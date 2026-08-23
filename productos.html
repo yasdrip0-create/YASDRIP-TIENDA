@@ -157,6 +157,21 @@ document.querySelectorAll('.add-btn').forEach(btn => {
   });
 });
 
+/* ---- si venimos del buscador (?buscar=<id>), resaltar y hacer scroll ---- */
+const buscarId = params.get('buscar');
+if (buscarId) {
+  const tarjeta = document.getElementById(buscarId);
+  if (tarjeta) {
+    [...filtersEl.children].forEach(b => b.classList.toggle('active', b.dataset.cat === 'todos'));
+    document.querySelectorAll('[data-product]').forEach(c => c.classList.remove('hidden'));
+    setTimeout(() => {
+      tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      tarjeta.classList.add('search-highlight');
+      setTimeout(() => tarjeta.classList.remove('search-highlight'), 2300);
+    }, 150);
+  }
+}
+
 let toastTimer;
 function showToast(text, esError = false) {
   const toast = document.getElementById('toast');

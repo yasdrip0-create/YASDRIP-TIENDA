@@ -55,6 +55,20 @@ function eliminarDelCarrito(idx) {
   carrito.splice(idx, 1);
   _guardar(LS_KEYS.carrito, carrito);
 }
+/** Quita SOLO una unidad de un producto (mismo id + color + talla) */
+function quitarUnidad(id, color, talla) {
+  const carrito = getCarrito();
+  const idx = carrito.findIndex(it => it.id == id && it.color === color && it.talla === talla);
+  if (idx > -1) carrito.splice(idx, 1);
+  _guardar(LS_KEYS.carrito, carrito);
+  return carrito.length;
+}
+/** Quita TODAS las unidades de un producto (mismo id + color + talla) */
+function eliminarGrupo(id, color, talla) {
+  const carrito = getCarrito().filter(it => !(it.id == id && it.color === color && it.talla === talla));
+  _guardar(LS_KEYS.carrito, carrito);
+  return carrito.length;
+}
 function limpiarCarrito() {
   _guardar(LS_KEYS.carrito, []);
 }
