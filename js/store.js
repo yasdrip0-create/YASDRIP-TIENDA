@@ -9,6 +9,23 @@
    panel admin.html del proyecto de la barbería.
    ============================================================ */
 
+/* URL de tu Google Apps Script (Parte 5 de la guía). Termina en /exec */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTBXm-I37O2XS2OiqqgkmrgEDpoImsR3-2HUWFoK9SOzQbHRXhpNBoR6_vbOmGRkT6/exec";
+
+/** Avisa a Google Apps Script (Sheet + Telegram) de un pedido nuevo o de
+    un problema. Nunca bloquea la compra: si falla el envío del aviso
+    (ej. no configuraste APPS_SCRIPT_URL, o no hay internet), solo se
+    registra en la consola y la tienda sigue funcionando normal. */
+function enviarAviso(payload) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return;
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  }).catch((e) => console.error("No se pudo enviar el aviso:", e));
+}
+
 const LS_KEYS = {
   carrito: "yasdrip_carrito",
   pedidos: "yasdrip_pedidos",
@@ -262,9 +279,11 @@ async function crearPedido(datosCliente) {
     const ref = await fbDb.collection('pedidos').add(pedido);
     descontarStockCarrito(carrito);
     limpiarCarrito();
+    enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido } });
     return { ...pedido, id: ref.id };
   } catch (e) {
     console.error('Error guardando el pedido en Firestore:', e);
+    enviarAviso({ tipo: 'problema', titulo: 'No se pudo guardar un pedido', detalle: String(e && e.message || e) });
     return null;
   }
 }
