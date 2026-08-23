@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAS DRIP — Ropa urbana de edición limitada</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow">Drop 01 · Voltage <span class="hero-note">— no dormimos haciéndolo</span></div>
+    <h1>Drip para gente que <em>ya trae</em><br>su propia energía.</h1>
+    <p class="sub">Busos, camisetas y accesorios urbanos con cortes sueltos y detalles de confección real. Edición limitada — cuando se acaban, no vuelven en el mismo color.</p>
+    <div class="hero-ctas">
+      <a href="productos.html" class="btn btn-primary">Ver la colección</a>
+      <a href="productos.html" id="heroDestacadoLink" class="btn btn-ghost">Pieza destacada</a>
+    </div>
+  </div>
+  <div class="hero-visual" id="heroVisual">
+    <!-- se rellena con JS -->
+    <div class="hero-stamp stamp-font">underground<br>drip co.</div>
+  </div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee">
+    <span>Nuevo drop de busos</span><span>Envíos a toda Colombia</span><span>Stock limitado</span><span>Paga contra entrega</span>
+    <span>Nuevo drop de busos</span><span>Envíos a toda Colombia</span><span>Stock limitado</span><span>Paga contra entrega</span>
+  </div>
+</div>
+
+<div class="banners">
+  <div class="banner b1">
+    <h3 class="display">Busos</h3>
+    <p>La pieza más pedida del drop, en varios colores.</p>
+    <a href="productos.html?cat=Busos" class="arrow-link">Ver busos →</a>
+  </div>
+  <div class="banner b2">
+    <h3 class="display">Accesorios</h3>
+    <p>Gorras y complementos para rematar el fit.</p>
+    <a href="productos.html?cat=Gorras" class="arrow-link">Ver accesorios →</a>
+  </div>
+</div>
+
+<section class="manifesto">
+  <div class="section" style="padding-top:90px;padding-bottom:90px;">
+    <div class="manifesto-inner">
+      <p class="big">No hacemos ropa para pasar desapercibido. Hacemos ropa para gente que <em>ya trae su propia energía</em> y solo necesita una tela que la deje salir.</p>
+      <div class="manifesto-row">
+        <div class="stat"><b>2021</b><span>Desde</span></div>
+        <div class="stat"><b>100%</b><span>Diseño propio</span></div>
+        <div class="stat"><b>Ed. Ltd</b><span>Cada drop</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="club" id="club">
+  <h2>Únete al Voltage Club</h2>
+  <p>Acceso anticipado a cada drop, antes de que se agote.</p>
+  <form class="club-form" id="clubForm">
+    <input type="email" name="email" id="clubEmail" placeholder="tu@correo.com" required>
+    <button class="btn btn-primary" type="submit">Quiero entrar</button>
+  </form>
+  <div class="club-msg" id="clubMsg"></div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="js/icons.js"></script>
+<script src="js/products.js"></script>
+<script src="js/store.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderHeader('inicio');
+renderFooter();
+
+/* producto destacado del hero: el primero con badge 'pocas', si existe */
+const activos = productosActivos();
+const destacado = activos.find(p => p.badge === 'pocas') || activos[0] || null;
+
+if (destacado) {
+  document.getElementById('heroDestacadoLink').href = 'productos.html#' + destacado.id;
+  document.getElementById('heroVisual').innerHTML =
+    iconoProducto(destacado.icono, destacado.colores[0]) +
+    `<div class="blob-tag"><span class="dot"></span>Quedan ${destacado.stock} unidades de ${destacado.nombre}</div>` +
+    `<div class="hero-stamp stamp-font">underground<br>drip co.</div>`;
+} else {
+  document.getElementById('heroVisual').innerHTML =
+    iconoProducto('hoodie', '#dfe8da') +
+    `<div class="hero-stamp stamp-font">underground<br>drip co.</div>`;
+}
+
+/* suscripción al Voltage Club (antes iba a la tabla 'suscriptores') */
+document.getElementById('clubForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const email = document.getElementById('clubEmail').value.trim();
+  const msgEl = document.getElementById('clubMsg');
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (emailValido) {
+    suscribirVoltageClub(email);
+    msgEl.textContent = `Listo, ${email} ya está en el Voltage Club.`;
+    this.reset();
+  } else {
+    msgEl.textContent = 'Ingresa un correo válido.';
+  }
+});
+</script>
+
+</body>
+</html>

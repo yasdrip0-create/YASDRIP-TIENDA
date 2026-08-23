@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu carrito — YAS DRIP</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="section-head" style="border:none;padding-bottom:0;">
+    <div>
+      <div class="section-eyebrow">Paso final</div>
+      <h2>Tu carrito</h2>
+    </div>
+  </div>
+
+  <div class="carrito-wrap" style="margin-top:30px;" id="carritoWrap">
+    <!-- se rellena con JS -->
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<div id="pago-overlay">
+  <canvas id="pago-canvas"></canvas>
+  <div class="pago-card">
+    <div class="estado-verificando" id="estado-verificando">
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 96 96">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#1b4332"/>
+              <stop offset="100%" stop-color="#4c8c68"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-track"    cx="48" cy="48" r="44"/>
+          <circle class="ring-progress" cx="48" cy="48" r="44"/>
+        </svg>
+        <div class="ring-icon">💳</div>
+      </div>
+      <div>
+        <div class="pago-status" id="pago-status-txt">Comprobando pago</div>
+        <div class="dots" style="margin-top:10px"><span></span><span></span><span></span></div>
+      </div>
+      <div class="barra-wrap" style="width:260px"><div class="barra-fill"></div></div>
+    </div>
+
+    <div class="estado-exito" id="estado-exito">
+      <div class="check-circle">✅</div>
+      <div class="exito-titulo">¡Pago exitoso!</div>
+      <div class="exito-sub">Tu pedido fue registrado correctamente</div>
+      <div class="gracias-nombre" id="gracias-nombre"></div>
+      <div class="exito-pedido" id="exito-pedido"></div>
+      <a href="productos.html" class="btn-exito-volver">Seguir comprando</a>
+    </div>
+
+    <div class="estado-error" id="estado-error">
+      <div class="error-circle">❌</div>
+      <div class="error-titulo">Error en el pago</div>
+      <div class="error-msg" id="error-msg-txt"></div>
+      <button class="btn-error-volver" onclick="cerrarOverlay()">↩ Volver e intentar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/icons.js"></script>
+<script src="js/products.js"></script>
+<script src="js/store.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderHeader('carrito');
+renderFooter();
+
+function pintarCarrito() {
+  const carrito = getCarrito();
+  const wrap = document.getElementById('carritoWrap');
+
+  if (carrito.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <p>Tu carrito está vacío. <a href="productos.html" style="color:var(--forest);font-weight:600;">Volver a la colección</a></p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  carrito.forEach((item, i) => {
+    html += `
+      <div class="producto-carrito">
+        <div class="prod-icon-wrap">${iconoProducto(item.icono, item.color || '#dfe8da')}</div>
+        <div class="producto-info">
+          <h3>${item.nombre}</h3>
+          <div class="producto-meta">TALLA ${item.talla || '—'} · ${item.categoria || ''}</div>
+          <div class="precio-carrito">$${Number(item.precio).toLocaleString('es-CO')}</div>
+        </div>
+        <a href="#" class="btn-eliminar" data-idx="${i}">✕</a>
+      </div>`;
+  });
+
+  const total = totalCarritoValor();
+  html += `
+    <div class="carrito-total">
+      <span>TOTAL</span>
+      <span class="total-valor">$${Number(total).toLocaleString('es-CO')}</span>
+    </div>
+    <a href="#" class="btn-limpiar" id="btnLimpiar">🗑 Limpiar carrito</a>
+    <div class="pagar-box">
+      <h2>Finalizar compra</h2>
+      <form id="form-pago">
+        <input type="text"  name="nombre_cliente" id="nombreCliente" placeholder="Nombre completo"    required>
+        <input type="email" name="email_cliente"  id="emailCliente"  placeholder="Correo electrónico" required>
+        <button type="submit" class="btn-pagar">Confirmar compra</button>
+      </form>
+    </div>`;
+
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.btn-eliminar').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      eliminarDelCarrito(Number(a.dataset.idx));
+      pintarCarrito();
+      document.getElementById('cartCount').textContent = totalCarritoCount();
+    });
+  });
+
+  const btnLimpiar = document.getElementById('btnLimpiar');
+  if (btnLimpiar) {
+    btnLimpiar.addEventListener('click', (e) => {
+      e.preventDefault();
+      limpiarCarrito();
+      pintarCarrito();
+      document.getElementById('cartCount').textContent = 0;
+    });
+  }
+
+  const formPago = document.getElementById('form-pago');
+  if (formPago) {
+    formPago.addEventListener('submit', (e) => {
+      e.preventDefault();
+      mostrarOverlay();
+      const nombre = document.getElementById('nombreCliente').value.trim();
+      const email  = document.getElementById('emailCliente').value.trim();
+
+      setTimeout(() => {
+        const pedido = crearPedido(nombre, email);
+        if (pedido) {
+          mostrarExito(nombre, pedido.id);
+          document.getElementById('cartCount').textContent = 0;
+        } else {
+          mostrarError('No se pudo procesar tu pedido, intenta de nuevo.');
+        }
+      }, 1600);
+    });
+  }
+}
+
+pintarCarrito();
+
+/* ---- animación de "pago" (igual que en el proyecto original) ---- */
+function mostrarOverlay() {
+  const overlay = document.getElementById('pago-overlay');
+  overlay.classList.add('activo');
+  iniciarParticulas();
+  const msgs = ['Comprobando pago','Verificando datos','Procesando...','Validando pago'];
+  let mi = 0;
+  const st = document.getElementById('pago-status-txt');
+  overlay._iv = setInterval(() => { st.textContent = msgs[++mi % msgs.length]; }, 700);
+}
+
+function cerrarOverlay() {
+  const overlay = document.getElementById('pago-overlay');
+  clearInterval(overlay._iv);
+  overlay.classList.remove('activo');
+  document.getElementById('estado-verificando').style.cssText = 'display:flex;opacity:1;';
+  document.getElementById('estado-exito').style.display = 'none';
+  document.getElementById('estado-error').style.display = 'none';
+}
+
+function mostrarExito(nombreCliente, pedidoId) {
+  clearInterval(document.getElementById('pago-overlay')._iv);
+  const ver = document.getElementById('estado-verificando');
+  ver.style.transition = 'opacity 0.4s'; ver.style.opacity = '0';
+  setTimeout(() => {
+    ver.style.display = 'none';
+    const ex = document.getElementById('estado-exito');
+    ex.style.display = 'flex';
+    document.getElementById('gracias-nombre').textContent = '✨ ¡Muchas gracias, ' + nombreCliente + '! ✨';
+    document.getElementById('exito-pedido').textContent = pedidoId ? `PEDIDO #${pedidoId}` : 'PEDIDO REGISTRADO';
+    lanzarConfeti();
+    pintarCarrito();
+  }, 400);
+}
+
+function mostrarError(msg) {
+  clearInterval(document.getElementById('pago-overlay')._iv);
+  const ver = document.getElementById('estado-verificando');
+  ver.style.transition = 'opacity 0.4s'; ver.style.opacity = '0';
+  setTimeout(() => {
+    ver.style.display = 'none';
+    document.getElementById('estado-error').style.display = 'flex';
+    document.getElementById('error-msg-txt').textContent = msg;
+  }, 400);
+}
+
+function iniciarParticulas() {
+  const canvas = document.getElementById('pago-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  const pts = Array.from({length:40}, () => ({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+    r: Math.random()*1.4+0.3, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+    a: Math.random()*0.4+0.1
+  }));
+  (function frame() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pts.forEach(p => {
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(27,67,50,${p.a})`; ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x<0||p.x>canvas.width) p.vx*=-1;
+      if (p.y<0||p.y>canvas.height) p.vy*=-1;
+    });
+    if (document.getElementById('pago-overlay').classList.contains('activo')) requestAnimationFrame(frame);
+  })();
+}
+
+function lanzarConfeti() {
+  const colores = ['#1b4332','#4c8c68','#dfe8da','#f3e0da','#f5ecd6','#d9a441'];
+  const card = document.querySelector('.pago-card');
+  for (let i=0; i<50; i++) setTimeout(() => {
+    const d = document.createElement('div');
+    d.className = 'confeti-dot';
+    d.style.cssText = `left:${Math.random()*100}%;top:${5+Math.random()*25}%;background:${colores[Math.floor(Math.random()*colores.length)]};animation-delay:${Math.random()*0.6}s;width:${5+Math.random()*9}px;height:${5+Math.random()*9}px;border-radius:${Math.random()>.5?'50%':'2px'};`;
+    card.appendChild(d);
+    setTimeout(() => d.remove(), 2400);
+  }, i*35);
+}
+</script>
+
+</body>
+</html>

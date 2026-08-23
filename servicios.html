@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Servicio al cliente — YAS DRIP</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section">
+  <div class="section-head" style="border:none;padding-bottom:0;">
+    <div>
+      <div class="section-eyebrow">Estamos para ayudarte</div>
+      <h2>Servicio al cliente</h2>
+    </div>
+    <p>Cambios, garantías, guía de tallas y todo lo que necesites.</p>
+  </div>
+
+  <div id="alertaMsg"></div>
+
+  <div class="servicios-grid" style="margin-top:30px;">
+
+    <div class="servicio-card">
+      <span class="serv-icon">📦</span>
+      <h3>Cambios y devoluciones</h3>
+      <p>Tienes 15 días para cambiar talla o color sin costo, con la prenda sin usar y su etiqueta.</p>
+      <button class="btn-opciones" onclick="abrirOpciones('📦','Cambios y devoluciones','Tienes 15 días para cambiar talla o color sin costo, con la prenda sin usar y su etiqueta.','Hola, quiero hacer un cambio de talla/color')">Ver opciones</button>
+    </div>
+
+    <div class="servicio-card">
+      <span class="serv-icon">📏</span>
+      <h3>Guía de tallas</h3>
+      <p>Te ayudamos a elegir la talla correcta según tus medidas antes de comprar.</p>
+      <button class="btn-opciones" onclick="abrirOpciones('📏','Guía de tallas','Te ayudamos a elegir la talla correcta según tus medidas antes de comprar.','Hola, necesito ayuda para elegir mi talla')">Ver opciones</button>
+    </div>
+
+    <div class="servicio-card">
+      <span class="serv-icon">🚚</span>
+      <h3>Envíos a todo el país</h3>
+      <p>Enviamos con empaque cuidado y seguimiento en tiempo real a toda Colombia.</p>
+      <button class="btn-opciones" onclick="abrirOpciones('🚚','Envíos a todo el país','Enviamos con empaque cuidado y seguimiento en tiempo real a toda Colombia.','Hola, quiero información sobre envíos')">Ver opciones</button>
+    </div>
+
+    <div class="servicio-card">
+      <span class="serv-icon">💬</span>
+      <h3>Soporte por WhatsApp</h3>
+      <p>Escríbenos y te respondemos rápido para resolver cualquier duda sobre tu pedido.</p>
+      <button class="btn-opciones" onclick="abrirOpciones('💬','Soporte por WhatsApp','Escríbenos y te respondemos rápido para resolver cualquier duda sobre tu pedido.','Hola, tengo una pregunta sobre mi pedido')">Ver opciones</button>
+    </div>
+
+    <div class="servicio-card card-garantia">
+      <span class="serv-icon">🛡️</span>
+      <h3>Garantía de producto</h3>
+      <p>¿Tu prenda llegó con una falla de costura o material? Registra tu garantía aquí.</p>
+      <button class="btn-opciones btn-garantia" onclick="abrirId('modalGarantia')">🛡️ Solicitar garantía</button>
+    </div>
+
+    <div class="servicio-card card-queja">
+      <span class="serv-icon">📢</span>
+      <h3>Quejas y reclamos</h3>
+      <p>¿Tuviste algún inconveniente con tu compra? Cuéntanos, lo solucionamos.</p>
+      <button class="btn-opciones btn-queja" onclick="abrirId('modalQueja')">📢 Enviar queja</button>
+    </div>
+
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<!-- MODAL: Servicios generales -->
+<div class="modal-overlay" id="modalOpciones" onclick="cerrarFondo(event,'modalOpciones')">
+  <div class="modal-box">
+    <button class="modal-cerrar" onclick="cerrarId('modalOpciones')">✕</button>
+    <div class="modal-icon" id="modalIcono">📦</div>
+    <h3 id="modalTitulo">Servicio</h3>
+    <p id="modalDesc" class="modal-desc"></p>
+    <form id="formSolicitud" class="form-solicitud">
+      <textarea name="problema" id="modalProblema" placeholder="Cuéntanos qué necesitas..." required></textarea>
+      <input type="text" name="nombre"   id="modalNombre"   placeholder="Tu nombre" required>
+      <input type="text" name="contacto" id="modalContacto" placeholder="Teléfono o correo de contacto" required>
+      <button type="submit" class="btn-enviar-solicitud">Enviar solicitud</button>
+    </form>
+    <div class="modal-divisor"><span>o contáctanos directo</span></div>
+    <div class="modal-opciones">
+      <a id="modalWhatsapp" class="opcion-btn" target="_blank" rel="noopener">💬 Escribir por WhatsApp</a>
+      <a class="opcion-btn" href="tel:+573239523623">📞 Llamar ahora</a>
+      <a id="modalCorreo" class="opcion-btn" target="_blank">✉️ Escribir por correo</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Garantía -->
+<div class="modal-overlay" id="modalGarantia" onclick="cerrarFondo(event,'modalGarantia')">
+  <div class="modal-box">
+    <button class="modal-cerrar" onclick="cerrarId('modalGarantia')">✕</button>
+    <div class="modal-icon">🛡️</div>
+    <h3>Solicitud de garantía</h3>
+    <p class="modal-desc">Completa el formulario y nos comunicamos contigo para resolver tu caso.</p>
+    <form id="formGarantia" class="form-solicitud">
+      <input type="text" name="g_nombre"   id="gNombre"   placeholder="Tu nombre completo" required>
+      <input type="text" name="g_contacto" id="gContacto" placeholder="Teléfono o correo de contacto" required>
+      <input type="text" name="g_producto" id="gProducto" placeholder="¿Qué prenda compraste?" required>
+      <label style="color:var(--gray);font-size:.85rem;margin-bottom:4px;display:block;">📅 ¿Cuándo compraste la prenda?</label>
+      <input type="date" name="g_fecha_compra" id="gFecha" required>
+      <select name="g_causa" id="gCausa" required>
+        <option value="" disabled selected>— Selecciona la causa del problema —</option>
+        <option>Falla de costura</option>
+        <option>Tela dañada o defectuosa</option>
+        <option>Talla incorrecta</option>
+        <option>Color distinto al comprado</option>
+        <option>Estampado descosido o dañado</option>
+        <option>Otro</option>
+      </select>
+      <textarea name="g_descripcion" id="gDescripcion" placeholder="Describe con más detalle lo que está pasando..." required></textarea>
+      <button type="submit" class="btn-enviar-solicitud">Enviar solicitud de garantía</button>
+    </form>
+    <div class="modal-divisor"><span>o contáctanos directo</span></div>
+    <div class="modal-opciones">
+      <a class="opcion-btn" href="https://wa.me/573239523623?text=Hola%2C%20necesito%20ayuda%20con%20una%20garant%C3%ADa%20de%20mi%20prenda" target="_blank" rel="noopener">💬 WhatsApp Garantía</a>
+      <a class="opcion-btn" href="tel:+573239523623">📞 Llamar ahora</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Quejas -->
+<div class="modal-overlay" id="modalQueja" onclick="cerrarFondo(event,'modalQueja')">
+  <div class="modal-box">
+    <button class="modal-cerrar" onclick="cerrarId('modalQueja')">✕</button>
+    <div class="modal-icon">📢</div>
+    <h3>Quejas y reclamos</h3>
+    <p class="modal-desc">Tu opinión nos ayuda a mejorar. Cuéntanos qué pasó.</p>
+    <form id="formQueja" class="form-solicitud">
+      <input type="text" name="q_nombre"   id="qNombre"   placeholder="Tu nombre completo" required>
+      <input type="text" name="q_contacto" id="qContacto" placeholder="Teléfono o correo de contacto" required>
+      <select name="q_tipo" id="qTipo" onchange="toggleDescQueja(this)" required>
+        <option value="" disabled selected>— Tipo de queja o reclamo —</option>
+        <option>Prenda defectuosa o dañada</option>
+        <option>Entrega tardía o no recibida</option>
+        <option>Cobro incorrecto</option>
+        <option>Mal servicio al cliente</option>
+        <option>Publicidad engañosa</option>
+        <option>Otro</option>
+      </select>
+      <div id="bloque-descripcion-queja">
+        <input type="text"    name="q_pedido"      id="qPedido"      placeholder="N° de pedido (opcional)">
+        <textarea             name="q_descripcion" id="qDescripcion" placeholder="Describe tu queja con el mayor detalle posible..."></textarea>
+        <button type="submit" class="btn-enviar-solicitud" style="background:var(--red);">Enviar queja</button>
+      </div>
+    </form>
+    <div class="modal-divisor"><span>o contáctanos directo</span></div>
+    <div class="modal-opciones">
+      <a class="opcion-btn" href="https://wa.me/573239523623?text=Hola%2C%20tengo%20una%20queja%20o%20reclamo%20que%20quiero%20reportar" target="_blank" rel="noopener">💬 WhatsApp Quejas</a>
+      <a class="opcion-btn" href="tel:+573239523623">📞 Llamar ahora</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/icons.js"></script>
+<script src="js/products.js"></script>
+<script src="js/store.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderHeader('servicios');
+renderFooter();
+
+function mostrarAlerta(texto, tipo) {
+  document.getElementById('alertaMsg').innerHTML =
+    `<div class="alerta ${tipo}">${tipo === 'ok' ? '✅' : '❌'} ${texto}</div>`;
+}
+
+function abrirId(id)       { document.getElementById(id).classList.add('activo'); }
+function cerrarId(id)      { document.getElementById(id).classList.remove('activo'); }
+function cerrarFondo(e,id) { if (e.target.id === id) cerrarId(id); }
+
+let servicioActual = '';
+function abrirOpciones(icono, titulo, desc, mensaje) {
+  const msg = encodeURIComponent(mensaje);
+  servicioActual = titulo;
+  document.getElementById('modalIcono').textContent  = icono;
+  document.getElementById('modalTitulo').textContent = titulo;
+  document.getElementById('modalDesc').textContent   = desc;
+  document.getElementById('modalWhatsapp').href = 'https://wa.me/573239523623?text=' + msg;
+  document.getElementById('modalCorreo').href   = 'mailto:contacto@yasdrip.co?subject=' + encodeURIComponent(titulo) + '&body=' + msg;
+  abrirId('modalOpciones');
+}
+
+function toggleDescQueja(select) {
+  const bloque = document.getElementById('bloque-descripcion-queja');
+  bloque.style.display = select.value ? 'block' : 'none';
+  bloque.querySelector('textarea').required = !!select.value;
+}
+
+/* ---- formulario de servicio general ---- */
+document.getElementById('formSolicitud').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const nombre = document.getElementById('modalNombre').value.trim();
+  const contacto = document.getElementById('modalContacto').value.trim();
+  const problema = document.getElementById('modalProblema').value.trim();
+  if (!servicioActual || !nombre || !contacto || !problema) {
+    mostrarAlerta('Completa todos los campos para enviar tu solicitud.', 'error');
+    return;
+  }
+  guardarSolicitud(servicioActual, nombre, contacto, problema);
+  mostrarAlerta(`¡Listo, ${nombre}! Tu solicitud de "${servicioActual}" fue enviada. Te contactaremos pronto.`, 'ok');
+  this.reset();
+  cerrarId('modalOpciones');
+});
+
+/* ---- formulario de garantía ---- */
+document.getElementById('formGarantia').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const nombre = document.getElementById('gNombre').value.trim();
+  const contacto = document.getElementById('gContacto').value.trim();
+  const fecha = document.getElementById('gFecha').value;
+  const producto = document.getElementById('gProducto').value.trim();
+  const causa = document.getElementById('gCausa').value;
+  const descripcion = document.getElementById('gDescripcion').value.trim();
+  if (!nombre || !contacto || !fecha || !producto || !causa || !descripcion) {
+    mostrarAlerta('Completa todos los campos del formulario de garantía.', 'error');
+    return;
+  }
+  const desc = `Producto: ${producto} | Fecha compra: ${fecha} | Causa: ${causa} | Detalle: ${descripcion}`;
+  guardarSolicitud('Garantía / Cambio de talla', nombre, contacto, desc);
+  mostrarAlerta(`¡Listo, ${nombre}! Tu solicitud de garantía/cambio fue registrada. Te contactaremos pronto.`, 'ok');
+  this.reset();
+  cerrarId('modalGarantia');
+});
+
+/* ---- formulario de quejas ---- */
+document.getElementById('formQueja').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const nombre = document.getElementById('qNombre').value.trim();
+  const contacto = document.getElementById('qContacto').value.trim();
+  const tipo = document.getElementById('qTipo').value;
+  const pedido = document.getElementById('qPedido').value.trim();
+  const descripcion = document.getElementById('qDescripcion').value.trim();
+  if (!nombre || !contacto || !tipo || !descripcion) {
+    mostrarAlerta('Completa todos los campos obligatorios de la queja.', 'error');
+    return;
+  }
+  const desc = `Tipo: ${tipo} | Pedido: ${pedido} | Detalle: ${descripcion}`;
+  guardarSolicitud('Queja / Reclamo', nombre, contacto, desc);
+  mostrarAlerta(`¡Recibido, ${nombre}! Tu queja fue registrada. La atenderemos en máximo 48 horas.`, 'ok');
+  this.reset();
+  cerrarId('modalQueja');
+});
+</script>
+
+</body>
+</html>

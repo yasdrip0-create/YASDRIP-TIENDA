@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colección — YAS DRIP</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div id="site-header"></div>
+
+<section class="section" id="coleccion">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Catálogo completo</div>
+      <h2>La colección <span class="hero-note" style="font-size:0.55em;transform:rotate(-3deg);">psst, se acaba rápido</span></h2>
+    </div>
+    <p>Elige color y talla directo en la tarjeta.</p>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="grid" id="productGrid"></div>
+</section>
+
+<div id="site-footer"></div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText">Añadido al carrito</span></div>
+
+<script src="js/icons.js"></script>
+<script src="js/products.js"></script>
+<script src="js/store.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderHeader('productos');
+renderFooter();
+
+const params = new URLSearchParams(window.location.search);
+const filtroInicial = params.get('cat') || 'todos';
+const categorias = categoriasDisponibles();
+const productos = productosActivos();
+
+/* ---- construir botones de filtro ---- */
+const filtersEl = document.getElementById('filters');
+let filtrosHtml = `<button class="filter-btn ${filtroInicial === 'todos' ? 'active' : ''}" data-cat="todos">Todos</button>`;
+categorias.forEach(cat => {
+  filtrosHtml += `<button class="filter-btn ${filtroInicial === cat ? 'active' : ''}" data-cat="${cat}">${cat}</button>`;
+});
+filtersEl.innerHTML = filtrosHtml;
+
+/* ---- construir tarjetas de producto ---- */
+const gridEl = document.getElementById('productGrid');
+
+if (productos.length === 0) {
+  gridEl.innerHTML = `<div class="empty-state"><p>No hay productos disponibles por ahora.</p></div>`;
+} else {
+  gridEl.innerHTML = productos.map(p => {
+    const badge = badgeInfo(p.badge);
+    const oculto = (filtroInicial !== 'todos' && filtroInicial !== p.categoria) ? 'hidden' : '';
+    const badgeHtml = badge ? `<div class="badge ${badge.class}">${badge.label}</div>` : '';
+    const swatchesHtml = p.colores.map((c, i) =>
+      `<div class="swatch ${i === 0 ? 'active' : ''}" style="background:${c}" data-color="${c}"></div>`
+    ).join('');
+    const sizesHtml = p.tallas.map(sz => `<div class="size-chip" data-size="${sz}">${sz}</div>`).join('');
+    const precioAnteriorHtml = p.precio_anterior
+      ? `<span class="old">$${Number(p.precio_anterior).toLocaleString('es-CO')}</span>` : '';
+
+    return `
+      <div class="card ${oculto}" id="${p.id}" data-cat="${p.categoria}" data-product>
+        <div class="card-media" data-media style="background:${p.colores[0]}22">
+          ${badgeHtml}
+          <div data-icon>${iconoProducto(p.icono, p.colores[0])}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-cat">${p.categoria}</div>
+          <div class="card-name display">${p.nombre}</div>
+          <div class="swatches">${swatchesHtml}</div>
+          <div class="sizes">${sizesHtml}</div>
+          <div class="card-bottom">
+            <div class="card-price mono">${precioAnteriorHtml} $${Number(p.precio).toLocaleString('es-CO')}</div>
+            <button class="add-btn" data-id="${p.id}" data-nombre="${p.nombre}">Añadir</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ---- filtros de categoría (100% en el cliente) ---- */
+filtersEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  [...filtersEl.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const cat = btn.dataset.cat;
+  document.querySelectorAll('[data-product]').forEach(card => {
+    card.classList.toggle('hidden', cat !== 'todos' && card.dataset.cat !== cat);
+  });
+});
+
+/* ---- estado de color/talla elegidos por tarjeta ---- */
+const seleccion = {};
+
+document.querySelectorAll('[data-product]').forEach(card => {
+  const id = card.id;
+  seleccion[id] = { color: card.querySelector('.swatch')?.dataset.color || null, talla: null };
+
+  card.querySelectorAll('.swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      card.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+      seleccion[id].color = sw.dataset.color;
+      card.querySelectorAll('[data-icon] svg path[fill]').forEach(path => {
+        path.setAttribute('fill', sw.dataset.color);
+      });
+      card.querySelector('[data-media]').style.background = sw.dataset.color + '22';
+    });
+  });
+
+  card.querySelectorAll('.size-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      card.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      seleccion[id].talla = chip.dataset.size;
+    });
+  });
+});
+
+/* ---- añadir al carrito (antes era fetch a ajax/agregar_carrito.php, ahora es local) ---- */
+document.querySelectorAll('.add-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const card = btn.closest('[data-product]');
+    const id = card.id;
+    const sel = seleccion[id];
+
+    if (!sel.talla) {
+      btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
+      showToast('Elige una talla para ' + btn.dataset.nombre, true);
+      return;
+    }
+
+    const producto = buscarProducto(id);
+    if (!producto) { showToast('Ese producto ya no está disponible.', true); return; }
+
+    const totalCarrito = agregarAlCarrito(producto, sel.color, sel.talla);
+
+    document.getElementById('cartCount').textContent = totalCarrito;
+    const pill = document.querySelector('.cart-pill');
+    pill.classList.remove('pulse'); void pill.offsetWidth; pill.classList.add('pulse');
+
+    const original = btn.textContent;
+    btn.textContent = 'Añadido ✓';
+    btn.classList.add('added');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('added'); }, 1200);
+
+    showToast(`${producto.nombre} · talla ${sel.talla} añadido al carrito`);
+  });
+});
+
+let toastTimer;
+function showToast(text, esError = false) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastText').textContent = text;
+  toast.classList.toggle('error', esError);
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+</script>
+
+</body>
+</html>
