@@ -87,6 +87,14 @@
         <input type="text" id="nProdColores" placeholder="Colores en hex separados por coma (#151512,#faf9f5)">
         <input type="text" id="nProdTallas" placeholder="Tallas separadas por coma (S,M,L,XL)">
       </div>
+      <div class="admin-foto-row">
+        <label class="admin-foto-picker" id="nProdFotoLabel">
+          <img id="nProdFotoPreview" style="display:none;">
+          <span id="nProdFotoTexto">📷 Subir foto del producto (opcional)</span>
+          <input type="file" id="nProdFoto" accept="image/*" hidden>
+        </label>
+        <span class="admin-foto-hint">Si no subes foto, se usa un dibujo genérico según la categoría.</span>
+      </div>
       <div class="admin-add-actions">
         <button class="admin-btn admin-btn-primary" id="btnGuardarNuevo">Guardar producto</button>
         <button class="admin-btn admin-btn-ghost" id="btnCancelarNuevo">Cancelar</button>
@@ -98,6 +106,7 @@
         <table class="admin-table" id="tablaProductos">
           <thead>
             <tr>
+              <th></th>
               <th>Producto</th>
               <th>Categoría</th>
               <th>Precio base</th>
@@ -196,11 +205,19 @@ function pintarTabla() {
   tbody.innerHTML = productos.map(p => {
     const agotado = estaAgotado(p);
     const precioFinal = precioConDescuento(p);
+    const miniatura = p.foto
+      ? `<img src="${p.foto}" class="admin-prod-thumb">`
+      : iconoProducto(p.icono, p.colores[0]);
     return `
       <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
         <td>
-          <div class="admin-prod-nombre">${iconoProducto(p.icono, p.colores[0])}<span>${p.nombre}</span></div>
+          <label class="admin-foto-cell" title="Cambiar foto">
+            ${miniatura}
+            <span class="admin-foto-cell-cam">📷</span>
+            <input type="file" accept="image/*" class="input-foto-fila" hidden>
+          </label>
         </td>
+        <td><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td>${p.categoria}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
@@ -219,6 +236,23 @@ function pintarTabla() {
         </td>
       </tr>`;
   }).join('');
+
+  /* ---- cambiar la foto de un producto que ya existe ---- */
+  tbody.querySelectorAll('.input-foto-fila').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const fila = input.closest('tr');
+      try {
+        const dataUrl = await comprimirImagen(file, 700, 0.75);
+        actualizarProductoAdmin(fila.dataset.rowId, { foto: dataUrl });
+        showToast('Foto actualizada ✓');
+        pintarTodo();
+      } catch (err) {
+        showToast('No se pudo usar esa imagen.', true);
+      }
+    });
+  });
 
   /* al escribir, actualiza el "precio final" en vivo sin guardar todavía */
   tbody.querySelectorAll('tr').forEach(fila => {
@@ -270,6 +304,24 @@ document.getElementById('btnMostrarNuevo').addEventListener('click', () => {
 document.getElementById('btnCancelarNuevo').addEventListener('click', () => {
   cardNuevo.style.display = 'none';
 });
+
+let fotoNuevaDataUrl = null;
+const inputFotoNuevo = document.getElementById('nProdFoto');
+const previewFotoNuevo = document.getElementById('nProdFotoPreview');
+const textoFotoNuevo = document.getElementById('nProdFotoTexto');
+inputFotoNuevo.addEventListener('change', async () => {
+  const file = inputFotoNuevo.files[0];
+  if (!file) return;
+  try {
+    fotoNuevaDataUrl = await comprimirImagen(file, 700, 0.75);
+    previewFotoNuevo.src = fotoNuevaDataUrl;
+    previewFotoNuevo.style.display = 'block';
+    textoFotoNuevo.textContent = '✓ Foto lista — clic para cambiarla';
+  } catch (err) {
+    showToast('No se pudo usar esa imagen.', true);
+  }
+});
+
 document.getElementById('btnGuardarNuevo').addEventListener('click', () => {
   const nombre = document.getElementById('nProdNombre').value.trim();
   const categoria = document.getElementById('nProdCategoria').value.trim();
@@ -283,9 +335,14 @@ document.getElementById('btnGuardarNuevo').addEventListener('click', () => {
     showToast('Completa al menos nombre, categoría y precio.', true);
     return;
   }
-  agregarProductoAdmin({ nombre, categoria, precio, stock, icono, colores, tallas });
+  agregarProductoAdmin({ nombre, categoria, precio, stock, icono, colores, tallas, foto: fotoNuevaDataUrl });
   showToast(`${nombre} agregado al catálogo ✓`);
   document.querySelectorAll('.admin-add-grid input').forEach(i => i.value = '');
+  fotoNuevaDataUrl = null;
+  previewFotoNuevo.style.display = 'none';
+  previewFotoNuevo.src = '';
+  textoFotoNuevo.textContent = '📷 Subir foto del producto (opcional)';
+  inputFotoNuevo.value = '';
   cardNuevo.style.display = 'none';
   pintarTodo();
 });

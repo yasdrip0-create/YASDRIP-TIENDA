@@ -100,10 +100,12 @@ function actualizarProductoAdmin(id, cambios) {
   if (cambios.descuento !== undefined) p.descuento = Math.min(90, Math.max(0, Number(cambios.descuento) || 0));
   if (cambios.stock !== undefined) p.stock = Math.max(0, Math.floor(Number(cambios.stock) || 0));
   if (cambios.activo !== undefined) p.activo = !!cambios.activo;
+  if (cambios.foto !== undefined) p.foto = cambios.foto;
   guardarCatalogo(catalogo);
   return p;
 }
-/** Agrega un producto nuevo al catálogo desde el panel admin */
+/** Agrega un producto nuevo al catálogo desde el panel admin.
+    nuevo.foto (opcional) ya debe venir como dataURL comprimido. */
 function agregarProductoAdmin(nuevo) {
   const catalogo = getCatalogo();
   const producto = {
@@ -114,6 +116,7 @@ function agregarProductoAdmin(nuevo) {
     precio_anterior: null,
     descuento: 0,
     icono: nuevo.icono || 'tee',
+    foto: nuevo.foto || null,
     colores: nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'],
     tallas: nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'],
     badge: null,
@@ -145,6 +148,7 @@ function agregarAlCarrito(producto, color, talla) {
     categoria: producto.categoria,
     precio: precioConDescuento(producto),
     icono: producto.icono,
+    foto: producto.foto || null,
     color: color || producto.colores[0],
     talla: talla,
   });

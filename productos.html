@@ -78,7 +78,9 @@ if (productos.length === 0) {
       <div class="card ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
         <div class="card-media" data-media style="background:${p.colores[0]}22">
           ${badgeHtml}
-          <div data-icon>${iconoProducto(p.icono, p.colores[0])}</div>
+          ${p.foto
+            ? `<img src="${p.foto}" class="card-photo" alt="${p.nombre}">`
+            : `<div data-icon>${iconoProducto(p.icono, p.colores[0])}</div>`}
         </div>
         <div class="card-body">
           <div class="card-cat">${p.categoria}</div>

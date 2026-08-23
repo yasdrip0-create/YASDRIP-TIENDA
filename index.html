@@ -85,8 +85,11 @@ const destacado = activos.find(p => p.badge === 'pocas') || activos[0] || null;
 
 if (destacado) {
   document.getElementById('heroDestacadoLink').href = 'productos.html#' + destacado.id;
+  const visualProducto = destacado.foto
+    ? `<img src="${destacado.foto}" class="hero-visual-photo" alt="${destacado.nombre}">`
+    : iconoProducto(destacado.icono, destacado.colores[0]);
   document.getElementById('heroVisual').innerHTML =
-    iconoProducto(destacado.icono, destacado.colores[0]) +
+    visualProducto +
     `<div class="blob-tag"><span class="dot"></span>Quedan ${destacado.stock} unidades de ${destacado.nombre}</div>` +
     `<div class="hero-stamp stamp-font">underground<br>drip co.</div>`;
 } else {

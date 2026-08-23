@@ -106,7 +106,7 @@ function pintarCarrito() {
   grupos.forEach(g => {
     itemsHtml += `
       <div class="producto-carrito">
-        <div class="prod-icon-wrap">${iconoProducto(g.icono, g.color || '#dfe8da')}</div>
+        <div class="prod-icon-wrap">${g.foto ? `<img src="${g.foto}" class="prod-icon-photo" alt="${g.nombre}">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
         <div class="producto-info">
           <h3>${g.nombre}</h3>
           <div class="producto-meta">TALLA ${g.talla || '—'} · ${g.categoria || ''}</div>
