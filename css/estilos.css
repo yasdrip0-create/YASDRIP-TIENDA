@@ -1229,13 +1229,20 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-table tr.fila-inactiva{opacity:0.45;}
 .admin-prod-nombre{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--black);}
 .admin-prod-nombre svg{width:30px;height:30px;flex-shrink:0;}
-.admin-precio-final{font-weight:800;color:var(--black);}
+.admin-precio-final{font-weight:800;color:var(--black);white-space:nowrap;font-size:12.5px;}
 
 .admin-input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'Space Mono',monospace;font-size:13px;color:var(--black);background:var(--offwhite);}
 .admin-input-sm{width:88px;}
 .admin-input-xs{width:66px;padding:5px 6px;font-size:11.5px;}
 
 .admin-tallas-precios{max-width:230px;}
+.btn-toggle-tallas{
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+  font-family:'Space Mono',monospace;font-size:10.5px;
+}
+.btn-toggle-tallas .toggle-arrow{font-size:9px;}
+.admin-tallas-precios[hidden]{display:none;}
+.admin-tallas-precios{margin-top:8px;}
 .talla-chips{display:flex;flex-wrap:wrap;gap:6px;}
 .talla-chip-btn{
   position:relative;min-width:32px;height:28px;padding:0 8px;display:flex;align-items:center;justify-content:center;

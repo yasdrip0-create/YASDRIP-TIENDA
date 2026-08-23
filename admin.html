@@ -210,7 +210,10 @@ function pintarTabla() {
     const rango = rangoPrecioTallas(p);
     const precioFinalTexto = rango.min === rango.max
       ? `$${rango.min.toLocaleString('es-CO')}`
-      : `$${rango.min.toLocaleString('es-CO')}–$${rango.max.toLocaleString('es-CO')}`;
+      : `Desde $${rango.min.toLocaleString('es-CO')}`;
+    const precioFinalTitulo = rango.min === rango.max
+      ? ''
+      : `title="Varía según la talla: $${rango.min.toLocaleString('es-CO')} a $${rango.max.toLocaleString('es-CO')}"`;
     const fotoPrincipal = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
     const miniatura = fotoPrincipal
       ? `<img src="${fotoPrincipal}" class="admin-prod-thumb">`
@@ -237,6 +240,7 @@ function pintarTabla() {
           <input type="number" class="admin-input admin-input-xs input-precio-talla" data-talla="${t}" value="${valor}" min="0" step="1000">
         </div>`;
     }).join('');
+    const personalizadas = (p.tallas || []).filter(t => precioBaseTalla(p, t) !== (Number(p.precio) || 0)).length;
     return `
       <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
         <td>
@@ -250,9 +254,17 @@ function pintarTabla() {
         <td><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td>${p.categoria}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
-        <td><div class="admin-tallas-precios"><div class="talla-chips">${preciosTallaHtml}</div><div class="talla-precio-editors">${editoresTallaHtml}</div></div></td>
+        <td>
+          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-tallas">
+            ${personalizadas > 0 ? `Personalizado (${personalizadas})` : 'Precio por talla'} <span class="toggle-arrow">▾</span>
+          </button>
+          <div class="admin-tallas-precios" hidden>
+            <div class="talla-chips">${preciosTallaHtml}</div>
+            <div class="talla-precio-editors">${editoresTallaHtml}</div>
+          </div>
+        </td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
-        <td class="mono admin-precio-final">${precioFinalTexto}</td>
+        <td class="mono admin-precio-final" ${precioFinalTitulo}>${precioFinalTexto}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="stock" value="${p.stock}" min="0"></td>
         <td>
           <span class="estado-pill ${agotado ? 'out' : 'ok'}">${agotado ? 'Agotado' : 'Disponible'}</span>
@@ -299,6 +311,16 @@ function pintarTabla() {
       } catch (err) {
         showToast('No se pudo usar esa imagen.', true);
       }
+    });
+  });
+
+  /* ---- botón "Precio por talla": expande/colapsa el bloque para que la tabla no se vea saturada ---- */
+  tbody.querySelectorAll('.btn-toggle-tallas').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bloque = btn.nextElementSibling;
+      const abrir = bloque.hasAttribute('hidden');
+      bloque.toggleAttribute('hidden', !abrir);
+      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
     });
   });
 
