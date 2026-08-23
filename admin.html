@@ -226,9 +226,14 @@ function pintarTabla() {
     }).join('');
     const preciosTallaHtml = (p.tallas || []).map(t => {
       const valor = precioBaseTalla(p, t);
+      const esDistinto = valor !== (Number(p.precio) || 0);
+      return `<button type="button" class="talla-chip-btn ${esDistinto ? 'tiene-precio-propio' : ''}" data-talla="${t}">${t}</button>`;
+    }).join('');
+    const editoresTallaHtml = (p.tallas || []).map(t => {
+      const valor = precioBaseTalla(p, t);
       return `
-        <div class="admin-talla-precio">
-          <span class="admin-talla-precio-label">${t}</span>
+        <div class="talla-precio-editor" data-talla-editor="${t}" hidden>
+          <span>${t}</span>
           <input type="number" class="admin-input admin-input-xs input-precio-talla" data-talla="${t}" value="${valor}" min="0" step="1000">
         </div>`;
     }).join('');
@@ -245,7 +250,7 @@ function pintarTabla() {
         <td><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td>${p.categoria}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
-        <td><div class="admin-tallas-precios">${preciosTallaHtml}</div></td>
+        <td><div class="admin-tallas-precios"><div class="talla-chips">${preciosTallaHtml}</div><div class="talla-precio-editors">${editoresTallaHtml}</div></div></td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
         <td class="mono admin-precio-final">${precioFinalTexto}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="stock" value="${p.stock}" min="0"></td>
@@ -294,6 +299,20 @@ function pintarTabla() {
       } catch (err) {
         showToast('No se pudo usar esa imagen.', true);
       }
+    });
+  });
+
+  /* ---- chips de talla: clic muestra/oculta el input de precio de esa talla ---- */
+  tbody.querySelectorAll('.talla-chip-btn').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const fila = chip.closest('tr');
+      const talla = chip.dataset.talla;
+      const editor = fila.querySelector(`[data-talla-editor="${CSS.escape(talla)}"]`);
+      if (!editor) return;
+      const abrir = editor.hasAttribute('hidden');
+      editor.toggleAttribute('hidden', !abrir);
+      chip.classList.toggle('active', abrir);
+      if (abrir) editor.querySelector('input')?.focus();
     });
   });
 

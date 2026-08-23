@@ -1235,9 +1235,31 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-input-sm{width:88px;}
 .admin-input-xs{width:66px;padding:5px 6px;font-size:11.5px;}
 
-.admin-tallas-precios{display:flex;flex-wrap:wrap;gap:8px;max-width:210px;}
-.admin-talla-precio{display:flex;flex-direction:column;align-items:center;gap:3px;}
-.admin-talla-precio-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.04em;color:var(--gray);text-transform:uppercase;}
+.admin-tallas-precios{max-width:230px;}
+.talla-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.talla-chip-btn{
+  position:relative;min-width:32px;height:28px;padding:0 8px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:8px;font-size:11px;font-family:'Space Mono',monospace;font-weight:700;
+  color:var(--gray);background:var(--white);cursor:pointer;transition:all .15s ease;
+}
+.talla-chip-btn:hover{border-color:var(--black);color:var(--black);}
+.talla-chip-btn.active{background:var(--forest);color:var(--white);border-color:var(--forest);}
+.talla-chip-btn.tiene-precio-propio::after{
+  content:"";position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;
+  background:var(--red);border:1.5px solid var(--white);
+}
+.talla-precio-editors{display:flex;flex-direction:column;gap:6px;}
+.talla-precio-editors:not(:empty){margin-top:8px;}
+.talla-precio-editor{
+  display:flex;align-items:center;gap:8px;background:var(--offwhite);border:1px solid var(--line);
+  border-radius:10px;padding:6px 10px;animation:tallaPop .15s ease;
+}
+.talla-precio-editor[hidden]{display:none;}
+.talla-precio-editor span{
+  font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;color:var(--forest);
+  text-transform:uppercase;min-width:18px;
+}
+@keyframes tallaPop{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
 
 .estado-pill{
   display:inline-block;padding:4px 10px;border-radius:999px;font-size:10.5px;font-weight:700;
