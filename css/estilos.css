@@ -548,12 +548,18 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   padding:22px;margin-top:6px;
 }
 .pagar-box h2{font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:16px;}
-.pagar-box input{
+.pagar-box input,
+.pagar-box select,
+.pagar-box textarea{
   width:100%;padding:14px 16px;margin-bottom:12px;border:1px solid var(--line);border-radius:12px;
-  background:var(--offwhite);font-size:14.5px;font-family:'Work Sans',sans-serif;
+  background:var(--offwhite);font-size:14.5px;font-family:'Work Sans',sans-serif;color:var(--black);
   transition:border-color .2s ease, background .2s ease;
 }
-.pagar-box input:focus{outline:none;border-color:var(--forest);background:var(--white);}
+.pagar-box select{appearance:none;cursor:pointer;}
+.pagar-box textarea{resize:vertical;min-height:60px;}
+.pagar-box input:focus,
+.pagar-box select:focus,
+.pagar-box textarea:focus{outline:none;border-color:var(--forest);background:var(--white);}
 .btn-pagar{
   width:100%;padding:16px;background:linear-gradient(135deg,var(--forest),#2f6b4a);color:var(--white);
   border-radius:999px;
@@ -561,6 +567,77 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   transition:transform .2s ease, box-shadow .2s ease;
 }
 .btn-pagar:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(27,67,50,0.28);}
+
+.campo-grupo{margin-bottom:18px;}
+.campo-label{
+  display:block;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--forest);margin-bottom:10px;
+}
+.campo-fila{display:flex;gap:10px;}
+.campo-fila input{flex:1;}
+
+.metodo-pago-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.metodo-chip{
+  flex:1;min-width:110px;padding:12px 10px;border-radius:14px;border:1.5px solid var(--line);
+  background:var(--offwhite);font-size:12px;font-weight:700;color:var(--gray);
+  transition:all .2s ease;text-align:center;
+}
+.metodo-chip:hover{border-color:var(--black);color:var(--black);}
+.metodo-chip.active{
+  background:var(--forest);border-color:var(--forest);color:var(--white);
+  transform:translateY(-2px);box-shadow:0 10px 22px rgba(27,67,50,0.25);
+}
+
+.campos-tarjeta{
+  max-height:0;overflow:hidden;opacity:0;
+  transition:max-height .4s ease, opacity .3s ease, margin .4s ease;
+}
+.campos-tarjeta.open{max-height:600px;opacity:1;margin-bottom:8px;}
+
+/* ---- Tarjeta animada estilo Stripe ---- */
+.tarjeta-visual{
+  width:100%;max-width:320px;aspect-ratio:1.586/1;margin:4px auto 20px;
+  perspective:1000px;
+}
+.tarjeta-cara{
+  position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;
+  padding:20px 22px;color:var(--white);
+  display:flex;flex-direction:column;justify-content:space-between;
+  box-shadow:0 16px 34px rgba(20,20,15,0.22);
+  transition:transform .5s cubic-bezier(.4,.2,.2,1);
+}
+.tarjeta-visual{position:relative;transform-style:preserve-3d;}
+.tarjeta-frente{
+  background:linear-gradient(135deg,var(--forest-dark),var(--forest) 55%,#3a7a54);
+  transform:rotateY(0deg);z-index:2;
+}
+.tarjeta-reverso{
+  background:linear-gradient(135deg,#1c1c18,#33322c);
+  transform:rotateY(180deg);
+}
+.tarjeta-visual.flip .tarjeta-frente{transform:rotateY(180deg);}
+.tarjeta-visual.flip .tarjeta-reverso{transform:rotateY(360deg);}
+.tarjeta-top{display:flex;align-items:center;justify-content:space-between;}
+.tarjeta-chip{
+  font-size:16px;letter-spacing:-2px;color:var(--butter);opacity:0.9;
+  background:rgba(245,236,214,0.16);padding:4px 8px;border-radius:5px;
+}
+.tarjeta-marca{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.04em;opacity:0.85;}
+.tarjeta-numero{
+  font-family:'Space Mono',monospace;font-size:clamp(15px,4.4vw,19px);letter-spacing:0.06em;
+}
+.tarjeta-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;}
+.tarjeta-mini-label{font-size:8.5px;letter-spacing:0.1em;opacity:0.6;margin-bottom:3px;}
+.tarjeta-titular{font-size:13px;font-weight:600;letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;}
+.tarjeta-venc{font-family:'Space Mono',monospace;font-size:13px;}
+.tarjeta-banda{width:100%;height:38px;background:#111;margin-top:16px;}
+.tarjeta-cvv-box{
+  margin-top:22px;background:var(--white);color:var(--black);border-radius:6px;
+  padding:10px 14px;text-align:right;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:0.2em;
+  max-width:70px;margin-left:auto;
+}
+.tarjeta-nota{font-size:11.5px;color:var(--gray);text-align:center;line-height:1.5;margin-bottom:14px;}
+@media (max-width:420px){.campo-fila{flex-direction:column;}}
 
 /* ---------- CHECKOUT OVERLAY ---------- */
 #pago-overlay{

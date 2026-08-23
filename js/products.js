@@ -35,3 +35,28 @@ function categoriasDisponibles() {
   const set = new Set(productosActivos().map(p => p.categoria));
   return Array.from(set).sort();
 }
+
+/* ============================================================
+   ZONAS DE ENVÍO
+   Costo de envío según dónde queda el municipio/zona del
+   cliente. Para agregar o editar zonas, edita este arreglo.
+   ============================================================ */
+const ZONAS_ENVIO = [
+  { id: "medellin",     nombre: "Medellín (zona urbana)",                    costo: 8000  },
+  { id: "metro",        nombre: "Área metropolitana (Bello, Itagüí, Envigado, Sabaneta, La Estrella, Copacabana)", costo: 10000 },
+  { id: "oriente",      nombre: "Oriente antioqueño (Rionegro, Marinilla, La Ceja, El Retiro)",  costo: 15000 },
+  { id: "otro_antioquia", nombre: "Otro municipio de Antioquia",             costo: 18000 },
+  { id: "vereda",       nombre: "Vereda / zona rural",                       costo: 20000 },
+  { id: "otra_ciudad",  nombre: "Otra ciudad de Colombia",                   costo: 25000 },
+];
+
+/** Devuelve la lista completa de zonas de envío disponibles */
+function zonasEnvio() {
+  return ZONAS_ENVIO;
+}
+
+/** Devuelve el costo de envío de una zona por su id (0 si no existe) */
+function costoEnvio(zonaId) {
+  const zona = ZONAS_ENVIO.find(z => z.id === zonaId);
+  return zona ? zona.costo : 0;
+}

@@ -77,16 +77,30 @@ function totalCarritoValor() {
 }
 
 /* ---------- PEDIDOS ---------- */
-function crearPedido(nombreCliente, emailCliente) {
+function crearPedido(datosCliente) {
   const carrito = getCarrito();
   if (!carrito.length) return null;
   const pedidos = _leer(LS_KEYS.pedidos);
+  const envio = datosCliente.envio || {};
+  const subtotal = totalCarritoValor();
+  const costoEnvioPedido = Number(envio.costo || 0);
   const pedido = {
     id: Date.now(),
-    nombre_cliente: nombreCliente,
-    email_cliente: emailCliente,
+    nombre_cliente: datosCliente.nombre,
+    email_cliente: datosCliente.email,
+    telefono_cliente: datosCliente.telefono || '',
+    metodo_pago: datosCliente.metodoPago || 'contraentrega',
+    tarjeta_final: datosCliente.tarjetaFinal || null,
+    envio_municipio: envio.municipio || '',
+    envio_barrio: envio.barrio || '',
+    envio_vereda: envio.vereda || '',
+    envio_direccion: envio.direccion || '',
+    envio_edificio: envio.edificio || '',
+    envio_referencia: envio.referencia || '',
+    costo_envio: costoEnvioPedido,
     detalle: carrito.map(i => `${i.nombre} (${i.talla})`).join(" | "),
-    total: totalCarritoValor(),
+    subtotal: subtotal,
+    total: subtotal + costoEnvioPedido,
     fecha: new Date().toISOString(),
   };
   pedidos.push(pedido);
