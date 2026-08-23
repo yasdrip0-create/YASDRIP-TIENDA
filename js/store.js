@@ -104,6 +104,23 @@ function actualizarProductoAdmin(id, cambios) {
   guardarCatalogo(catalogo);
   return p;
 }
+/** Guarda (o borra, si dataUrl es null) la foto de UN color específico
+    de un producto. Así, si el mismo buso existe en blanco y negro, cada
+    color puede tener su propia foto real y la tienda cambia la imagen
+    cuando el cliente hace clic en el color. */
+function actualizarFotoColorAdmin(id, color, dataUrl) {
+  const catalogo = getCatalogo();
+  const p = catalogo.find(x => x.id == id);
+  if (!p) return null;
+  if (!p.fotos) p.fotos = {};
+  if (dataUrl) {
+    p.fotos[color] = dataUrl;
+  } else {
+    delete p.fotos[color];
+  }
+  guardarCatalogo(catalogo);
+  return p;
+}
 /** Agrega un producto nuevo al catálogo desde el panel admin.
     nuevo.foto (opcional) ya debe venir como dataURL comprimido. */
 function agregarProductoAdmin(nuevo) {
@@ -117,6 +134,7 @@ function agregarProductoAdmin(nuevo) {
     descuento: 0,
     icono: nuevo.icono || 'tee',
     foto: nuevo.foto || null,
+    fotos: nuevo.fotos || {}, // foto específica por color, ej: {"#151512": "data:..."}
     colores: nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'],
     tallas: nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'],
     badge: null,
@@ -142,14 +160,15 @@ function totalCarritoCount() {
 }
 function agregarAlCarrito(producto, color, talla) {
   const carrito = getCarrito();
+  const colorFinal = color || producto.colores[0];
   carrito.push({
     id: producto.id,
     nombre: producto.nombre,
     categoria: producto.categoria,
     precio: precioConDescuento(producto),
     icono: producto.icono,
-    foto: producto.foto || null,
-    color: color || producto.colores[0],
+    foto: (producto.fotos && producto.fotos[colorFinal]) || producto.foto || null,
+    color: colorFinal,
     talla: talla,
   });
   _guardar(LS_KEYS.carrito, carrito);

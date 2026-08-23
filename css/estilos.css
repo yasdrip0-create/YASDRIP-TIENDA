@@ -1207,6 +1207,18 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-foto-cell:hover .admin-foto-cell-cam{opacity:1;}
 .admin-prod-thumb{width:100%;height:100%;object-fit:cover;}
 
+.admin-colores-fila{display:flex;gap:6px;flex-wrap:wrap;max-width:160px;}
+.admin-color-foto{
+  position:relative;width:30px;height:30px;border-radius:8px;cursor:pointer;overflow:hidden;
+  border:1.5px solid var(--line);flex-shrink:0;
+}
+.admin-color-foto-img{width:100%;height:100%;object-fit:cover;}
+.admin-color-foto-cam{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(21,21,18,0.45);color:var(--white);font-size:11px;opacity:0;transition:opacity .2s ease;
+}
+.admin-color-foto:hover .admin-color-foto-cam{opacity:1;}
+
 .admin-table-wrap{overflow-x:auto;}
 .admin-table{width:100%;border-collapse:collapse;min-width:760px;}
 .admin-table th{

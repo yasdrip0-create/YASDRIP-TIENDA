@@ -7,6 +7,11 @@
    tallas : lista de tallas disponibles
    icono  : hoodie | tee | cap | pants | jacket | shorts
    badge  : "nuevo" | "pocas" | "vendido" | null
+   foto   : foto general del producto (opcional)
+   fotos  : foto específica por color, ej: { "#151512": "img/negra.jpg" }
+            se sube desde admin.html, columna "Fotos por color".
+            Si el cliente hace clic en un color que tiene foto propia,
+            la imagen del producto cambia a esa foto.
    ============================================================ */
 
 const PRODUCTS = [

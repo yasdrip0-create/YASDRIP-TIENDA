@@ -108,6 +108,7 @@
             <tr>
               <th></th>
               <th>Producto</th>
+              <th>Fotos por color</th>
               <th>Categoría</th>
               <th>Precio base</th>
               <th>Descuento %</th>
@@ -199,24 +200,35 @@ function pintarTabla() {
   const productos = obtenerProductosAdmin();
   const tbody = document.getElementById('tablaProductosBody');
   if (!productos.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
     return;
   }
   tbody.innerHTML = productos.map(p => {
     const agotado = estaAgotado(p);
     const precioFinal = precioConDescuento(p);
-    const miniatura = p.foto
-      ? `<img src="${p.foto}" class="admin-prod-thumb">`
+    const fotoPrincipal = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
+    const miniatura = fotoPrincipal
+      ? `<img src="${fotoPrincipal}" class="admin-prod-thumb">`
       : iconoProducto(p.icono, p.colores[0]);
+    const fotosColorHtml = (p.colores || []).map(c => {
+      const fotoColor = p.fotos && p.fotos[c];
+      return `
+        <label class="admin-color-foto" title="Foto para este color" style="background:${c}">
+          ${fotoColor ? `<img src="${fotoColor}" class="admin-color-foto-img">` : ''}
+          <span class="admin-color-foto-cam">📷</span>
+          <input type="file" accept="image/*" class="input-foto-color" data-color="${c}" hidden>
+        </label>`;
+    }).join('');
     return `
       <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
         <td>
-          <label class="admin-foto-cell" title="Cambiar foto">
+          <label class="admin-foto-cell" title="Foto general (si no hay foto por color)">
             ${miniatura}
             <span class="admin-foto-cell-cam">📷</span>
             <input type="file" accept="image/*" class="input-foto-fila" hidden>
           </label>
         </td>
+        <td><div class="admin-colores-fila">${fotosColorHtml}</div></td>
         <td><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td>${p.categoria}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
@@ -237,7 +249,7 @@ function pintarTabla() {
       </tr>`;
   }).join('');
 
-  /* ---- cambiar la foto de un producto que ya existe ---- */
+  /* ---- cambiar la foto general de un producto que ya existe ---- */
   tbody.querySelectorAll('.input-foto-fila').forEach(input => {
     input.addEventListener('change', async () => {
       const file = input.files[0];
@@ -247,6 +259,23 @@ function pintarTabla() {
         const dataUrl = await comprimirImagen(file, 700, 0.75);
         actualizarProductoAdmin(fila.dataset.rowId, { foto: dataUrl });
         showToast('Foto actualizada ✓');
+        pintarTodo();
+      } catch (err) {
+        showToast('No se pudo usar esa imagen.', true);
+      }
+    });
+  });
+
+  /* ---- cambiar la foto de UN color específico (ej: la versión negra vs la blanca) ---- */
+  tbody.querySelectorAll('.input-foto-color').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const fila = input.closest('tr');
+      try {
+        const dataUrl = await comprimirImagen(file, 700, 0.75);
+        actualizarFotoColorAdmin(fila.dataset.rowId, input.dataset.color, dataUrl);
+        showToast('Foto del color actualizada ✓');
         pintarTodo();
       } catch (err) {
         showToast('No se pudo usar esa imagen.', true);

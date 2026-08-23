@@ -67,6 +67,8 @@ if (productos.length === 0) {
       `<div class="swatch ${i === 0 ? 'active' : ''}" style="background:${c}" data-color="${c}"></div>`
     ).join('');
     const sizesHtml = p.tallas.map(sz => `<div class="size-chip" data-size="${sz}">${sz}</div>`).join('');
+    /* foto a mostrar de entrada: la del primer color si existe, si no la foto general, si no el dibujo */
+    const fotoInicial = (p.fotos && p.fotos[p.colores[0]]) || p.foto || null;
     const precioTachado = descuento > 0 ? p.precio : p.precio_anterior;
     const precioAnteriorHtml = precioTachado
       ? `<span class="old">$${Number(precioTachado).toLocaleString('es-CO')}</span>` : '';
@@ -78,8 +80,8 @@ if (productos.length === 0) {
       <div class="card ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
         <div class="card-media" data-media style="background:${p.colores[0]}22">
           ${badgeHtml}
-          ${p.foto
-            ? `<img src="${p.foto}" class="card-photo" alt="${p.nombre}">`
+          ${fotoInicial
+            ? `<img src="${fotoInicial}" class="card-photo" data-photo alt="${p.nombre}">`
             : `<div data-icon>${iconoProducto(p.icono, p.colores[0])}</div>`}
         </div>
         <div class="card-body">
@@ -120,11 +122,20 @@ document.querySelectorAll('[data-product]').forEach(card => {
     sw.addEventListener('click', () => {
       card.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
       sw.classList.add('active');
-      seleccion[id].color = sw.dataset.color;
+      const colorElegido = sw.dataset.color;
+      seleccion[id].color = colorElegido;
       card.querySelectorAll('[data-icon] svg path[fill]').forEach(path => {
-        path.setAttribute('fill', sw.dataset.color);
+        path.setAttribute('fill', colorElegido);
       });
-      card.querySelector('[data-media]').style.background = sw.dataset.color + '22';
+      card.querySelector('[data-media]').style.background = colorElegido + '22';
+
+      /* si el producto tiene una foto real para este color, la mostramos */
+      const producto = buscarProducto(id);
+      const imgEl = card.querySelector('[data-photo]');
+      if (imgEl && producto) {
+        const fotoDelColor = (producto.fotos && producto.fotos[colorElegido]) || producto.foto;
+        if (fotoDelColor) imgEl.src = fotoDelColor;
+      }
     });
   });
 
