@@ -56,18 +56,26 @@ if (productos.length === 0) {
   gridEl.innerHTML = `<div class="empty-state"><p>No hay productos disponibles por ahora.</p></div>`;
 } else {
   gridEl.innerHTML = productos.map(p => {
-    const badge = badgeInfo(p.badge);
+    const stockNum = Number(p.stock) || 0;
+    const sinStock = stockNum <= 0;
+    const descuento = Number(p.descuento) || 0;
+    const precioFinal = precioConDescuento(p);
+    const badge = badgeInfo(sinStock ? 'agotado' : p.badge);
     const oculto = (filtroInicial !== 'todos' && filtroInicial !== p.categoria) ? 'hidden' : '';
     const badgeHtml = badge ? `<div class="badge ${badge.class}">${badge.label}</div>` : '';
     const swatchesHtml = p.colores.map((c, i) =>
       `<div class="swatch ${i === 0 ? 'active' : ''}" style="background:${c}" data-color="${c}"></div>`
     ).join('');
     const sizesHtml = p.tallas.map(sz => `<div class="size-chip" data-size="${sz}">${sz}</div>`).join('');
-    const precioAnteriorHtml = p.precio_anterior
-      ? `<span class="old">$${Number(p.precio_anterior).toLocaleString('es-CO')}</span>` : '';
+    const precioTachado = descuento > 0 ? p.precio : p.precio_anterior;
+    const precioAnteriorHtml = precioTachado
+      ? `<span class="old">$${Number(precioTachado).toLocaleString('es-CO')}</span>` : '';
+    const descuentoHtml = descuento > 0 ? `<span class="chip-descuento">-${descuento}%</span>` : '';
+    const stockNoteHtml = (!sinStock && stockNum <= 5)
+      ? `<div class="stock-note">¡Quedan ${stockNum}!</div>` : '';
 
     return `
-      <div class="card ${oculto}" id="${p.id}" data-cat="${p.categoria}" data-product>
+      <div class="card ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
         <div class="card-media" data-media style="background:${p.colores[0]}22">
           ${badgeHtml}
           <div data-icon>${iconoProducto(p.icono, p.colores[0])}</div>
@@ -77,9 +85,10 @@ if (productos.length === 0) {
           <div class="card-name display">${p.nombre}</div>
           <div class="swatches">${swatchesHtml}</div>
           <div class="sizes">${sizesHtml}</div>
+          ${stockNoteHtml}
           <div class="card-bottom">
-            <div class="card-price mono">${precioAnteriorHtml} $${Number(p.precio).toLocaleString('es-CO')}</div>
-            <button class="add-btn" data-id="${p.id}" data-nombre="${p.nombre}">Añadir</button>
+            <div class="card-price mono">${precioAnteriorHtml} $${Number(precioFinal).toLocaleString('es-CO')} ${descuentoHtml}</div>
+            <button class="add-btn" data-id="${p.id}" data-nombre="${p.nombre}" ${sinStock ? 'disabled' : ''}>${sinStock ? 'Agotado' : 'Añadir'}</button>
           </div>
         </div>
       </div>`;
@@ -142,6 +151,17 @@ document.querySelectorAll('.add-btn').forEach(btn => {
     const producto = buscarProducto(id);
     if (!producto) { showToast('Ese producto ya no está disponible.', true); return; }
 
+    const stockDisponible = Number(producto.stock) || 0;
+    if (stockDisponible <= 0) {
+      showToast(`${producto.nombre} está agotado por ahora.`, true);
+      return;
+    }
+    const yaEnCarrito = getCarrito().filter(it => it.id == producto.id).length;
+    if (yaEnCarrito >= stockDisponible) {
+      showToast(`Ya tienes en el carrito todo el stock disponible de ${producto.nombre}.`, true);
+      return;
+    }
+
     const totalCarrito = agregarAlCarrito(producto, sel.color, sel.talla);
 
     document.getElementById('cartCount').textContent = totalCarrito;
@@ -152,6 +172,14 @@ document.querySelectorAll('.add-btn').forEach(btn => {
     btn.textContent = 'Añadido ✓';
     btn.classList.add('added');
     setTimeout(() => { btn.textContent = original; btn.classList.remove('added'); }, 1200);
+
+    /* si con esta unidad se agotó, la tarjeta pasa a "Agotado" sin recargar */
+    if (yaEnCarrito + 1 >= stockDisponible) {
+      const card = btn.closest('[data-product]');
+      card.classList.add('sin-stock');
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = 'Agotado'; }, 1200);
+    }
 
     showToast(`${producto.nombre} · talla ${sel.talla} añadido al carrito`);
   });

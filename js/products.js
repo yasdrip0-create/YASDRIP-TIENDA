@@ -20,14 +20,19 @@ const PRODUCTS = [
   { id: 8, nombre: "Shorts Drip",      categoria: "Shorts",      precio: 99900,  precio_anterior: null,   icono: "shorts", colores: ["#151512", "#f5ecd6"],             tallas: ["S","M","L","XL"],    badge: null,     stock: 18, activo: true },
 ];
 
-/** Devuelve solo los productos activos */
+/** Devuelve solo los productos activos, leyendo el catálogo editable
+    (yasdrip_catalogo en localStorage) que el admin puede modificar
+    desde admin.html. Si por algún motivo esa función no existe
+    todavía, cae de vuelta al catálogo de fábrica PRODUCTS. */
 function productosActivos() {
-  return PRODUCTS.filter(p => p.activo);
+  const lista = typeof getCatalogo === 'function' ? getCatalogo() : PRODUCTS;
+  return lista.filter(p => p.activo);
 }
 
 /** Busca un producto por id (los ids vienen como string desde el DOM, por eso == ) */
 function buscarProducto(id) {
-  return PRODUCTS.find(p => p.id == id) || null;
+  const lista = typeof getCatalogo === 'function' ? getCatalogo() : PRODUCTS;
+  return lista.find(p => p.id == id) || null;
 }
 
 /** Lista de categorías presentes en el catálogo, ordenadas alfabéticamente */

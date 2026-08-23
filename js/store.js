@@ -16,6 +16,9 @@ const LS_KEYS = {
   suscriptores: "yasdrip_suscriptores",
   usuarios: "yasdrip_usuarios",
   sesion: "yasdrip_sesion",
+  productos: "yasdrip_catalogo",
+  admin: "yasdrip_admin",
+  sesionAdmin: "yasdrip_sesion_admin",
 };
 
 function _leer(key) {
@@ -27,6 +30,104 @@ function _leer(key) {
 }
 function _guardar(key, valor) {
   localStorage.setItem(key, JSON.stringify(valor));
+}
+
+/* ============================================================
+   CATÁLOGO (productos editables por el admin)
+   PRODUCTS (definido en js/products.js) es solo el catálogo "de
+   fábrica" / semilla. La primera vez que alguien abre la tienda
+   en su navegador, se copia a localStorage. Desde ahí el panel
+   admin.html puede cambiar precio, % de descuento y stock, y
+   esos cambios se reflejan en la tienda sin tocar código.
+
+   Ojo: como no hay servidor, este catálogo vive en el navegador.
+   Los cambios que haga el vendedor en admin.html solo se ven en
+   ESE navegador/computador. Si abre la tienda desde otro celular,
+   ese otro celular no verá los cambios (igual que el resto de la
+   demo: carrito, pedidos, usuarios, etc.).
+   ============================================================ */
+function inicializarCatalogo() {
+  if (localStorage.getItem(LS_KEYS.productos)) return;
+  const base = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).map(p => ({
+    ...p,
+    descuento: 0, // % que pone el admin (0 a 90). 0 = sin descuento.
+  }));
+  _guardar(LS_KEYS.productos, base);
+}
+function getCatalogo() {
+  inicializarCatalogo();
+  return _leer(LS_KEYS.productos);
+}
+function guardarCatalogo(lista) {
+  _guardar(LS_KEYS.productos, lista);
+}
+/** Precio final ya aplicado el % de descuento que puso el admin */
+function precioConDescuento(p) {
+  const d = Number(p.descuento) || 0;
+  const base = Number(p.precio) || 0;
+  if (d <= 0) return base;
+  return Math.round(base * (1 - d / 100));
+}
+/** true si no queda stock de ese producto */
+function estaAgotado(p) {
+  return Number(p.stock) <= 0;
+}
+/** Baja 1 unidad de stock por cada prenda que venga en el carrito
+    (se llama al confirmar una compra). */
+function descontarStockCarrito(carrito) {
+  const catalogo = getCatalogo();
+  carrito.forEach(item => {
+    const p = catalogo.find(x => x.id == item.id);
+    if (p) p.stock = Math.max(0, Number(p.stock) - 1);
+  });
+  guardarCatalogo(catalogo);
+}
+
+/* ---------- ADMIN: gestión de inventario, precio y descuentos ---------- */
+/** Todos los productos (activos e inactivos), para el panel admin */
+function obtenerProductosAdmin() {
+  return getCatalogo();
+}
+/** Edita nombre/precio/descuento/stock/activo de un producto existente.
+    "cambios" es un objeto con solo los campos que se van a actualizar. */
+function actualizarProductoAdmin(id, cambios) {
+  const catalogo = getCatalogo();
+  const p = catalogo.find(x => x.id == id);
+  if (!p) return null;
+  if (cambios.nombre !== undefined) p.nombre = String(cambios.nombre).trim() || p.nombre;
+  if (cambios.categoria !== undefined) p.categoria = String(cambios.categoria).trim() || p.categoria;
+  if (cambios.precio !== undefined) p.precio = Math.max(0, Number(cambios.precio) || 0);
+  if (cambios.descuento !== undefined) p.descuento = Math.min(90, Math.max(0, Number(cambios.descuento) || 0));
+  if (cambios.stock !== undefined) p.stock = Math.max(0, Math.floor(Number(cambios.stock) || 0));
+  if (cambios.activo !== undefined) p.activo = !!cambios.activo;
+  guardarCatalogo(catalogo);
+  return p;
+}
+/** Agrega un producto nuevo al catálogo desde el panel admin */
+function agregarProductoAdmin(nuevo) {
+  const catalogo = getCatalogo();
+  const producto = {
+    id: Date.now(),
+    nombre: (nuevo.nombre || 'Producto nuevo').trim(),
+    categoria: (nuevo.categoria || 'Otros').trim(),
+    precio: Math.max(0, Number(nuevo.precio) || 0),
+    precio_anterior: null,
+    descuento: 0,
+    icono: nuevo.icono || 'tee',
+    colores: nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'],
+    tallas: nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'],
+    badge: null,
+    stock: Math.max(0, Math.floor(Number(nuevo.stock) || 0)),
+    activo: true,
+  };
+  catalogo.push(producto);
+  guardarCatalogo(catalogo);
+  return producto;
+}
+/** Elimina un producto del catálogo por completo */
+function eliminarProductoAdmin(id) {
+  const catalogo = getCatalogo().filter(p => p.id != id);
+  guardarCatalogo(catalogo);
 }
 
 /* ---------- CARRITO ---------- */
@@ -42,7 +143,7 @@ function agregarAlCarrito(producto, color, talla) {
     id: producto.id,
     nombre: producto.nombre,
     categoria: producto.categoria,
-    precio: producto.precio,
+    precio: precioConDescuento(producto),
     icono: producto.icono,
     color: color || producto.colores[0],
     talla: talla,
@@ -105,6 +206,7 @@ function crearPedido(datosCliente) {
   };
   pedidos.push(pedido);
   _guardar(LS_KEYS.pedidos, pedidos);
+  descontarStockCarrito(carrito);
   limpiarCarrito();
   return pedido;
 }
@@ -198,4 +300,40 @@ function usuarioActual() {
 }
 function cerrarSesion() {
   localStorage.removeItem(LS_KEYS.sesion);
+}
+
+/* ---------- SESIÓN DE ADMIN (panel del vendedor) ----------
+   Usuario/contraseña por defecto: admin / yasdrip2026
+   Se puede cambiar la contraseña desde adentro del panel. */
+function inicializarAdmin() {
+  if (localStorage.getItem(LS_KEYS.admin)) return;
+  _guardar(LS_KEYS.admin, { usuario: "admin", clave: "yasdrip2026" });
+}
+function loginAdmin(usuario, clave) {
+  inicializarAdmin();
+  const admin = JSON.parse(localStorage.getItem(LS_KEYS.admin));
+  if (admin.usuario === String(usuario).trim() && admin.clave === clave) {
+    _guardar(LS_KEYS.sesionAdmin, { ok: true, fecha: Date.now() });
+    return { ok: true };
+  }
+  return { ok: false, msg: "Usuario o contraseña incorrectos." };
+}
+function sesionAdminActiva() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.ok === true;
+  } catch (e) {
+    return false;
+  }
+}
+function cerrarSesionAdmin() {
+  localStorage.removeItem(LS_KEYS.sesionAdmin);
+}
+function cambiarClaveAdmin(actual, nueva) {
+  inicializarAdmin();
+  const admin = JSON.parse(localStorage.getItem(LS_KEYS.admin));
+  if (admin.clave !== actual) return { ok: false, msg: "La contraseña actual no es correcta." };
+  if (!nueva || nueva.length < 4) return { ok: false, msg: "La nueva contraseña debe tener al menos 4 caracteres." };
+  admin.clave = nueva;
+  _guardar(LS_KEYS.admin, admin);
+  return { ok: true };
 }

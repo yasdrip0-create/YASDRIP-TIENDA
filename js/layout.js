@@ -281,6 +281,7 @@ function renderFooter() {
       </div>
       <div class="footer-bottom">
         <p>© 2026 YAS DRIP — Todos los derechos reservados. <span class="hand">hecho en Medellín ⚡</span></p>
+        <a href="admin.html" class="footer-admin-link">Panel del vendedor</a>
       </div>
     </footer>
   `;

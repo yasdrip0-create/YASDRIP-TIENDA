@@ -117,7 +117,7 @@ function pintarCarrito() {
           </div>
         </div>
         <div class="producto-precio-total mono">$${Number(g.precio * g.cantidad).toLocaleString('es-CO')}</div>
-        <a href="#" class="btn-eliminar" data-id="${g.id}" data-color="${g.color}" data-talla="${g.talla}">✕</a>
+        <a href="#" class="btn-eliminar" data-id="${g.id}" data-color="${g.color}" data-talla="${g.talla}" aria-label="Quitar ${g.nombre}">${svgEquisBoton()}</a>
       </div>`;
   });
 
@@ -134,7 +134,7 @@ function pintarCarrito() {
             <span>TOTAL</span>
             <span class="total-valor" id="totalValor">$${Number(total).toLocaleString('es-CO')}</span>
           </div>
-          <a href="#" class="btn-limpiar" id="btnLimpiar">🗑 Limpiar carrito</a>
+          <a href="#" class="btn-limpiar" id="btnLimpiar">${svgRayoBoton()}<span>Vaciar carrito</span></a>
           <div class="pagar-box">
             <h2>Finalizar compra</h2>
             <form id="form-pago" novalidate>
@@ -246,6 +246,11 @@ function pintarCarrito() {
     btn.addEventListener('click', () => {
       const producto = buscarProducto(btn.dataset.id);
       if (!producto) return;
+      const enGrupo = getCarrito().filter(it => it.id == producto.id && it.color === btn.dataset.color && it.talla === btn.dataset.talla).length;
+      if (enGrupo >= Number(producto.stock)) {
+        showToastCarrito(`Ya tienes las ${producto.stock} unidades disponibles de ${producto.nombre}.`);
+        return;
+      }
       agregarAlCarrito(producto, btn.dataset.color, btn.dataset.talla);
       pintarCarrito();
       document.getElementById('cartCount').textContent = totalCarritoCount();

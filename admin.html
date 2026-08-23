@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel del vendedor — YAS DRIP</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<!-- ======================= LOGIN DEL ADMIN ======================= -->
+<div class="auth-page" id="adminLoginView">
+  <div class="auth-visual">
+    <a href="index.html" class="nav-logo">
+      <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
+    </a>
+    <div class="auth-copy">
+      <div class="auth-eyebrow">Solo para el equipo</div>
+      <h1>Panel del <em>vendedor</em>.</h1>
+      <p>Desde aquí controlas cuánto stock hay de cada prenda, el precio y los descuentos que ve la tienda.</p>
+    </div>
+    <div class="auth-stamp stamp-font">underground<br>drip co.</div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-card">
+      <a href="index.html" class="auth-brand">
+        <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
+      </a>
+      <h2>Entrar al panel</h2>
+      <p class="auth-sub">Usuario y contraseña del administrador de la tienda.</p>
+      <div id="adminAuthMsg"></div>
+      <form id="formAdminLogin">
+        <div class="auth-field">
+          <input type="text" id="adminUsuario" placeholder="Usuario" autocomplete="username" required>
+        </div>
+        <div class="auth-field">
+          <input type="password" id="adminClave" placeholder="Contraseña" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary auth-submit">Entrar</button>
+      </form>
+      <p class="auth-footnote">Usuario de fábrica: <b>admin</b> / <b>yasdrip2026</b> — puedes cambiar la contraseña ya adentro.</p>
+      <p class="auth-footnote"><a href="index.html">← Volver a la tienda</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= DASHBOARD ======================= -->
+<div class="admin-page" id="adminDashView" style="display:none;">
+  <header class="admin-topbar">
+    <a href="index.html" class="nav-logo">
+      <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
+    </a>
+    <div class="admin-topbar-right">
+      <a href="productos.html" target="_blank" class="admin-btn admin-btn-ghost">Ver tienda ↗</a>
+      <button class="admin-btn admin-btn-ghost" id="btnClave">Cambiar contraseña</button>
+      <button class="admin-btn admin-btn-dark" id="btnSalirAdmin">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-title-row">
+      <div>
+        <div class="section-eyebrow">Panel del vendedor</div>
+        <h2 class="display">Inventario y precios</h2>
+      </div>
+      <button class="admin-btn admin-btn-primary" id="btnMostrarNuevo">+ Agregar producto</button>
+    </div>
+
+    <div class="admin-stats" id="adminStats"></div>
+
+    <div class="admin-card admin-add-card" id="cardNuevoProducto" style="display:none;">
+      <h3>Agregar producto nuevo</h3>
+      <div class="admin-add-grid">
+        <input type="text" id="nProdNombre" placeholder="Nombre (ej: Buso Flash)">
+        <input type="text" id="nProdCategoria" placeholder="Categoría (ej: Busos)">
+        <select id="nProdIcono">
+          <option value="hoodie">Buso / Hoodie</option>
+          <option value="tee">Camiseta</option>
+          <option value="cap">Gorra</option>
+          <option value="pants">Pantalón</option>
+          <option value="jacket">Chaqueta</option>
+          <option value="shorts">Shorts</option>
+        </select>
+        <input type="number" id="nProdPrecio" placeholder="Precio (ej: 89900)" min="0">
+        <input type="number" id="nProdStock" placeholder="Stock inicial (ej: 10)" min="0">
+        <input type="text" id="nProdColores" placeholder="Colores en hex separados por coma (#151512,#faf9f5)">
+        <input type="text" id="nProdTallas" placeholder="Tallas separadas por coma (S,M,L,XL)">
+      </div>
+      <div class="admin-add-actions">
+        <button class="admin-btn admin-btn-primary" id="btnGuardarNuevo">Guardar producto</button>
+        <button class="admin-btn admin-btn-ghost" id="btnCancelarNuevo">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="tablaProductos">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Precio base</th>
+              <th>Descuento %</th>
+              <th>Precio final</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tablaProductosBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText">Guardado</span></div>
+
+<!-- ======================= MODAL CAMBIAR CLAVE ======================= -->
+<div class="admin-modal-overlay" id="modalClave">
+  <div class="admin-modal">
+    <h3>Cambiar contraseña del panel</h3>
+    <input type="password" id="claveActual" placeholder="Contraseña actual">
+    <input type="password" id="claveNueva" placeholder="Nueva contraseña">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnGuardarClave">Guardar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalClave">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/icons.js"></script>
+<script src="js/products.js"></script>
+<script src="js/store.js"></script>
+<script>
+const loginView = document.getElementById('adminLoginView');
+const dashView  = document.getElementById('adminDashView');
+
+function showToast(texto, esError = false) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastText').textContent = texto;
+  toast.classList.toggle('error', esError);
+  toast.classList.add('show');
+  clearTimeout(window._t);
+  window._t = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+function entrarAlPanel() {
+  loginView.style.display = 'none';
+  dashView.style.display = 'block';
+  pintarTodo();
+}
+
+if (sesionAdminActiva()) entrarAlPanel();
+
+document.getElementById('formAdminLogin').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const usuario = document.getElementById('adminUsuario').value.trim();
+  const clave = document.getElementById('adminClave').value;
+  const res = loginAdmin(usuario, clave);
+  const msg = document.getElementById('adminAuthMsg');
+  if (res.ok) {
+    entrarAlPanel();
+  } else {
+    msg.innerHTML = `<div class="auth-error">${res.msg}</div>`;
+  }
+});
+
+document.getElementById('btnSalirAdmin').addEventListener('click', () => {
+  cerrarSesionAdmin();
+  window.location.href = 'admin.html';
+});
+
+/* ---------- estadísticas rápidas ---------- */
+function pintarStats() {
+  const productos = obtenerProductosAdmin();
+  const totalProductos = productos.length;
+  const totalUnidades = productos.reduce((s, p) => s + (Number(p.stock) || 0), 0);
+  const agotados = productos.filter(p => estaAgotado(p)).length;
+  document.getElementById('adminStats').innerHTML = `
+    <div class="admin-stat"><b>${totalProductos}</b><span>Productos</span></div>
+    <div class="admin-stat"><b>${totalUnidades}</b><span>Unidades en stock</span></div>
+    <div class="admin-stat admin-stat-warn"><b>${agotados}</b><span>Agotados</span></div>
+  `;
+}
+
+/* ---------- tabla de productos ---------- */
+function pintarTabla() {
+  const productos = obtenerProductosAdmin();
+  const tbody = document.getElementById('tablaProductosBody');
+  if (!productos.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = productos.map(p => {
+    const agotado = estaAgotado(p);
+    const precioFinal = precioConDescuento(p);
+    return `
+      <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
+        <td>
+          <div class="admin-prod-nombre">${iconoProducto(p.icono, p.colores[0])}<span>${p.nombre}</span></div>
+        </td>
+        <td>${p.categoria}</td>
+        <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
+        <td><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
+        <td class="mono admin-precio-final">$${Number(precioFinal).toLocaleString('es-CO')}</td>
+        <td><input type="number" class="admin-input admin-input-sm" data-campo="stock" value="${p.stock}" min="0"></td>
+        <td>
+          <span class="estado-pill ${agotado ? 'out' : 'ok'}">${agotado ? 'Agotado' : 'Disponible'}</span>
+          <label class="admin-toggle">
+            <input type="checkbox" data-campo="activo" ${p.activo ? 'checked' : ''}>
+            <span>Visible</span>
+          </label>
+        </td>
+        <td>
+          <button class="admin-btn admin-btn-primary admin-btn-xs btn-guardar-fila">Guardar</button>
+          <button class="admin-btn admin-btn-ghost admin-btn-xs btn-borrar-fila">Eliminar</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  /* al escribir, actualiza el "precio final" en vivo sin guardar todavía */
+  tbody.querySelectorAll('tr').forEach(fila => {
+    const inPrecio = fila.querySelector('[data-campo="precio"]');
+    const inDescuento = fila.querySelector('[data-campo="descuento"]');
+    const finalCell = fila.querySelector('.admin-precio-final');
+    function refrescarFinal() {
+      const precio = Number(inPrecio.value) || 0;
+      const descuento = Math.min(90, Math.max(0, Number(inDescuento.value) || 0));
+      const final = descuento > 0 ? Math.round(precio * (1 - descuento / 100)) : precio;
+      finalCell.textContent = `$${final.toLocaleString('es-CO')}`;
+    }
+    inPrecio.addEventListener('input', refrescarFinal);
+    inDescuento.addEventListener('input', refrescarFinal);
+
+    fila.querySelector('.btn-guardar-fila').addEventListener('click', () => {
+      const id = fila.dataset.rowId;
+      const cambios = {
+        precio: inPrecio.value,
+        descuento: inDescuento.value,
+        stock: fila.querySelector('[data-campo="stock"]').value,
+        activo: fila.querySelector('[data-campo="activo"]').checked,
+      };
+      actualizarProductoAdmin(id, cambios);
+      showToast('Cambios guardados ✓');
+      pintarTodo();
+    });
+
+    fila.querySelector('.btn-borrar-fila').addEventListener('click', () => {
+      if (confirm('¿Eliminar este producto por completo del catálogo?')) {
+        eliminarProductoAdmin(fila.dataset.rowId);
+        showToast('Producto eliminado');
+        pintarTodo();
+      }
+    });
+  });
+}
+
+function pintarTodo() {
+  pintarStats();
+  pintarTabla();
+}
+
+/* ---------- agregar producto nuevo ---------- */
+const cardNuevo = document.getElementById('cardNuevoProducto');
+document.getElementById('btnMostrarNuevo').addEventListener('click', () => {
+  cardNuevo.style.display = cardNuevo.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('btnCancelarNuevo').addEventListener('click', () => {
+  cardNuevo.style.display = 'none';
+});
+document.getElementById('btnGuardarNuevo').addEventListener('click', () => {
+  const nombre = document.getElementById('nProdNombre').value.trim();
+  const categoria = document.getElementById('nProdCategoria').value.trim();
+  const precio = document.getElementById('nProdPrecio').value;
+  const stock = document.getElementById('nProdStock').value;
+  const icono = document.getElementById('nProdIcono').value;
+  const colores = document.getElementById('nProdColores').value.split(',').map(c => c.trim()).filter(Boolean);
+  const tallas = document.getElementById('nProdTallas').value.split(',').map(t => t.trim()).filter(Boolean);
+
+  if (!nombre || !categoria || !precio) {
+    showToast('Completa al menos nombre, categoría y precio.', true);
+    return;
+  }
+  agregarProductoAdmin({ nombre, categoria, precio, stock, icono, colores, tallas });
+  showToast(`${nombre} agregado al catálogo ✓`);
+  document.querySelectorAll('.admin-add-grid input').forEach(i => i.value = '');
+  cardNuevo.style.display = 'none';
+  pintarTodo();
+});
+
+/* ---------- cambiar contraseña ---------- */
+const modalClave = document.getElementById('modalClave');
+document.getElementById('btnClave').addEventListener('click', () => modalClave.classList.add('open'));
+document.getElementById('btnCerrarModalClave').addEventListener('click', () => modalClave.classList.remove('open'));
+document.getElementById('btnGuardarClave').addEventListener('click', () => {
+  const actual = document.getElementById('claveActual').value;
+  const nueva = document.getElementById('claveNueva').value;
+  const res = cambiarClaveAdmin(actual, nueva);
+  if (res.ok) {
+    showToast('Contraseña actualizada ✓');
+    modalClave.classList.remove('open');
+    document.getElementById('claveActual').value = '';
+    document.getElementById('claveNueva').value = '';
+  } else {
+    showToast(res.msg, true);
+  }
+});
+</script>
+
+</body>
+</html>
