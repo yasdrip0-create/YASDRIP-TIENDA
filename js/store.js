@@ -226,16 +226,20 @@ function totalCarritoValor() {
   return getCarrito().reduce((sum, item) => sum + Number(item.precio), 0);
 }
 
-/* ---------- PEDIDOS ---------- */
-function crearPedido(datosCliente) {
+/* ---------- PEDIDOS ----------
+   Los pedidos ya NO se guardan en localStorage: quedan en
+   Firestore (colección "pedidos"), así que tú los ves todos desde
+   cualquier computador entrando al panel admin, sin importar
+   desde qué celular compró cada cliente. */
+async function crearPedido(datosCliente) {
   const carrito = getCarrito();
   if (!carrito.length) return null;
-  const pedidos = _leer(LS_KEYS.pedidos);
   const envio = datosCliente.envio || {};
   const subtotal = totalCarritoValor();
   const costoEnvioPedido = Number(envio.costo || 0);
+  const usuario = usuarioActual();
   const pedido = {
-    id: Date.now(),
+    usuario_uid: usuario ? usuario.id : null,
     nombre_cliente: datosCliente.nombre,
     email_cliente: datosCliente.email,
     telefono_cliente: datosCliente.telefono || '',
@@ -248,16 +252,33 @@ function crearPedido(datosCliente) {
     envio_edificio: envio.edificio || '',
     envio_referencia: envio.referencia || '',
     costo_envio: costoEnvioPedido,
+    items: carrito.map(i => ({ nombre: i.nombre, talla: i.talla, color: i.color, precio: i.precio })),
     detalle: carrito.map(i => `${i.nombre} (${i.talla})`).join(" | "),
     subtotal: subtotal,
     total: subtotal + costoEnvioPedido,
     fecha: new Date().toISOString(),
   };
-  pedidos.push(pedido);
-  _guardar(LS_KEYS.pedidos, pedidos);
-  descontarStockCarrito(carrito);
-  limpiarCarrito();
-  return pedido;
+  try {
+    const ref = await fbDb.collection('pedidos').add(pedido);
+    descontarStockCarrito(carrito);
+    limpiarCarrito();
+    return { ...pedido, id: ref.id };
+  } catch (e) {
+    console.error('Error guardando el pedido en Firestore:', e);
+    return null;
+  }
+}
+
+/** Trae todos los pedidos guardados en la nube, del más nuevo al
+    más viejo. Lo usa el panel admin. */
+async function obtenerPedidosAdmin() {
+  try {
+    const snap = await fbDb.collection('pedidos').orderBy('fecha', 'desc').get();
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.error('Error leyendo pedidos:', e);
+    return [];
+  }
 }
 
 /* ---------- SOLICITUDES DE SERVICIO (cambios, garantías, quejas) ----------
@@ -318,37 +339,98 @@ function suscribirVoltageClub(email) {
 }
 
 /* ---------- USUARIOS (login / registro) ----------
-   Nota: esto es un login "de demostración". Como todo corre en
-   el navegador (sin servidor), las contraseñas NO quedan
-   protegidas de verdad. Sirve para probar el flujo de la tienda,
-   no para datos sensibles reales. */
-function registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pais) {
-  const usuarios = _leer(LS_KEYS.usuarios);
-  if (usuarios.some(u => u.correo === correo)) {
-    return { ok: false, msg: "Ese correo ya está registrado." };
-  }
-  usuarios.push({ id: Date.now(), nombre, correo, contrasena, fechaNacimiento, pais });
-  _guardar(LS_KEYS.usuarios, usuarios);
-  return { ok: true };
+   Ahora las cuentas viven en Firebase Authentication (la nube de
+   Google), no en este navegador. Cualquier cliente puede entrar
+   desde cualquier celular/computador con el mismo correo y
+   contraseña, y ni siquiera nosotros vemos su contraseña real
+   (Firebase la protege). Los datos extra (nombre, país, fecha de
+   nacimiento) se guardan en Firestore, en la colección "usuarios".
+
+   Todas estas funciones ahora son asíncronas (devuelven una
+   Promise), porque hablan con internet. Hay que usar
+   await/then() al llamarlas. */
+
+/* Cache en memoria (no en localStorage) para que renderHeader()
+   pueda seguir leyendo el usuario de forma sincrónica mientras
+   llega la respuesta real de Firebase. */
+let _usuarioActualCache = null;
+const _listenersSesion = [];
+
+function onCambioSesion(callback) {
+  _listenersSesion.push(callback);
 }
-function iniciarSesion(usuarioInput, contrasena) {
-  const usuarios = _leer(LS_KEYS.usuarios);
-  const encontrado = usuarios.find(
-    u => (u.correo === usuarioInput) && u.contrasena === contrasena
-  );
-  if (!encontrado) return { ok: false, msg: "Correo o contraseña incorrectos." };
-  _guardar(LS_KEYS.sesion, { id: encontrado.id, nombre: encontrado.nombre });
-  return { ok: true };
+
+if (typeof fbAuth !== 'undefined') {
+  fbAuth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      _usuarioActualCache = null;
+    } else {
+      try {
+        const doc = await fbDb.collection('usuarios').doc(user.uid).get();
+        const datos = doc.exists ? doc.data() : {};
+        _usuarioActualCache = {
+          id: user.uid,
+          nombre: datos.nombre || user.displayName || user.email,
+          correo: user.email,
+          fechaNacimiento: datos.fechaNacimiento || null,
+          pais: datos.pais || null,
+        };
+      } catch (e) {
+        _usuarioActualCache = { id: user.uid, nombre: user.email, correo: user.email };
+      }
+    }
+    _listenersSesion.forEach(cb => cb(_usuarioActualCache));
+  });
 }
-function usuarioActual() {
+
+async function registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pais) {
   try {
-    return JSON.parse(localStorage.getItem(LS_KEYS.sesion));
+    const cred = await fbAuth.createUserWithEmailAndPassword(correo, contrasena);
+    await cred.user.updateProfile({ displayName: nombre });
+    await fbDb.collection('usuarios').doc(cred.user.uid).set({
+      nombre, correo, fechaNacimiento, pais,
+      creado: new Date().toISOString(),
+    });
+    return { ok: true };
   } catch (e) {
-    return null;
+    return { ok: false, msg: traducirErrorFirebase(e) };
   }
 }
+
+async function iniciarSesion(usuarioInput, contrasena) {
+  try {
+    await fbAuth.signInWithEmailAndPassword(usuarioInput, contrasena);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: traducirErrorFirebase(e) };
+  }
+}
+
+/** Lectura sincrónica (usa la última copia que llegó de Firebase).
+    Justo al abrir una página puede devolver null un instante
+    mientras Firebase confirma la sesión; por eso layout.js también
+    escucha onCambioSesion() para repintar el header apenas llega. */
+function usuarioActual() {
+  return _usuarioActualCache;
+}
+
 function cerrarSesion() {
-  localStorage.removeItem(LS_KEYS.sesion);
+  return fbAuth.signOut();
+}
+
+function traducirErrorFirebase(e) {
+  const codigo = e && e.code;
+  const mapa = {
+    'auth/email-already-in-use': 'Ese correo ya está registrado.',
+    'auth/invalid-email': 'El correo no es válido.',
+    'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+    'auth/user-not-found': 'Correo o contraseña incorrectos.',
+    'auth/wrong-password': 'Correo o contraseña incorrectos.',
+    'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+    'auth/too-many-requests': 'Demasiados intentos. Espera un momento e intenta de nuevo.',
+    'auth/network-request-failed': 'No hay conexión a internet.',
+  };
+  return mapa[codigo] || 'Ocurrió un error, intenta de nuevo.';
 }
 
 /* ---------- SESIÓN DE ADMIN (panel del vendedor) ----------

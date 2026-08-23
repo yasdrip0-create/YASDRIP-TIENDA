@@ -61,24 +61,35 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
 <script src="js/store.js"></script>
 <script>
-document.getElementById('formLogin').addEventListener('submit', function (e) {
+document.getElementById('formLogin').addEventListener('submit', async function (e) {
   e.preventDefault();
   const usuario = document.getElementById('usuarioInput').value.trim();
   const contrasena = document.getElementById('contrasenaInput').value;
   const msgEl = document.getElementById('authMsg');
+  const btn = e.target.querySelector('button[type="submit"]');
 
   if (!usuario || !contrasena) {
     msgEl.innerHTML = `<div class="auth-error">Completa correo y contraseña.</div>`;
     return;
   }
 
-  const res = iniciarSesion(usuario, contrasena);
+  msgEl.innerHTML = '';
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+
+  const res = await iniciarSesion(usuario, contrasena);
   if (res.ok) {
     window.location.href = 'index.html';
   } else {
     msgEl.innerHTML = `<div class="auth-error">${res.msg}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Iniciar sesión';
   }
 });
 </script>

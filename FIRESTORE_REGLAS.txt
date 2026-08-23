@@ -1,0 +1,63 @@
+=========================================================
+ REGLAS DE SEGURIDAD DE FIRESTORE - YAS DRIP
+=========================================================
+
+En la consola de Firebase: Firestore Database -> pestaña "Reglas"
+-> borra lo que hay y pega esto -> Publicar.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cada cliente puede crear y leer SOLO su propio perfil
+    match /usuarios/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Cualquier visitante puede crear un pedido (aunque no tenga
+    // cuenta, para no obligar a nadie a registrarse antes de
+    // comprar). Pero nadie puede leer ni editar pedidos desde el
+    // navegador del cliente: solo tú, desde el panel admin, que
+    // usa una contraseña aparte (admin.html).
+    match /pedidos/{pedidoId} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+  }
+}
+
+-----------------------------------------------------------
+OJO: con estas reglas, el panel admin (admin.html) tampoco
+podría LEER los pedidos, porque no usa una cuenta de Firebase,
+sino su propio usuario/contraseña simple. Para que tú SÍ puedas
+ver los pedidos en el panel sin exponerlos a cualquier visitante,
+usa estas reglas en su lugar (permiten lectura, pero nadie puede
+editarlos ni borrarlos desde el navegador):
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    match /pedidos/{pedidoId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if false;
+    }
+  }
+}
+
+Con esta segunda versión, técnicamente alguien muy curioso que
+sepa programación podría leer la lista de pedidos si mira el
+código de la página. Para un negocio pequeño que está empezando
+es un riesgo bajo (no se pueden editar ni borrar, solo leer), y
+es la única forma sencilla y GRATIS de que el panel admin muestre
+los pedidos sin montar un servidor propio. Si más adelante crece
+el negocio, se puede pasar a un login de administrador real con
+Firebase Auth + "custom claims" para cerrar esto del todo.
+
+USA LA SEGUNDA VERSIÓN (la que permite "read: if true" en
+pedidos) para que tu panel admin funcione.

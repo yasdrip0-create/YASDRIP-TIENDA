@@ -62,66 +62,98 @@
     <div class="admin-title-row">
       <div>
         <div class="section-eyebrow">Panel del vendedor</div>
-        <h2 class="display">Inventario y precios</h2>
+        <h2 class="display" id="adminTituloTab">Inventario y precios</h2>
       </div>
       <button class="admin-btn admin-btn-primary" id="btnMostrarNuevo">+ Agregar producto</button>
     </div>
 
-    <div class="admin-stats" id="adminStats"></div>
+    <div class="admin-tabs">
+      <button type="button" class="admin-tab-btn active" id="tabBtnInventario">📦 Inventario</button>
+      <button type="button" class="admin-tab-btn" id="tabBtnPedidos">🧾 Pedidos <span id="pedidosBadge"></span></button>
+    </div>
 
-    <div class="admin-card admin-add-card" id="cardNuevoProducto" style="display:none;">
-      <h3>Agregar producto nuevo</h3>
-      <div class="admin-add-grid">
-        <input type="text" id="nProdNombre" placeholder="Nombre (ej: Buso Flash)">
-        <input type="text" id="nProdCategoria" placeholder="Categoría (ej: Busos)">
-        <select id="nProdIcono">
-          <option value="hoodie">Buso / Hoodie</option>
-          <option value="tee">Camiseta</option>
-          <option value="cap">Gorra</option>
-          <option value="pants">Pantalón</option>
-          <option value="jacket">Chaqueta</option>
-          <option value="shorts">Shorts</option>
-        </select>
-        <input type="number" id="nProdPrecio" placeholder="Precio (ej: 89900)" min="0">
-        <input type="number" id="nProdStock" placeholder="Stock inicial (ej: 10)" min="0">
-        <input type="text" id="nProdColores" placeholder="Colores en hex separados por coma (#151512,#faf9f5)">
-        <input type="text" id="nProdTallas" placeholder="Tallas separadas por coma (S,M,L,XL)">
+    <div id="tabInventario">
+      <div class="admin-stats" id="adminStats"></div>
+
+      <div class="admin-card admin-add-card" id="cardNuevoProducto" style="display:none;">
+        <h3>Agregar producto nuevo</h3>
+        <div class="admin-add-grid">
+          <input type="text" id="nProdNombre" placeholder="Nombre (ej: Buso Flash)">
+          <input type="text" id="nProdCategoria" placeholder="Categoría (ej: Busos)">
+          <select id="nProdIcono">
+            <option value="hoodie">Buso / Hoodie</option>
+            <option value="tee">Camiseta</option>
+            <option value="cap">Gorra</option>
+            <option value="pants">Pantalón</option>
+            <option value="jacket">Chaqueta</option>
+            <option value="shorts">Shorts</option>
+          </select>
+          <input type="number" id="nProdPrecio" placeholder="Precio (ej: 89900)" min="0">
+          <input type="number" id="nProdStock" placeholder="Stock inicial (ej: 10)" min="0">
+          <input type="text" id="nProdColores" placeholder="Colores en hex separados por coma (#151512,#faf9f5)">
+          <input type="text" id="nProdTallas" placeholder="Tallas separadas por coma (S,M,L,XL)">
+        </div>
+        <div class="admin-foto-row">
+          <label class="admin-foto-picker" id="nProdFotoLabel">
+            <img id="nProdFotoPreview" style="display:none;">
+            <span id="nProdFotoTexto">📷 Subir foto del producto (opcional)</span>
+            <input type="file" id="nProdFoto" accept="image/*" hidden>
+          </label>
+          <span class="admin-foto-hint">Si no subes foto, se usa un dibujo genérico según la categoría.</span>
+        </div>
+        <div class="admin-add-actions">
+          <button class="admin-btn admin-btn-primary" id="btnGuardarNuevo">Guardar producto</button>
+          <button class="admin-btn admin-btn-ghost" id="btnCancelarNuevo">Cancelar</button>
+        </div>
       </div>
-      <div class="admin-foto-row">
-        <label class="admin-foto-picker" id="nProdFotoLabel">
-          <img id="nProdFotoPreview" style="display:none;">
-          <span id="nProdFotoTexto">📷 Subir foto del producto (opcional)</span>
-          <input type="file" id="nProdFoto" accept="image/*" hidden>
-        </label>
-        <span class="admin-foto-hint">Si no subes foto, se usa un dibujo genérico según la categoría.</span>
-      </div>
-      <div class="admin-add-actions">
-        <button class="admin-btn admin-btn-primary" id="btnGuardarNuevo">Guardar producto</button>
-        <button class="admin-btn admin-btn-ghost" id="btnCancelarNuevo">Cancelar</button>
+
+      <div class="admin-card">
+        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 En "Precio por talla" puedes poner un precio distinto para cada talla (ej: L y XL más caras que S y M). Si no las tocas, todas cobran el precio base.</p>
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="tablaProductos">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Producto</th>
+                <th>Fotos por color</th>
+                <th>Categoría</th>
+                <th>Precio base</th>
+                <th>Precio por talla</th>
+                <th>Descuento %</th>
+                <th>Precio final</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tablaProductosBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="admin-card">
-      <p class="admin-foto-hint" style="margin-bottom:12px;">💡 En "Precio por talla" puedes poner un precio distinto para cada talla (ej: L y XL más caras que S y M). Si no las tocas, todas cobran el precio base.</p>
-      <div class="admin-table-wrap">
-        <table class="admin-table" id="tablaProductos">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Producto</th>
-              <th>Fotos por color</th>
-              <th>Categoría</th>
-              <th>Precio base</th>
-              <th>Precio por talla</th>
-              <th>Descuento %</th>
-              <th>Precio final</th>
-              <th>Stock</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tablaProductosBody"></tbody>
-        </table>
+    <div id="tabPedidos" style="display:none;">
+      <div class="admin-stats" id="pedidosStats"></div>
+      <div class="admin-card">
+        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Estos pedidos quedan guardados en la nube (Firebase), no en este computador — los ves igual desde cualquier navegador donde entres con el usuario del panel.</p>
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="tablaPedidos">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Contacto</th>
+                <th>Productos</th>
+                <th>Envío</th>
+                <th>Pago</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="tablaPedidosBody">
+              <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
@@ -142,6 +174,10 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/products.js"></script>
 <script src="js/store.js"></script>
@@ -165,6 +201,64 @@ function entrarAlPanel() {
 }
 
 if (sesionAdminActiva()) entrarAlPanel();
+
+/* ---------- Pestañas: Inventario / Pedidos ---------- */
+const tabBtnInventario = document.getElementById('tabBtnInventario');
+const tabBtnPedidos = document.getElementById('tabBtnPedidos');
+const tabInventario = document.getElementById('tabInventario');
+const tabPedidos = document.getElementById('tabPedidos');
+const tituloTab = document.getElementById('adminTituloTab');
+
+tabBtnInventario.addEventListener('click', () => {
+  tabBtnInventario.classList.add('active');
+  tabBtnPedidos.classList.remove('active');
+  tabInventario.style.display = 'block';
+  tabPedidos.style.display = 'none';
+  tituloTab.textContent = 'Inventario y precios';
+});
+
+tabBtnPedidos.addEventListener('click', () => {
+  tabBtnPedidos.classList.add('active');
+  tabBtnInventario.classList.remove('active');
+  tabInventario.style.display = 'none';
+  tabPedidos.style.display = 'block';
+  tituloTab.textContent = 'Pedidos de clientes';
+  pintarPedidos();
+});
+
+/* ---------- tabla de pedidos (vienen de Firestore, en la nube) ---------- */
+async function pintarPedidos() {
+  const tbody = document.getElementById('tablaPedidosBody');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>`;
+  const pedidos = await obtenerPedidosAdmin();
+
+  document.getElementById('pedidosBadge').textContent = pedidos.length ? `(${pedidos.length})` : '';
+  const totalVendido = pedidos.reduce((s, p) => s + (Number(p.total) || 0), 0);
+  document.getElementById('pedidosStats').innerHTML = `
+    <div class="admin-stat"><b>${pedidos.length}</b><span>Pedidos</span></div>
+    <div class="admin-stat"><b>$${totalVendido.toLocaleString('es-CO')}</b><span>Total vendido</span></div>
+  `;
+
+  if (!pedidos.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay pedidos.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = pedidos.map(p => {
+    const fecha = p.fecha ? new Date(p.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    const envioTexto = [p.envio_direccion, p.envio_barrio, p.envio_municipio].filter(Boolean).join(', ');
+    return `
+      <tr>
+        <td class="mono" style="white-space:nowrap;">${fecha}</td>
+        <td><b>${p.nombre_cliente || '—'}</b></td>
+        <td>${p.email_cliente || ''}<br><span style="color:var(--gray);">${p.telefono_cliente || ''}</span></td>
+        <td>${p.detalle || '—'}</td>
+        <td>${envioTexto || '—'}</td>
+        <td>${p.metodo_pago === 'tarjeta' ? `Tarjeta •••• ${p.tarjeta_final || ''}` : 'Contraentrega'}</td>
+        <td class="mono"><b>$${(Number(p.total) || 0).toLocaleString('es-CO')}</b></td>
+      </tr>`;
+  }).join('');
+}
 
 document.getElementById('formAdminLogin').addEventListener('submit', (e) => {
   e.preventDefault();

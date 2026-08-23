@@ -8,6 +8,15 @@
 function renderHeader(paginaActual = "") {
   const cont = document.getElementById("site-header");
   if (!cont) return;
+  window._paginaActualHeader = paginaActual;
+  /* Firebase confirma la sesión de forma asíncrona; en cuanto lo
+     haga, este mismo renderHeader se vuelve a llamar solo, para
+     que el botón de "Iniciar sesión" cambie a la cuenta del
+     cliente sin que la persona tenga que recargar la página. */
+  if (!window._sesionListenerRegistrado && typeof onCambioSesion === 'function') {
+    window._sesionListenerRegistrado = true;
+    onCambioSesion(() => renderHeader(window._paginaActualHeader));
+  }
   const total = totalCarritoCount();
   const usuario = usuarioActual();
   const categorias = typeof categoriasDisponibles === 'function' ? categoriasDisponibles() : [];
