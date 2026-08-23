@@ -40,6 +40,9 @@
 renderHeader('productos');
 renderFooter();
 
+(async function () {
+await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
+
 const params = new URLSearchParams(window.location.search);
 const filtroInicial = params.get('cat') || 'todos';
 const categorias = categoriasDisponibles();
@@ -239,6 +242,8 @@ function showToast(text, esError = false) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
 }
+
+})();
 </script>
 
 </body>

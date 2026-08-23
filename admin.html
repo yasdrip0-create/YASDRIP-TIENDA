@@ -194,9 +194,10 @@ function showToast(texto, esError = false) {
   window._t = setTimeout(() => toast.classList.remove('show'), 2400);
 }
 
-function entrarAlPanel() {
+async function entrarAlPanel() {
   loginView.style.display = 'none';
   dashView.style.display = 'block';
+  await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar la tabla
   pintarTodo();
 }
 

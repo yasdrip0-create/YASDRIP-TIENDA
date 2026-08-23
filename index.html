@@ -83,6 +83,9 @@
 renderHeader('inicio');
 renderFooter();
 
+(async function () {
+await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
+
 /* producto destacado del hero: el primero con badge 'pocas', si existe */
 const activos = productosActivos();
 const destacado = activos.find(p => p.badge === 'pocas') || activos[0] || null;
@@ -116,6 +119,8 @@ document.getElementById('clubForm').addEventListener('submit', function (e) {
     msgEl.textContent = 'Ingresa un correo válido.';
   }
 });
+
+})();
 </script>
 
 </body>

@@ -57,26 +57,66 @@ function _guardar(key, valor) {
    admin.html puede cambiar precio, % de descuento y stock, y
    esos cambios se reflejan en la tienda sin tocar código.
 
-   Ojo: como no hay servidor, este catálogo vive en el navegador.
-   Los cambios que haga el vendedor en admin.html solo se ven en
-   ESE navegador/computador. Si abre la tienda desde otro celular,
-   ese otro celular no verá los cambios (igual que el resto de la
-   demo: carrito, pedidos, usuarios, etc.).
-   ============================================================ */
-function inicializarCatalogo() {
-  if (localStorage.getItem(LS_KEYS.productos)) return;
-  const base = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).map(p => ({
-    ...p,
-    descuento: 0, // % que pone el admin (0 a 90). 0 = sin descuento.
-  }));
-  _guardar(LS_KEYS.productos, base);
+   El catálogo ahora vive en Firestore (colección "productos"), no
+   en localStorage. Así, un cambio de precio/stock/foto que hagas
+   en admin.html desde cualquier computador o celular se ve igual
+   en todos lados, incluida la tienda que ven tus clientes.
+
+   Como todo Firestore es asíncrono, cada página lo carga UNA vez
+   al abrir (con await cargarCatalogo()) a una copia en memoria
+   (_catalogoCache). De ahí en adelante, getCatalogo() y el resto
+   de funciones de este bloque leen/escriben esa copia de forma
+   normal (sincrónica) y en segundo plano avisan a Firestore del
+   cambio, sin bloquear la interfaz. ============================================================ */
+let _catalogoCache = [];
+
+/** Carga el catálogo desde Firestore a la memoria (_catalogoCache).
+    Si la colección "productos" está vacía (primera vez que se usa
+    la tienda), la siembra con el catálogo de fábrica (PRODUCTS, de
+    js/products.js). Cada página HTML debe hacer
+    "await cargarCatalogo();" al iniciar, ANTES de llamar a
+    productosActivos(), buscarProducto(), obtenerProductosAdmin(),
+    etc. — si no, esas funciones van a devolver una lista vacía. */
+async function cargarCatalogo() {
+  try {
+    const snap = await fbDb.collection('productos').get();
+    if (snap.empty) {
+      const base = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).map(p => ({
+        ...p,
+        descuento: 0, // % que pone el admin (0 a 90). 0 = sin descuento.
+      }));
+      const batch = fbDb.batch();
+      base.forEach(p => {
+        const { id, ...datos } = p;
+        batch.set(fbDb.collection('productos').doc(String(id)), datos);
+      });
+      await batch.commit();
+      _catalogoCache = base;
+    } else {
+      _catalogoCache = snap.docs.map(d => {
+        const datos = d.data();
+        return { ...datos, id: isNaN(d.id) ? d.id : Number(d.id) };
+      });
+    }
+  } catch (e) {
+    console.error('Error cargando el catálogo desde Firestore:', e);
+    // Si falla internet, al menos que la tienda muestre el catálogo de fábrica
+    _catalogoCache = (typeof PRODUCTS !== 'undefined' ? PRODUCTS : []).map(p => ({ ...p, descuento: 0 }));
+  }
+  return _catalogoCache;
 }
+/** Lectura sincrónica del catálogo ya cargado en memoria (ver
+    cargarCatalogo más arriba). */
 function getCatalogo() {
-  inicializarCatalogo();
-  return _leer(LS_KEYS.productos);
+  return _catalogoCache;
 }
-function guardarCatalogo(lista) {
-  _guardar(LS_KEYS.productos, lista);
+/** Guarda en Firestore, en segundo plano, los datos de UN producto.
+    No se espera (no bloquea): la pantalla ya se actualizó con el
+    cambio en _catalogoCache antes de llamar a esto. */
+function _guardarProductoEnNube(producto) {
+  const { id, ...datos } = producto;
+  fbDb.collection('productos').doc(String(id)).set(datos, { merge: true })
+    .catch(e => console.error('Error guardando el producto en la nube:', e));
 }
 /** Precio final ya aplicado el % de descuento que puso el admin */
 function precioConDescuento(p) {
@@ -114,14 +154,17 @@ function estaAgotado(p) {
   return Number(p.stock) <= 0;
 }
 /** Baja 1 unidad de stock por cada prenda que venga en el carrito
-    (se llama al confirmar una compra). */
+    (se llama al confirmar una compra). Actualiza la memoria local
+    al toque, y en la nube usa un incremento atómico (increment(-1))
+    para que dos compras casi simultáneas no se pisen entre sí. */
 function descontarStockCarrito(carrito) {
-  const catalogo = getCatalogo();
   carrito.forEach(item => {
-    const p = catalogo.find(x => x.id == item.id);
+    const p = _catalogoCache.find(x => x.id == item.id);
     if (p) p.stock = Math.max(0, Number(p.stock) - 1);
+    fbDb.collection('productos').doc(String(item.id)).update({
+      stock: firebase.firestore.FieldValue.increment(-1),
+    }).catch(e => console.error('Error descontando stock en la nube:', e));
   });
-  guardarCatalogo(catalogo);
 }
 
 /* ---------- ADMIN: gestión de inventario, precio y descuentos ---------- */
@@ -132,8 +175,7 @@ function obtenerProductosAdmin() {
 /** Edita nombre/precio/descuento/stock/activo de un producto existente.
     "cambios" es un objeto con solo los campos que se van a actualizar. */
 function actualizarProductoAdmin(id, cambios) {
-  const catalogo = getCatalogo();
-  const p = catalogo.find(x => x.id == id);
+  const p = _catalogoCache.find(x => x.id == id);
   if (!p) return null;
   if (cambios.nombre !== undefined) p.nombre = String(cambios.nombre).trim() || p.nombre;
   if (cambios.categoria !== undefined) p.categoria = String(cambios.categoria).trim() || p.categoria;
@@ -143,7 +185,7 @@ function actualizarProductoAdmin(id, cambios) {
   if (cambios.activo !== undefined) p.activo = !!cambios.activo;
   if (cambios.preciosTalla !== undefined) p.preciosTalla = cambios.preciosTalla;
   if (cambios.foto !== undefined) p.foto = cambios.foto;
-  guardarCatalogo(catalogo);
+  _guardarProductoEnNube(p);
   return p;
 }
 /** Guarda (o borra, si dataUrl es null) la foto de UN color específico
@@ -151,8 +193,7 @@ function actualizarProductoAdmin(id, cambios) {
     color puede tener su propia foto real y la tienda cambia la imagen
     cuando el cliente hace clic en el color. */
 function actualizarFotoColorAdmin(id, color, dataUrl) {
-  const catalogo = getCatalogo();
-  const p = catalogo.find(x => x.id == id);
+  const p = _catalogoCache.find(x => x.id == id);
   if (!p) return null;
   if (!p.fotos) p.fotos = {};
   if (dataUrl) {
@@ -160,13 +201,12 @@ function actualizarFotoColorAdmin(id, color, dataUrl) {
   } else {
     delete p.fotos[color];
   }
-  guardarCatalogo(catalogo);
+  _guardarProductoEnNube(p);
   return p;
 }
 /** Agrega un producto nuevo al catálogo desde el panel admin.
     nuevo.foto (opcional) ya debe venir como dataURL comprimido. */
 function agregarProductoAdmin(nuevo) {
-  const catalogo = getCatalogo();
   const producto = {
     id: Date.now(),
     nombre: (nuevo.nombre || 'Producto nuevo').trim(),
@@ -184,14 +224,15 @@ function agregarProductoAdmin(nuevo) {
     stock: Math.max(0, Math.floor(Number(nuevo.stock) || 0)),
     activo: true,
   };
-  catalogo.push(producto);
-  guardarCatalogo(catalogo);
+  _catalogoCache.push(producto);
+  _guardarProductoEnNube(producto);
   return producto;
 }
 /** Elimina un producto del catálogo por completo */
 function eliminarProductoAdmin(id) {
-  const catalogo = getCatalogo().filter(p => p.id != id);
-  guardarCatalogo(catalogo);
+  _catalogoCache = _catalogoCache.filter(p => p.id != id);
+  fbDb.collection('productos').doc(String(id)).delete()
+    .catch(e => console.error('Error eliminando el producto en la nube:', e));
 }
 
 /* ---------- CARRITO ---------- */
