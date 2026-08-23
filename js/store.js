@@ -109,8 +109,12 @@ function crearPedido(datosCliente) {
   return pedido;
 }
 
-/* ---------- SOLICITUDES DE SERVICIO (cambios, garantías, quejas) ---------- */
-function guardarSolicitud(servicio, nombre, contacto, descripcion) {
+/* ---------- SOLICITUDES DE SERVICIO (cambios, garantías, quejas) ----------
+   extra puede traer:
+     foto:      dataURL (jpeg) ya comprimido, o null
+     ubicacion: { lat, lng } capturada por geolocalización, o null
+   ambos son opcionales y no rompen las llamadas antiguas. */
+function guardarSolicitud(servicio, nombre, contacto, descripcion, extra = {}) {
   const solicitudes = _leer(LS_KEYS.solicitudes);
   solicitudes.push({
     id: Date.now(),
@@ -118,9 +122,39 @@ function guardarSolicitud(servicio, nombre, contacto, descripcion) {
     nombre,
     contacto,
     descripcion,
+    foto: extra.foto || null,
+    ubicacion: extra.ubicacion || null,
     fecha: new Date().toISOString(),
   });
   _guardar(LS_KEYS.solicitudes, solicitudes);
+}
+
+/** Comprime una foto (File) a un dataURL jpeg liviano antes de guardarla
+    en localStorage. Devuelve una Promise<string|null>. */
+function comprimirImagen(file, maxAncho = 900, calidad = 0.72) {
+  return new Promise((resolve, reject) => {
+    if (!file) { resolve(null); return; }
+    if (!file.type || !file.type.startsWith('image/')) {
+      reject(new Error('El archivo debe ser una imagen.'));
+      return;
+    }
+    const lector = new FileReader();
+    lector.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const escala = Math.min(1, maxAncho / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * escala);
+        canvas.height = Math.round(img.height * escala);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', calidad));
+      };
+      img.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+      img.src = e.target.result;
+    };
+    lector.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+    lector.readAsDataURL(file);
+  });
 }
 
 /* ---------- SUSCRIPTORES (Voltage Club) ---------- */
