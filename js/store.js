@@ -68,6 +68,30 @@ function precioConDescuento(p) {
   if (d <= 0) return base;
   return Math.round(base * (1 - d / 100));
 }
+/** Precio BASE (sin descuento) de una talla específica. Si el admin no le
+    puso un precio propio a esa talla, se usa el precio general del producto.
+    Así, una camiseta puede costar distinto en S/M que en L/XL. */
+function precioBaseTalla(p, talla) {
+  const t = p.preciosTalla || {};
+  if (talla != null && t[talla] !== undefined && t[talla] !== null && t[talla] !== '') {
+    return Number(t[talla]) || 0;
+  }
+  return Number(p.precio) || 0;
+}
+/** Precio final de una talla específica, ya con el % de descuento aplicado */
+function precioConDescuentoTalla(p, talla) {
+  const d = Number(p.descuento) || 0;
+  const base = precioBaseTalla(p, talla);
+  if (d <= 0) return base;
+  return Math.round(base * (1 - d / 100));
+}
+/** Rango {min,max} de precios finales del producto entre todas sus tallas.
+    Si todas las tallas cuestan lo mismo, min === max. */
+function rangoPrecioTallas(p) {
+  const tallas = p.tallas && p.tallas.length ? p.tallas : [null];
+  const finales = tallas.map(t => precioConDescuentoTalla(p, t));
+  return { min: Math.min(...finales), max: Math.max(...finales) };
+}
 /** true si no queda stock de ese producto */
 function estaAgotado(p) {
   return Number(p.stock) <= 0;
@@ -100,6 +124,7 @@ function actualizarProductoAdmin(id, cambios) {
   if (cambios.descuento !== undefined) p.descuento = Math.min(90, Math.max(0, Number(cambios.descuento) || 0));
   if (cambios.stock !== undefined) p.stock = Math.max(0, Math.floor(Number(cambios.stock) || 0));
   if (cambios.activo !== undefined) p.activo = !!cambios.activo;
+  if (cambios.preciosTalla !== undefined) p.preciosTalla = cambios.preciosTalla;
   if (cambios.foto !== undefined) p.foto = cambios.foto;
   guardarCatalogo(catalogo);
   return p;
@@ -135,6 +160,7 @@ function agregarProductoAdmin(nuevo) {
     icono: nuevo.icono || 'tee',
     foto: nuevo.foto || null,
     fotos: nuevo.fotos || {}, // foto específica por color, ej: {"#151512": "data:..."}
+    preciosTalla: nuevo.preciosTalla || {}, // precio específico por talla, ej: {"L": 89900}
     colores: nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'],
     tallas: nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'],
     badge: null,
@@ -165,7 +191,7 @@ function agregarAlCarrito(producto, color, talla) {
     id: producto.id,
     nombre: producto.nombre,
     categoria: producto.categoria,
-    precio: precioConDescuento(producto),
+    precio: precioConDescuentoTalla(producto, talla),
     icono: producto.icono,
     foto: (producto.fotos && producto.fotos[colorFinal]) || producto.foto || null,
     color: colorFinal,

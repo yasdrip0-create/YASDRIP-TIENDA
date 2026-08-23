@@ -59,7 +59,6 @@ if (productos.length === 0) {
     const stockNum = Number(p.stock) || 0;
     const sinStock = stockNum <= 0;
     const descuento = Number(p.descuento) || 0;
-    const precioFinal = precioConDescuento(p);
     const badge = badgeInfo(sinStock ? 'agotado' : p.badge);
     const oculto = (filtroInicial !== 'todos' && filtroInicial !== p.categoria) ? 'hidden' : '';
     const badgeHtml = badge ? `<div class="badge ${badge.class}">${badge.label}</div>` : '';
@@ -75,6 +74,12 @@ if (productos.length === 0) {
     const descuentoHtml = descuento > 0 ? `<span class="chip-descuento">-${descuento}%</span>` : '';
     const stockNoteHtml = (!sinStock && stockNum <= 5)
       ? `<div class="stock-note">¡Quedan ${stockNum}!</div>` : '';
+    /* si las tallas tienen precios distintos, mostramos "Desde $X" hasta que
+       el cliente elija una talla puntual */
+    const rango = rangoPrecioTallas(p);
+    const precioMostradoInicial = rango.min === rango.max
+      ? `$${rango.min.toLocaleString('es-CO')}`
+      : `Desde $${rango.min.toLocaleString('es-CO')}`;
 
     return `
       <div class="card ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
@@ -91,7 +96,7 @@ if (productos.length === 0) {
           <div class="sizes">${sizesHtml}</div>
           ${stockNoteHtml}
           <div class="card-bottom">
-            <div class="card-price mono">${precioAnteriorHtml} $${Number(precioFinal).toLocaleString('es-CO')} ${descuentoHtml}</div>
+            <div class="card-price mono">${precioAnteriorHtml} <span data-price-num>${precioMostradoInicial}</span> ${descuentoHtml}</div>
             <button class="add-btn" data-id="${p.id}" data-nombre="${p.nombre}" ${sinStock ? 'disabled' : ''}>${sinStock ? 'Agotado' : 'Añadir'}</button>
           </div>
         </div>
@@ -144,6 +149,14 @@ document.querySelectorAll('[data-product]').forEach(card => {
       card.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       seleccion[id].talla = chip.dataset.size;
+
+      /* si esa talla tiene un precio propio, actualizamos el precio mostrado */
+      const producto = buscarProducto(id);
+      const priceEl = card.querySelector('[data-price-num]');
+      if (producto && priceEl) {
+        const finalTalla = precioConDescuentoTalla(producto, chip.dataset.size);
+        priceEl.textContent = `$${Number(finalTalla).toLocaleString('es-CO')}`;
+      }
     });
   });
 });

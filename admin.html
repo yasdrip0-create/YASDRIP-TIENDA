@@ -102,6 +102,7 @@
     </div>
 
     <div class="admin-card">
+      <p class="admin-foto-hint" style="margin-bottom:12px;">💡 En "Precio por talla" puedes poner un precio distinto para cada talla (ej: L y XL más caras que S y M). Si no las tocas, todas cobran el precio base.</p>
       <div class="admin-table-wrap">
         <table class="admin-table" id="tablaProductos">
           <thead>
@@ -111,6 +112,7 @@
               <th>Fotos por color</th>
               <th>Categoría</th>
               <th>Precio base</th>
+              <th>Precio por talla</th>
               <th>Descuento %</th>
               <th>Precio final</th>
               <th>Stock</th>
@@ -200,12 +202,15 @@ function pintarTabla() {
   const productos = obtenerProductosAdmin();
   const tbody = document.getElementById('tablaProductosBody');
   if (!productos.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
     return;
   }
   tbody.innerHTML = productos.map(p => {
     const agotado = estaAgotado(p);
-    const precioFinal = precioConDescuento(p);
+    const rango = rangoPrecioTallas(p);
+    const precioFinalTexto = rango.min === rango.max
+      ? `$${rango.min.toLocaleString('es-CO')}`
+      : `$${rango.min.toLocaleString('es-CO')}–$${rango.max.toLocaleString('es-CO')}`;
     const fotoPrincipal = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
     const miniatura = fotoPrincipal
       ? `<img src="${fotoPrincipal}" class="admin-prod-thumb">`
@@ -218,6 +223,14 @@ function pintarTabla() {
           <span class="admin-color-foto-cam">📷</span>
           <input type="file" accept="image/*" class="input-foto-color" data-color="${c}" hidden>
         </label>`;
+    }).join('');
+    const preciosTallaHtml = (p.tallas || []).map(t => {
+      const valor = precioBaseTalla(p, t);
+      return `
+        <div class="admin-talla-precio">
+          <span class="admin-talla-precio-label">${t}</span>
+          <input type="number" class="admin-input admin-input-xs input-precio-talla" data-talla="${t}" value="${valor}" min="0" step="1000">
+        </div>`;
     }).join('');
     return `
       <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
@@ -232,8 +245,9 @@ function pintarTabla() {
         <td><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td>${p.categoria}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
+        <td><div class="admin-tallas-precios">${preciosTallaHtml}</div></td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
-        <td class="mono admin-precio-final">$${Number(precioFinal).toLocaleString('es-CO')}</td>
+        <td class="mono admin-precio-final">${precioFinalTexto}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="stock" value="${p.stock}" min="0"></td>
         <td>
           <span class="estado-pill ${agotado ? 'out' : 'ok'}">${agotado ? 'Agotado' : 'Disponible'}</span>
@@ -287,23 +301,34 @@ function pintarTabla() {
   tbody.querySelectorAll('tr').forEach(fila => {
     const inPrecio = fila.querySelector('[data-campo="precio"]');
     const inDescuento = fila.querySelector('[data-campo="descuento"]');
+    const inputsTalla = fila.querySelectorAll('.input-precio-talla');
     const finalCell = fila.querySelector('.admin-precio-final');
     function refrescarFinal() {
-      const precio = Number(inPrecio.value) || 0;
+      const precioBase = Number(inPrecio.value) || 0;
       const descuento = Math.min(90, Math.max(0, Number(inDescuento.value) || 0));
-      const final = descuento > 0 ? Math.round(precio * (1 - descuento / 100)) : precio;
-      finalCell.textContent = `$${final.toLocaleString('es-CO')}`;
+      const valoresBase = inputsTalla.length ? [...inputsTalla].map(i => Number(i.value) || 0) : [precioBase];
+      const finales = valoresBase.map(v => descuento > 0 ? Math.round(v * (1 - descuento / 100)) : v);
+      const min = Math.min(...finales), max = Math.max(...finales);
+      finalCell.textContent = min === max
+        ? `$${min.toLocaleString('es-CO')}`
+        : `$${min.toLocaleString('es-CO')}–$${max.toLocaleString('es-CO')}`;
     }
     inPrecio.addEventListener('input', refrescarFinal);
     inDescuento.addEventListener('input', refrescarFinal);
+    inputsTalla.forEach(inp => inp.addEventListener('input', refrescarFinal));
 
     fila.querySelector('.btn-guardar-fila').addEventListener('click', () => {
       const id = fila.dataset.rowId;
+      const preciosTalla = {};
+      inputsTalla.forEach(inp => {
+        preciosTalla[inp.dataset.talla] = Math.max(0, Number(inp.value) || 0);
+      });
       const cambios = {
         precio: inPrecio.value,
         descuento: inDescuento.value,
         stock: fila.querySelector('[data-campo="stock"]').value,
         activo: fila.querySelector('[data-campo="activo"]').checked,
+        preciosTalla,
       };
       actualizarProductoAdmin(id, cambios);
       showToast('Cambios guardados ✓');
