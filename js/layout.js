@@ -67,6 +67,9 @@ function renderHeader(paginaActual = "") {
         <a href="index.html#club">Voltage Club</a>
       </div>
       <div class="nav-right">
+        <button class="icon-only-btn nav-burger" id="navBurger" aria-label="Abrir menú" aria-expanded="false">
+          <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
         <button class="icon-only-btn" id="searchBtn" aria-label="Buscar">
           <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         </button>
@@ -77,6 +80,26 @@ function renderHeader(paginaActual = "") {
         </a>
       </div>
     </nav>
+
+    <div class="mobile-nav" id="mobileNav">
+      <div class="mobile-nav-top">
+        <a href="index.html" class="nav-logo">
+          <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
+        </a>
+        <button class="search-close" id="mobileNavClose" aria-label="Cerrar menú">✕</button>
+      </div>
+      <div class="mobile-nav-links">
+        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Colección</a>
+        ${categorias.length ? `<div class="mobile-nav-subwrap">${categorias.map(cat => `<a href="productos.html?cat=${encodeURIComponent(cat)}">${cat}</a>`).join('')}</div>` : ''}
+        <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Servicio al cliente</a>
+        <a href="index.html#club">Voltage Club</a>
+      </div>
+      <div class="mobile-nav-foot">
+        ${usuario
+          ? `<a href="#" id="mobileLogout">Cerrar sesión</a>`
+          : `<a href="login.html" class="mobile-nav-primary">Iniciar sesión</a><a href="registro.html">Crear cuenta</a>`}
+      </div>
+    </div>
 
     <div class="search-overlay" id="searchOverlay">
       <div class="search-box">
@@ -106,6 +129,37 @@ function renderHeader(paginaActual = "") {
         window.location.href = 'login.html';
       }, 260);
     });
+  }
+
+  /* ---- menú móvil (hamburguesa) ---- */
+  const navBurger = document.getElementById('navBurger');
+  const mobileNav = document.getElementById('mobileNav');
+  const mobileNavClose = document.getElementById('mobileNavClose');
+  if (navBurger && mobileNav) {
+    const abrirMenu = () => {
+      mobileNav.classList.add('open');
+      navBurger.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('menu-open');
+    };
+    const cerrarMenu = () => {
+      mobileNav.classList.remove('open');
+      navBurger.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('menu-open');
+    };
+    navBurger.addEventListener('click', abrirMenu);
+    if (mobileNavClose) mobileNavClose.addEventListener('click', cerrarMenu);
+    mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', cerrarMenu));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileNav.classList.contains('open')) cerrarMenu();
+    });
+    const mobileLogout = document.getElementById('mobileLogout');
+    if (mobileLogout) {
+      mobileLogout.addEventListener('click', (e) => {
+        e.preventDefault();
+        cerrarSesion();
+        window.location.href = 'login.html';
+      });
+    }
   }
 
   initSearch();
