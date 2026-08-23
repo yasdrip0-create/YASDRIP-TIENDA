@@ -75,7 +75,11 @@ function renderHeader(paginaActual = "") {
         </button>
         ${cuentaHtml}
         <a class="cart-pill" href="carrito.html">
-          <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+          <svg class="icon-btn cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 3h2l1.6 9.6a2 2 0 0 0 2 1.7h8.6a2 2 0 0 0 2-1.6l1.3-6.7H6.2"/>
+            <circle cx="9.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="16.5" cy="19.5" r="1.5" fill="currentColor" stroke="none"/>
+          </svg>
           <span id="cartCount" class="cart-count">${total}</span>
         </a>
       </div>

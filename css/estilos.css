@@ -199,6 +199,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   transition:transform .2s ease, box-shadow .2s ease, background .3s ease;
 }
 .cart-pill .icon-btn{color:var(--white);}
+.cart-icon{width:20px;height:20px;transition:transform .25s cubic-bezier(.3,1.4,.5,1);}
+.cart-pill:hover .cart-icon{transform:rotate(-8deg) scale(1.08);}
 .cart-pill:hover{
   transform:translateY(-2px) scale(1.03);
   box-shadow:0 10px 24px rgba(27,67,50,0.4);
