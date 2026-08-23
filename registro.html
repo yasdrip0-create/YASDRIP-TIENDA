@@ -46,6 +46,27 @@
         <div class="auth-field">
           <input type="email" id="correoInput" placeholder="tu@correo.com" required>
         </div>
+        <div class="auth-field-row">
+          <div class="auth-field">
+            <label style="color:var(--gray);font-size:.78rem;margin-bottom:4px;display:block;">Fecha de nacimiento</label>
+            <input type="date" id="fechaNacimientoInput" required>
+          </div>
+          <div class="auth-field">
+            <label style="color:var(--gray);font-size:.78rem;margin-bottom:4px;display:block;">País</label>
+            <select id="paisInput" required>
+              <option value="" disabled selected>— Selecciona —</option>
+              <option>Colombia</option>
+              <option>México</option>
+              <option>Argentina</option>
+              <option>Chile</option>
+              <option>Perú</option>
+              <option>Ecuador</option>
+              <option>España</option>
+              <option>Estados Unidos</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
         <div class="auth-field">
           <input type="password" id="contrasenaInput" placeholder="Contraseña (mín. 6 caracteres)" required>
         </div>
@@ -68,16 +89,18 @@ document.getElementById('formRegistro').addEventListener('submit', function (e) 
   e.preventDefault();
   const nombre = document.getElementById('nombreInput').value.trim();
   const correo = document.getElementById('correoInput').value.trim();
+  const fechaNacimiento = document.getElementById('fechaNacimientoInput').value;
+  const pais = document.getElementById('paisInput').value;
   const contrasena = document.getElementById('contrasenaInput').value;
   const msgEl = document.getElementById('authMsg');
 
   const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
-  if (!nombre || !correoValido || contrasena.length < 6) {
-    msgEl.innerHTML = `<div class="auth-error">Revisa tus datos: nombre, correo válido y contraseña de al menos 6 caracteres.</div>`;
+  if (!nombre || !correoValido || !fechaNacimiento || !pais || contrasena.length < 6) {
+    msgEl.innerHTML = `<div class="auth-error">Revisa tus datos: nombre, correo válido, fecha de nacimiento, país y contraseña de al menos 6 caracteres.</div>`;
     return;
   }
 
-  const res = registrarUsuario(nombre, correo, contrasena);
+  const res = registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pais);
   if (res.ok) {
     iniciarSesion(correo, contrasena);
     window.location.href = 'productos.html';

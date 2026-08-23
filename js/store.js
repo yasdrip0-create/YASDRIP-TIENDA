@@ -109,12 +109,12 @@ function suscribirVoltageClub(email) {
    el navegador (sin servidor), las contraseñas NO quedan
    protegidas de verdad. Sirve para probar el flujo de la tienda,
    no para datos sensibles reales. */
-function registrarUsuario(nombre, correo, contrasena) {
+function registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pais) {
   const usuarios = _leer(LS_KEYS.usuarios);
   if (usuarios.some(u => u.correo === correo)) {
     return { ok: false, msg: "Ese correo ya está registrado." };
   }
-  usuarios.push({ id: Date.now(), nombre, correo, contrasena });
+  usuarios.push({ id: Date.now(), nombre, correo, contrasena, fechaNacimiento, pais });
   _guardar(LS_KEYS.usuarios, usuarios);
   return { ok: true };
 }
