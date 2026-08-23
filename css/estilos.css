@@ -481,15 +481,17 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 
 /* ---------- AUTH (LOGIN / REGISTRO) ---------- */
-.auth-page{display:flex;min-height:100vh;}
+.auth-page{display:flex;height:100vh;overflow:hidden;}
 .auth-visual{
   flex:1;position:relative;overflow:hidden;
-  background:
-    linear-gradient(165deg, rgba(10,26,19,0.72), rgba(27,67,50,0.6) 55%, rgba(10,26,19,0.78)),
-    url('../img/portada.jpeg') center/cover no-repeat;
+  background:url('../img/portada.jpeg') center/cover no-repeat;
   color:var(--offwhite);
   padding:52px clamp(28px,5vw,64px);
   display:flex;flex-direction:column;justify-content:space-between;
+}
+.auth-visual::after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 32%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%);
 }
 .auth-visual .nav-logo{position:relative;z-index:2;color:var(--offwhite);font-size:38px;letter-spacing:0.015em;font-weight:700;}
 .auth-visual .logo-mark{color:var(--sage);font-size:38px;}
