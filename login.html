@@ -6,30 +6,8 @@
 <title>Iniciar sesión — YAS DRIP</title>
 <link rel="stylesheet" href="css/estilos.css">
 <style>
-/* ---- animación de caminata del personaje ---- */
+/* ---- personaje est\u00e1tico (sin animaci\u00f3n) ---- */
 .auth-figure svg{ overflow:visible; }
-.cuerpo-bob{ transform-origin:110px 190px; animation:cuerpoBob 0.9s ease-in-out infinite; }
-@keyframes cuerpoBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
-
-.sombra-personaje{ animation:sombraPulso 0.9s ease-in-out infinite; transform-origin:110px 298px; }
-@keyframes sombraPulso{ 0%,100%{ transform:scaleX(1); opacity:.18; } 50%{ transform:scaleX(0.82); opacity:.1; } }
-
-.pierna-tras{ transform-origin:110px 190px; animation:pasoTras 0.9s ease-in-out infinite; }
-.pierna-delant{ transform-origin:110px 190px; animation:pasoDelant 0.9s ease-in-out infinite; }
-@keyframes pasoTras{ 0%,100%{ transform:rotate(24deg); } 50%{ transform:rotate(-20deg); } }
-@keyframes pasoDelant{ 0%,100%{ transform:rotate(-20deg); } 50%{ transform:rotate(24deg); } }
-
-.brazo-tras{ transform-origin:138px 128px; animation:brazoTras 0.9s ease-in-out infinite; }
-.brazo-delant{ transform-origin:82px 128px; animation:brazoDelant 0.9s ease-in-out infinite; }
-@keyframes brazoTras{ 0%,100%{ transform:rotate(-22deg); } 50%{ transform:rotate(28deg); } }
-@keyframes brazoDelant{ 0%,100%{ transform:rotate(28deg); } 50%{ transform:rotate(-22deg); } }
-
-.cabeza-grupo{ transform-origin:110px 60px; animation:cabeceo 0.9s ease-in-out infinite; }
-@keyframes cabeceo{ 0%,100%{ transform:rotate(-1.2deg); } 50%{ transform:rotate(1.2deg); } }
-
-@media (prefers-reduced-motion: reduce){
-  .cuerpo-bob,.sombra-personaje,.pierna-tras,.pierna-delant,.brazo-tras,.brazo-delant,.cabeza-grupo{ animation:none; }
-}
 </style>
 </head>
 <body>
