@@ -435,6 +435,12 @@ body.menu-open{overflow:hidden;}
 }
 .swatch:hover{transform:scale(1.12);}
 .swatch.active::after{content:"";position:absolute;inset:-4px;border:1px solid var(--forest);border-radius:50%;}
+.swatch-agotado{opacity:.35;position:relative;}
+.swatch-agotado::before{
+  content:""; position:absolute; inset:-1px; border-radius:50%;
+  background:linear-gradient(to top right, transparent 46%, var(--red) 48%, var(--red) 52%, transparent 54%);
+}
+.stock-note-agotado{color:var(--red) !important; opacity:.9;}
 
 .sizes{display:flex;gap:6px;flex-wrap:wrap;}
 .size-chip{
@@ -1396,3 +1402,28 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 
 .auth-field.phone-field{ display:none; }
 .auth-field.phone-field.show{ display:block; }
+
+/* ---- stock por color (panel admin) ---- */
+.admin-stock-total{font-size:13px;font-weight:700;white-space:nowrap;}
+.btn-toggle-stock{margin-top:4px;}
+.admin-stock-colores{
+  margin-top:8px; display:flex; flex-direction:column; gap:6px; max-width:170px;
+}
+.admin-stock-colores[hidden]{display:none;}
+.stock-color-editor{
+  display:flex; align-items:center; gap:8px;
+  background:var(--offwhite); border-radius:8px; padding:4px 8px;
+}
+.stock-color-swatch{
+  width:15px; height:15px; border-radius:50%; flex-shrink:0;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15);
+}
+.input-stock-color, .input-stock-color-nuevo{
+  border:none; background:transparent; width:100%; padding:2px 0; font-size:13px;
+}
+.input-stock-color:focus, .input-stock-color-nuevo:focus{outline:none;}
+.admin-stock-colores-nuevo{
+  display:flex !important; flex-direction:row; flex-wrap:wrap; max-width:none;
+  margin:-6px 0 14px;
+}
+.admin-stock-colores-nuevo:empty{margin:0;}

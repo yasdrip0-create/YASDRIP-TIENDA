@@ -149,21 +149,77 @@ function rangoPrecioTallas(p) {
   const finales = tallas.map(t => precioConDescuentoTalla(p, t));
   return { min: Math.min(...finales), max: Math.max(...finales) };
 }
-/** true si no queda stock de ese producto */
+/* ---------- STOCK POR COLOR ----------
+   p.stockColores es un objeto opcional { "#hex": cantidad, ... }.
+   Si un producto todavía no tiene ese desglose (productos viejos,
+   o el admin no lo configuró), se sigue usando p.stock como una
+   sola bolsa compartida entre todos los colores — así nada se
+   rompe con el catálogo que ya tenías. p.stock SIEMPRE queda
+   sincronizado como la suma de todos los colores cuando sí hay
+   desglose, para que el resto del código (que ya leía p.stock)
+   siga funcionando sin tocar nada más. */
+
+/** Stock disponible de UN color específico de un producto. */
+function stockColor(p, color) {
+  if (p && p.stockColores && Object.prototype.hasOwnProperty.call(p.stockColores, color)) {
+    return Math.max(0, Number(p.stockColores[color]) || 0);
+  }
+  return Math.max(0, Number(p && p.stock) || 0);
+}
+/** true si un color específico ya no tiene unidades */
+function colorAgotado(p, color) {
+  return stockColor(p, color) <= 0;
+}
+/** Stock total del producto: suma de todos los colores si hay
+    desglose por color, o el número general si no lo hay. */
+function stockTotalProducto(p) {
+  if (p && p.stockColores && Object.keys(p.stockColores).length) {
+    return Object.values(p.stockColores).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0);
+  }
+  return Math.max(0, Number(p && p.stock) || 0);
+}
+/** true si no queda stock de ese producto (en NINGÚN color) */
 function estaAgotado(p) {
-  return Number(p.stock) <= 0;
+  return stockTotalProducto(p) <= 0;
+}
+/** Guarda desde el panel admin el stock de cada color de un producto.
+    "stockColores" es un objeto { "#hex": cantidad, ... } con TODOS
+    los colores del producto (no solo el que se editó). */
+function actualizarStockColoresAdmin(id, stockColores) {
+  const p = _catalogoCache.find(x => x.id == id);
+  if (!p) return null;
+  const limpio = {};
+  Object.keys(stockColores).forEach(c => {
+    limpio[c] = Math.max(0, Math.floor(Number(stockColores[c]) || 0));
+  });
+  p.stockColores = limpio;
+  p.stock = stockTotalProducto(p);
+  _guardarProductoEnNube(p);
+  return p;
 }
 /** Baja 1 unidad de stock por cada prenda que venga en el carrito
-    (se llama al confirmar una compra). Actualiza la memoria local
-    al toque, y en la nube usa un incremento atómico (increment(-1))
-    para que dos compras casi simultáneas no se pisen entre sí. */
+    (se llama al confirmar una compra). Descuenta del color exacto
+    que se compró si el producto tiene desglose por color, y
+    siempre mantiene p.stock (el total) sincronizado. Actualiza la
+    memoria local al toque, y en la nube usa incrementos atómicos
+    (increment(-1)) para que dos compras casi simultáneas no se
+    pisen entre sí. */
 function descontarStockCarrito(carrito) {
   carrito.forEach(item => {
     const p = _catalogoCache.find(x => x.id == item.id);
-    if (p) p.stock = Math.max(0, Number(p.stock) - 1);
-    fbDb.collection('productos').doc(String(item.id)).update({
-      stock: firebase.firestore.FieldValue.increment(-1),
-    }).catch(e => console.error('Error descontando stock en la nube:', e));
+    if (!p) return;
+    const cambiosNube = {};
+    const usaColores = p.stockColores && Object.prototype.hasOwnProperty.call(p.stockColores, item.color);
+    if (usaColores) {
+      p.stockColores[item.color] = Math.max(0, Number(p.stockColores[item.color]) - 1);
+      p.stock = stockTotalProducto(p);
+      cambiosNube[`stockColores.${item.color}`] = firebase.firestore.FieldValue.increment(-1);
+    } else {
+      p.stock = Math.max(0, Number(p.stock) - 1);
+    }
+    cambiosNube.stock = firebase.firestore.FieldValue.increment(-1);
+    fbDb.collection('productos').doc(String(item.id)).update(cambiosNube)
+      .catch(e => console.error('Error descontando stock en la nube:', e));
   });
 }
 
@@ -207,6 +263,15 @@ function actualizarFotoColorAdmin(id, color, dataUrl) {
 /** Agrega un producto nuevo al catálogo desde el panel admin.
     nuevo.foto (opcional) ya debe venir como dataURL comprimido. */
 function agregarProductoAdmin(nuevo) {
+  const colores = nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'];
+  // Si mandaron stock por color (nuevo.stockColores), ese manda; si no,
+  // se reparte el "stock inicial" único como una bolsa compartida.
+  const stockColores = nuevo.stockColores && Object.keys(nuevo.stockColores).length
+    ? nuevo.stockColores
+    : {};
+  const stockTotal = Object.keys(stockColores).length
+    ? Object.values(stockColores).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0)
+    : Math.max(0, Math.floor(Number(nuevo.stock) || 0));
   const producto = {
     id: Date.now(),
     nombre: (nuevo.nombre || 'Producto nuevo').trim(),
@@ -218,10 +283,11 @@ function agregarProductoAdmin(nuevo) {
     foto: nuevo.foto || null,
     fotos: nuevo.fotos || {}, // foto específica por color, ej: {"#151512": "data:..."}
     preciosTalla: nuevo.preciosTalla || {}, // precio específico por talla, ej: {"L": 89900}
-    colores: nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'],
+    colores: colores,
     tallas: nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'],
     badge: null,
-    stock: Math.max(0, Math.floor(Number(nuevo.stock) || 0)),
+    stock: stockTotal,
+    stockColores: stockColores, // {"#hex": cantidad, ...} — vacío = bolsa compartida (stock arriba)
     activo: true,
   };
   _catalogoCache.push(producto);

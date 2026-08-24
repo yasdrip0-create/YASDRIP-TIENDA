@@ -251,8 +251,9 @@ function pintarCarrito() {
       const producto = buscarProducto(btn.dataset.id);
       if (!producto) return;
       const enGrupo = getCarrito().filter(it => it.id == producto.id && it.color === btn.dataset.color && it.talla === btn.dataset.talla).length;
-      if (enGrupo >= Number(producto.stock)) {
-        showToastCarrito(`Ya tienes las ${producto.stock} unidades disponibles de ${producto.nombre}.`);
+      const stockDisponible = stockColor(producto, btn.dataset.color);
+      if (enGrupo >= stockDisponible) {
+        showToastCarrito(`Ya tienes las ${stockDisponible} unidades disponibles de ${producto.nombre} en ese color.`);
         return;
       }
       agregarAlCarrito(producto, btn.dataset.color, btn.dataset.talla);

@@ -63,24 +63,28 @@ if (productos.length === 0) {
   gridEl.innerHTML = `<div class="empty-state"><p>No hay productos disponibles por ahora.</p></div>`;
 } else {
   gridEl.innerHTML = productos.map(p => {
-    const stockNum = Number(p.stock) || 0;
+    const stockNum = stockTotalProducto(p);
     const sinStock = stockNum <= 0;
     const descuento = Number(p.descuento) || 0;
     const badge = badgeInfo(sinStock ? 'agotado' : p.badge);
     const oculto = (filtroInicial !== 'todos' && filtroInicial !== p.categoria) ? 'hidden' : '';
     const badgeHtml = badge ? `<div class="badge ${badge.class}">${badge.label}</div>` : '';
-    const swatchesHtml = p.colores.map((c, i) =>
-      `<div class="swatch ${i === 0 ? 'active' : ''}" style="background:${c}" data-color="${c}"></div>`
-    ).join('');
+    /* primer color con stock disponible (si todos están agotados, cae en el primero) */
+    const colorInicial = p.colores.find(c => !colorAgotado(p, c)) || p.colores[0];
+    const swatchesHtml = p.colores.map((c) => {
+      const agotadoColor = colorAgotado(p, c);
+      return `<div class="swatch ${c === colorInicial ? 'active' : ''} ${agotadoColor ? 'swatch-agotado' : ''}" style="background:${c}" data-color="${c}" title="${agotadoColor ? 'Agotado en este color' : ''}"></div>`;
+    }).join('');
     const sizesHtml = p.tallas.map(sz => `<div class="size-chip" data-size="${sz}">${sz}</div>`).join('');
-    /* foto a mostrar de entrada: la del primer color si existe, si no la foto general, si no el dibujo */
-    const fotoInicial = (p.fotos && p.fotos[p.colores[0]]) || p.foto || null;
+    /* foto a mostrar de entrada: la del primer color con stock, si no la foto general, si no el dibujo */
+    const fotoInicial = (p.fotos && p.fotos[colorInicial]) || p.foto || null;
     const precioTachado = descuento > 0 ? p.precio : p.precio_anterior;
     const precioAnteriorHtml = precioTachado
       ? `<span class="old">$${Number(precioTachado).toLocaleString('es-CO')}</span>` : '';
     const descuentoHtml = descuento > 0 ? `<span class="chip-descuento">-${descuento}%</span>` : '';
-    const stockNoteHtml = (!sinStock && stockNum <= 5)
-      ? `<div class="stock-note">¡Quedan ${stockNum}!</div>` : '';
+    const stockColorInicial = stockColor(p, colorInicial);
+    const stockNoteHtml = (!sinStock && stockColorInicial <= 5)
+      ? `<div class="stock-note" data-stock-note>¡Quedan ${stockColorInicial}!</div>` : `<div class="stock-note" data-stock-note style="display:none;"></div>`;
     /* si las tallas tienen precios distintos, mostramos "Desde $X" hasta que
        el cliente elija una talla puntual */
     const rango = rangoPrecioTallas(p);
@@ -90,11 +94,11 @@ if (productos.length === 0) {
 
     return `
       <div class="card ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
-        <div class="card-media" data-media style="background:${p.colores[0]}22">
+        <div class="card-media" data-media style="background:${colorInicial}22">
           ${badgeHtml}
           ${fotoInicial
             ? `<img src="${fotoInicial}" class="card-photo" data-photo alt="${p.nombre}">`
-            : `<div data-icon>${iconoProducto(p.icono, p.colores[0])}</div>`}
+            : `<div data-icon>${iconoProducto(p.icono, colorInicial)}</div>`}
         </div>
         <div class="card-body">
           <div class="card-cat">${p.categoria}</div>
@@ -128,7 +132,32 @@ const seleccion = {};
 
 document.querySelectorAll('[data-product]').forEach(card => {
   const id = card.id;
-  seleccion[id] = { color: card.querySelector('.swatch')?.dataset.color || null, talla: null };
+  seleccion[id] = { color: card.querySelector('.swatch.active')?.dataset.color || card.querySelector('.swatch')?.dataset.color || null, talla: null };
+
+  function refrescarAvisoStock() {
+    const producto = buscarProducto(id);
+    const colorElegido = seleccion[id].color;
+    const noteEl = card.querySelector('[data-stock-note]');
+    const addBtn = card.querySelector('.add-btn');
+    if (!producto || !noteEl) return;
+    const stockDeEseColor = stockColor(producto, colorElegido);
+    if (colorAgotado(producto, colorElegido)) {
+      noteEl.textContent = 'Agotado en este color';
+      noteEl.style.display = 'block';
+      noteEl.classList.add('stock-note-agotado');
+      if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Agotado en este color'; }
+    } else {
+      noteEl.classList.remove('stock-note-agotado');
+      if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Añadir'; }
+      if (stockDeEseColor <= 5) {
+        noteEl.textContent = `¡Quedan ${stockDeEseColor}!`;
+        noteEl.style.display = 'block';
+      } else {
+        noteEl.style.display = 'none';
+      }
+    }
+  }
+  refrescarAvisoStock();
 
   card.querySelectorAll('.swatch').forEach(sw => {
     sw.addEventListener('click', () => {
@@ -148,6 +177,7 @@ document.querySelectorAll('[data-product]').forEach(card => {
         const fotoDelColor = (producto.fotos && producto.fotos[colorElegido]) || producto.foto;
         if (fotoDelColor) imgEl.src = fotoDelColor;
       }
+      refrescarAvisoStock();
     });
   });
 
@@ -184,14 +214,14 @@ document.querySelectorAll('.add-btn').forEach(btn => {
     const producto = buscarProducto(id);
     if (!producto) { showToast('Ese producto ya no está disponible.', true); return; }
 
-    const stockDisponible = Number(producto.stock) || 0;
+    const stockDisponible = stockColor(producto, sel.color);
     if (stockDisponible <= 0) {
-      showToast(`${producto.nombre} está agotado por ahora.`, true);
+      showToast(`${producto.nombre} está agotado en ese color por ahora.`, true);
       return;
     }
-    const yaEnCarrito = getCarrito().filter(it => it.id == producto.id).length;
+    const yaEnCarrito = getCarrito().filter(it => it.id == producto.id && it.color === sel.color).length;
     if (yaEnCarrito >= stockDisponible) {
-      showToast(`Ya tienes en el carrito todo el stock disponible de ${producto.nombre}.`, true);
+      showToast(`Ya tienes en el carrito todo el stock disponible de ${producto.nombre} en ese color.`, true);
       return;
     }
 
@@ -206,12 +236,16 @@ document.querySelectorAll('.add-btn').forEach(btn => {
     btn.classList.add('added');
     setTimeout(() => { btn.textContent = original; btn.classList.remove('added'); }, 1200);
 
-    /* si con esta unidad se agotó, la tarjeta pasa a "Agotado" sin recargar */
+    /* si con esta unidad se agotó ESE color, se avisa en la tarjeta
+       (el producto puede seguir disponible en otros colores) */
     if (yaEnCarrito + 1 >= stockDisponible) {
-      const card = btn.closest('[data-product]');
-      card.classList.add('sin-stock');
-      btn.disabled = true;
-      setTimeout(() => { btn.textContent = 'Agotado'; }, 1200);
+      const noteEl = card.querySelector('[data-stock-note]');
+      if (noteEl) {
+        noteEl.textContent = 'Agotado en este color';
+        noteEl.style.display = 'block';
+        noteEl.classList.add('stock-note-agotado');
+      }
+      setTimeout(() => { btn.disabled = true; btn.textContent = 'Agotado en este color'; }, 1200);
     }
 
     showToast(`${producto.nombre} · talla ${sel.talla} añadido al carrito`);
