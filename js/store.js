@@ -443,12 +443,13 @@ if (typeof fbAuth !== 'undefined') {
   });
 }
 
-async function registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pais) {
+async function registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pais, telefono = null) {
   try {
     const cred = await fbAuth.createUserWithEmailAndPassword(correo, contrasena);
     await cred.user.updateProfile({ displayName: nombre });
     await fbDb.collection('usuarios').doc(cred.user.uid).set({
       nombre, correo, fechaNacimiento, pais,
+      telefono: telefono || null,
       creado: new Date().toISOString(),
     });
     return { ok: true };

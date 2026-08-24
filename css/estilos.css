@@ -1298,3 +1298,101 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   .admin-topbar{padding:14px 16px;flex-direction:column;gap:12px;align-items:flex-start;}
   .admin-main{padding:24px 14px 60px;}
 }
+
+/* ============================================================
+   VERIFICACIÓN DE CUENTA (código OTP) — paleta aparte, más
+   vibrante/juvenil que el resto del sitio (que es tierra/forest).
+   Se usa solo en el paso de registro.html donde se pide el código.
+   ============================================================ */
+:root{
+  --otp-violet:#7c3aed;
+  --otp-violet-dark:#5b21b6;
+  --otp-blue:#3b82f6;
+  --otp-blue-light:#60a5fa;
+  --otp-bg-dark:#12091f;
+}
+
+.method-toggle{
+  display:flex; gap:8px; margin-bottom:16px;
+  background:var(--offwhite); padding:5px; border-radius:14px;
+}
+.method-option{
+  flex:1; text-align:center; padding:10px 8px; border-radius:10px;
+  font-size:13.5px; font-weight:600; color:var(--gray); cursor:pointer;
+  user-select:none; transition:all .18s ease; display:flex; align-items:center;
+  justify-content:center; gap:6px; border:1px solid transparent;
+}
+.method-option .m-ic{font-size:15px; line-height:1;}
+.method-option.active{
+  background:linear-gradient(135deg,var(--otp-violet),var(--otp-blue));
+  color:#fff; box-shadow:0 6px 16px rgba(124,58,237,0.35);
+}
+
+.otp-screen{ display:none; }
+.otp-screen.active{ display:block; }
+.auth-card.otp-mode form#formRegistro,
+.auth-card.otp-mode .auth-divider,
+.auth-card.otp-mode .auth-signup{ display:none; }
+
+.otp-badge{
+  width:64px; height:64px; border-radius:50%; margin:0 auto 18px;
+  display:flex; align-items:center; justify-content:center; font-size:28px;
+  background:linear-gradient(135deg,var(--otp-violet),var(--otp-blue));
+  box-shadow:0 10px 26px rgba(124,58,237,0.4);
+}
+.otp-title{
+  font-family:'Fraunces',serif; font-weight:500; font-size:24px;
+  text-align:center; margin-bottom:6px;
+  background:linear-gradient(135deg,var(--otp-violet-dark),var(--otp-blue));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.otp-sub{
+  text-align:center; color:var(--gray); font-size:13.5px; line-height:1.55;
+  margin-bottom:26px;
+}
+.otp-sub strong{color:var(--black);}
+
+.otp-boxes{
+  display:flex; gap:8px; justify-content:center; margin-bottom:18px;
+}
+.otp-boxes input{
+  width:44px; height:54px; text-align:center; font-size:22px; font-weight:700;
+  border-radius:12px; border:2px solid var(--line); background:var(--offwhite);
+  color:var(--otp-violet-dark); font-family:'Space Mono',monospace;
+  transition:border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+}
+.otp-boxes input:focus{
+  outline:none; border-color:var(--otp-blue); background:#fff;
+  box-shadow:0 0 0 4px rgba(124,58,237,0.14); transform:translateY(-1px);
+}
+.otp-boxes input.filled{ border-color:var(--otp-violet); }
+
+.otp-submit{
+  width:100%; border:none; cursor:pointer; text-align:center; margin-top:4px;
+  padding:14px; border-radius:12px; font-weight:700; font-size:14.5px; color:#fff;
+  background:linear-gradient(135deg,var(--otp-violet),var(--otp-blue));
+  box-shadow:0 10px 22px rgba(59,130,246,0.32);
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.otp-submit:hover{ transform:translateY(-1px); box-shadow:0 12px 26px rgba(59,130,246,0.4); }
+.otp-submit:disabled{ opacity:.55; cursor:default; transform:none; }
+
+.otp-resend{
+  text-align:center; margin-top:18px; font-size:13px; color:var(--gray);
+}
+.otp-resend button{
+  background:none; border:none; padding:0; font-weight:700; cursor:pointer;
+  color:var(--otp-violet); font-size:13px;
+}
+.otp-resend button:disabled{ color:var(--gray); cursor:default; }
+
+.otp-back{
+  display:block; text-align:center; margin-top:16px; font-size:12.5px; color:var(--gray);
+  cursor:pointer; background:none; border:none; width:100%;
+}
+.otp-back:hover{ color:var(--otp-violet); }
+
+.otp-timer{ font-family:'Space Mono',monospace; color:var(--otp-blue); }
+
+.auth-field.phone-field{ display:none; }
+.auth-field.phone-field.show{ display:block; }
