@@ -518,6 +518,17 @@ async function registrarUsuario(nombre, correo, contrasena, fechaNacimiento, pai
       telefono: telefono || null,
       creado: new Date().toISOString(),
     });
+    // Guarda también teléfono -> correo en una colección aparte
+    // ("telefonos"), para que "¿Olvidaste tu contraseña?" pueda
+    // encontrar la cuenta cuando el cliente solo recuerda su
+    // número (ver más abajo, sección RECUPERAR CONTRASEÑA).
+    if (telefono) {
+      try {
+        await fbDb.collection('telefonos').doc(telefono).set({ correo });
+      } catch (e) {
+        console.error('No se pudo guardar el teléfono para recuperación:', e);
+      }
+    }
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: traducirErrorFirebase(e) };
@@ -543,6 +554,93 @@ function usuarioActual() {
 
 function cerrarSesion() {
   return fbAuth.signOut();
+}
+
+/* ---------- RECUPERAR CONTRASEÑA ----------
+   Dos caminos, según con qué se registró el cliente:
+
+   1) CORREO: se manda directo el correo de restablecimiento de
+      Firebase (enviarRecuperacionCorreo). Es un solo paso.
+
+   2) TELÉFONO: primero hay que probar que esa persona SÍ es dueña
+      del número (se manda un SMS con código, igual que en el
+      registro). Una vez confirmado el código, se busca en la
+      colección "telefonos" a qué correo pertenece ese número, y
+      se le manda el enlace de restablecimiento a ESE correo (no
+      se le entrega la contraseña ni se inicia sesión directo).
+      Esto solo encuentra cuentas registradas con teléfono DESPUÉS
+      de que se agregó esta función, porque la colección
+      "telefonos" se llena en registrarUsuario(). */
+
+/** Manda el correo de restablecimiento de Firebase a un correo
+    que el cliente escribe a mano. Por seguridad, Firebase nunca
+    revela si el correo existe o no: la llamada "funciona" igual;
+    si existe, le llega el enlace. */
+async function enviarRecuperacionCorreo(correo) {
+  try {
+    await fbAuth.sendPasswordResetEmail(correo);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: traducirErrorFirebase(e) };
+  }
+}
+
+/** Paso 1 de recuperación por teléfono: manda un SMS con código
+    (reutiliza Firebase Phone Auth, igual que el registro).
+    recaptchaVerifier lo crea la página (firebase.auth.RecaptchaVerifier).
+    Devuelve el confirmationResult para usarlo en el paso 2. */
+async function enviarCodigoRecuperacionTelefono(telefono, recaptchaVerifier) {
+  try {
+    const confirmationResult = await fbAuth.signInWithPhoneNumber(telefono, recaptchaVerifier);
+    return { ok: true, confirmationResult };
+  } catch (e) {
+    console.error('Error enviando SMS de recuperación:', e);
+    let msg = 'No se pudo enviar el SMS. Revisa el número e inténtalo de nuevo.';
+    if (e && e.code === 'auth/invalid-phone-number') msg = 'Ese número no parece válido.';
+    if (e && e.code === 'auth/too-many-requests') msg = 'Demasiados intentos, espera un momento.';
+    return { ok: false, msg };
+  }
+}
+
+/** Paso 2 de recuperación por teléfono: confirma el código SMS,
+    busca el correo dueño de ese número, y le manda el enlace de
+    restablecimiento a ese correo (nunca lo muestra completo). */
+async function confirmarCodigoRecuperacionTelefono(confirmationResult, codigo, telefono) {
+  try {
+    await confirmationResult.confirm(codigo);
+  } catch (e) {
+    try { await fbAuth.signOut(); } catch (_) {}
+    const msg = e && e.code === 'auth/code-expired'
+      ? 'El código expiró, pide uno nuevo.'
+      : 'Código incorrecto, inténtalo de nuevo.';
+    return { ok: false, msg };
+  }
+  try {
+    const doc = await fbDb.collection('telefonos').doc(telefono).get();
+    // El teléfono ya cumplió su función (probar que es suyo); esa
+    // sesión temporal por SMS no es la cuenta real del cliente.
+    try { await fbAuth.signOut(); } catch (_) {}
+    if (!doc.exists || !doc.data().correo) {
+      return { ok: false, msg: 'No encontramos ninguna cuenta con ese número. Si te registraste hace tiempo, prueba con la opción "Correo".' };
+    }
+    const correo = doc.data().correo;
+    await fbAuth.sendPasswordResetEmail(correo);
+    return { ok: true, correoTapado: taparCorreo(correo) };
+  } catch (e) {
+    try { await fbAuth.signOut(); } catch (_) {}
+    console.error('Error buscando cuenta por teléfono:', e);
+    return { ok: false, msg: 'Ocurrió un error buscando tu cuenta. Intenta de nuevo.' };
+  }
+}
+
+/** Tapa un correo para mostrarlo sin revelarlo completo,
+    ej: "juanperez@gmail.com" -> "ju*******@gmail.com" */
+function taparCorreo(correo) {
+  const partes = String(correo).split('@');
+  if (partes.length < 2) return correo;
+  const [usuario, dominio] = partes;
+  const visible = usuario.slice(0, 2);
+  return `${visible}${'*'.repeat(Math.max(3, usuario.length - 2))}@${dominio}`;
 }
 
 function traducirErrorFirebase(e) {
