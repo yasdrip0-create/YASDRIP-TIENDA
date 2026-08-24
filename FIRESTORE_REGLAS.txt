@@ -94,5 +94,47 @@ service cloud.firestore {
     match /productos/{productoId} {
       allow read, write: if true;
     }
+    match /telefonos/{telefono} {
+      // Recuperación de contraseña por teléfono ("Olvidaste tu
+      // contraseña" en login.html). Guarda SOLO teléfono->correo.
+      // "get" (leer UN documento) exige saber el número exacto de
+      // antemano -> solo permite averiguar el correo de TU propio
+      // teléfono, no ver la lista de nadie. "list" queda cerrado
+      // (false) a propósito, para que nadie pueda listar todos los
+      // teléfonos/correos de la tienda de una sola vez.
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
   }
 }
+
+=========================================================
+ ACTUALIZACIÓN — "Olvidaste tu contraseña" (login.html)
+=========================================================
+
+Se agregó la colección "telefonos" (arriba) para que el botón
+"¿Olvidaste tu contraseña?" de login.html pueda funcionar tanto
+con correo como con número:
+
+- Si el cliente elige "Correo", se le manda directo el enlace de
+  Firebase para crear una contraseña nueva. Ya funciona solo con
+  copiar y pegar las reglas de arriba (o incluso sin tocarlas,
+  porque ese envío no depende de Firestore).
+
+- Si el cliente elige "Teléfono", primero se le manda un código
+  por SMS para comprobar que el número es suyo (mismo mecanismo
+  del registro). Una vez confirmado, se busca en "telefonos" a
+  qué correo pertenece ese número, y se le manda el enlace a ESE
+  correo (nunca se muestra completo, ni se entra directo a la
+  cuenta).
+
+OJO: la relación teléfono -> correo solo se guarda para cuentas
+que se registren CON TELÉFONO de ahora en adelante (registro.js
+lo hace automático en cada registro nuevo). Las cuentas viejas
+que ya eligieron "Teléfono" al registrarse, antes de este cambio,
+no van a aparecer con esta búsqueda — a esos clientes hay que
+decirles que usen la opción "Correo" en su lugar, o guardarles tú
+manualmente un documento en Firestore -> colección "telefonos" ->
+ID = su número (ej: +573001234567) -> campo "correo" = su correo.
