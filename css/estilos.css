@@ -418,6 +418,17 @@ body.menu-open{overflow:hidden;}
 .card-photo{width:100%;height:100%;object-fit:cover;transition:transform .35s ease;}
 .card:hover .card-media svg{transform:scale(1.06) rotate(-1.5deg);}
 .card:hover .card-photo{transform:scale(1.06);}
+
+/* ---- foto de espaldas: vive encima de la foto normal y solo se ve
+   al pasar el mouse (o al tocar, en celular), como en las tiendas
+   que muestran el diseño de atrás sin que el cliente tenga que
+   hacer clic en nada ---- */
+.card-photo-trasera{
+  position:absolute; inset:0; opacity:0; transition:opacity .25s ease, transform .35s ease;
+  pointer-events:none;
+}
+.card:hover .card-photo-trasera,.card:focus-within .card-photo-trasera{opacity:1; transform:scale(1.06);}
+.card.card-trasera-activa .card-photo-trasera{opacity:1; transform:scale(1.06);}
 .badge{
   position:absolute;top:14px;left:14px;
   font-family:'Special Elite',monospace;font-size:10px;font-weight:400;
@@ -483,6 +494,10 @@ body.menu-open{overflow:hidden;}
 }
 .size-chip:hover{border-color:var(--black);color:var(--black);}
 .size-chip.active{background:var(--forest);color:var(--white);border-color:var(--forest);}
+.size-chip-agotado{
+  opacity:.4; text-decoration:line-through; cursor:not-allowed;
+}
+.size-chip-agotado:hover{border-color:var(--line);color:var(--gray);}
 
 .card-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px;}
 .card-price{font-family:'Space Mono',monospace;font-size:15.5px;font-weight:700;}
@@ -1460,6 +1475,20 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   margin:-6px 0 14px;
 }
 .admin-stock-colores-nuevo:empty{margin:0;}
+
+/* ---- stock por talla (panel admin): mismo bloque que stock por
+   color, pero el "swatch" muestra el texto de la talla en vez de
+   un círculo de color, ya que una talla no tiene color propio ---- */
+.btn-toggle-stock-talla{margin-top:4px;}
+.stock-talla-swatch{
+  width:auto; min-width:22px; height:auto; border-radius:5px; flex-shrink:0;
+  background:var(--forest); color:var(--white); font-family:'Space Mono',monospace;
+  font-size:10px; font-weight:700; text-align:center; padding:2px 4px; box-shadow:none;
+}
+.input-stock-talla, .input-stock-talla-nuevo{
+  border:none; background:transparent; width:100%; padding:2px 0; font-size:13px;
+}
+.input-stock-talla:focus, .input-stock-talla-nuevo:focus{outline:none;}
 
 /* ============================================================
    ANIMACIONES AL HACER SCROLL ("reveal")

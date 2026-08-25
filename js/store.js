@@ -170,15 +170,20 @@ function stockColor(p, color) {
 function colorAgotado(p, color) {
   return stockColor(p, color) <= 0;
 }
-/** Stock total del producto: suma de todos los colores si hay
-    desglose por color, o el número general si no lo hay. */
+/** Stock total del producto: si hay desglose por talla se usa ese
+    (es el más específico para saber qué se está agotando), si no
+    hay pero sí hay desglose por color se usa la suma de colores,
+    y si no hay ninguno de los dos se usa el número general. */
 function stockTotalProducto(p) {
+  if (p && p.stockTallas && Object.keys(p.stockTallas).length) {
+    return Object.values(p.stockTallas).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0);
+  }
   if (p && p.stockColores && Object.keys(p.stockColores).length) {
     return Object.values(p.stockColores).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0);
   }
   return Math.max(0, Number(p && p.stock) || 0);
 }
-/** true si no queda stock de ese producto (en NINGÚN color) */
+/** true si no queda stock de ese producto (en NINGÚN color/talla) */
 function estaAgotado(p) {
   return stockTotalProducto(p) <= 0;
 }
@@ -197,6 +202,41 @@ function actualizarStockColoresAdmin(id, stockColores) {
   _guardarProductoEnNube(p);
   return p;
 }
+
+/* ---------- STOCK POR TALLA ----------
+   Mismo mecanismo que el stock por color, pero por talla: así
+   sabes exactamente cuántas unidades quedan de cada talla exacta
+   (S, M, L, 5L, 12, lo que sea que uses). p.stockTallas es un
+   objeto opcional { "talla": cantidad, ... }. Es independiente del
+   desglose por color: puedes usar uno, el otro, los dos o ninguno
+   (y seguir con el número único p.stock). */
+
+/** Stock disponible de UNA talla específica de un producto. */
+function stockTalla(p, talla) {
+  if (p && p.stockTallas && Object.prototype.hasOwnProperty.call(p.stockTallas, talla)) {
+    return Math.max(0, Number(p.stockTallas[talla]) || 0);
+  }
+  return Math.max(0, Number(p && p.stock) || 0);
+}
+/** true si una talla específica ya no tiene unidades */
+function tallaAgotada(p, talla) {
+  return stockTalla(p, talla) <= 0;
+}
+/** Guarda desde el panel admin el stock de cada talla de un producto.
+    "stockTallas" es un objeto { "talla": cantidad, ... } con TODAS
+    las tallas del producto (no solo la que se editó). */
+function actualizarStockTallasAdmin(id, stockTallas) {
+  const p = _catalogoCache.find(x => x.id == id);
+  if (!p) return null;
+  const limpio = {};
+  Object.keys(stockTallas).forEach(t => {
+    limpio[t] = Math.max(0, Math.floor(Number(stockTallas[t]) || 0));
+  });
+  p.stockTallas = limpio;
+  p.stock = stockTotalProducto(p);
+  _guardarProductoEnNube(p);
+  return p;
+}
 /** Baja 1 unidad de stock por cada prenda que venga en el carrito
     (se llama al confirmar una compra). Descuenta del color exacto
     que se compró si el producto tiene desglose por color, y
@@ -209,14 +249,20 @@ function descontarStockCarrito(carrito) {
     const p = _catalogoCache.find(x => x.id == item.id);
     if (!p) return;
     const cambiosNube = {};
+    let tocoAlgunDesglose = false;
     const usaColores = p.stockColores && Object.prototype.hasOwnProperty.call(p.stockColores, item.color);
     if (usaColores) {
       p.stockColores[item.color] = Math.max(0, Number(p.stockColores[item.color]) - 1);
-      p.stock = stockTotalProducto(p);
       cambiosNube[`stockColores.${item.color}`] = firebase.firestore.FieldValue.increment(-1);
-    } else {
-      p.stock = Math.max(0, Number(p.stock) - 1);
+      tocoAlgunDesglose = true;
     }
+    const usaTallas = p.stockTallas && Object.prototype.hasOwnProperty.call(p.stockTallas, item.talla);
+    if (usaTallas) {
+      p.stockTallas[item.talla] = Math.max(0, Number(p.stockTallas[item.talla]) - 1);
+      cambiosNube[`stockTallas.${item.talla}`] = firebase.firestore.FieldValue.increment(-1);
+      tocoAlgunDesglose = true;
+    }
+    p.stock = tocoAlgunDesglose ? stockTotalProducto(p) : Math.max(0, Number(p.stock) - 1);
     cambiosNube.stock = firebase.firestore.FieldValue.increment(-1);
     fbDb.collection('productos').doc(String(item.id)).update(cambiosNube)
       .catch(e => console.error('Error descontando stock en la nube:', e));
@@ -260,18 +306,45 @@ function actualizarFotoColorAdmin(id, color, dataUrl) {
   _guardarProductoEnNube(p);
   return p;
 }
+/** Guarda (o borra, si dataUrl es null) la foto DE ESPALDAS de UN
+    color específico de un producto. Se usa igual que
+    actualizarFotoColorAdmin, pero para la foto trasera: en la
+    tienda, el cliente puede pasar el mouse (o tocar en celular)
+    sobre la tarjeta del producto para ver esta foto y las tallas
+    disponibles, tal como se ve la prenda de espaldas. */
+function actualizarFotoTraseraColorAdmin(id, color, dataUrl) {
+  const p = _catalogoCache.find(x => x.id == id);
+  if (!p) return null;
+  if (!p.fotosTrasera) p.fotosTrasera = {};
+  if (dataUrl) {
+    p.fotosTrasera[color] = dataUrl;
+  } else {
+    delete p.fotosTrasera[color];
+  }
+  _guardarProductoEnNube(p);
+  return p;
+}
 /** Agrega un producto nuevo al catálogo desde el panel admin.
     nuevo.foto (opcional) ya debe venir como dataURL comprimido. */
 function agregarProductoAdmin(nuevo) {
   const colores = nuevo.colores && nuevo.colores.length ? nuevo.colores : ['#151512'];
-  // Si mandaron stock por color (nuevo.stockColores), ese manda; si no,
+  const tallas = nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'];
+  // Si mandaron stock por color y/o por talla, eso manda; si no,
   // se reparte el "stock inicial" único como una bolsa compartida.
   const stockColores = nuevo.stockColores && Object.keys(nuevo.stockColores).length
     ? nuevo.stockColores
     : {};
-  const stockTotal = Object.keys(stockColores).length
-    ? Object.values(stockColores).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0)
-    : Math.max(0, Math.floor(Number(nuevo.stock) || 0));
+  const stockTallas = nuevo.stockTallas && Object.keys(nuevo.stockTallas).length
+    ? nuevo.stockTallas
+    : {};
+  let stockTotal;
+  if (Object.keys(stockTallas).length) {
+    stockTotal = Object.values(stockTallas).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0);
+  } else if (Object.keys(stockColores).length) {
+    stockTotal = Object.values(stockColores).reduce((s, v) => s + Math.max(0, Number(v) || 0), 0);
+  } else {
+    stockTotal = Math.max(0, Math.floor(Number(nuevo.stock) || 0));
+  }
   const producto = {
     id: Date.now(),
     nombre: (nuevo.nombre || 'Producto nuevo').trim(),
@@ -282,12 +355,14 @@ function agregarProductoAdmin(nuevo) {
     icono: nuevo.icono || 'tee',
     foto: nuevo.foto || null,
     fotos: nuevo.fotos || {}, // foto específica por color, ej: {"#151512": "data:..."}
+    fotosTrasera: nuevo.fotosTrasera || {}, // foto de espaldas por color
     preciosTalla: nuevo.preciosTalla || {}, // precio específico por talla, ej: {"L": 89900}
     colores: colores,
-    tallas: nuevo.tallas && nuevo.tallas.length ? nuevo.tallas : ['S', 'M', 'L', 'XL'],
+    tallas: tallas,
     badge: null,
     stock: stockTotal,
     stockColores: stockColores, // {"#hex": cantidad, ...} — vacío = bolsa compartida (stock arriba)
+    stockTallas: stockTallas,   // {"talla": cantidad, ...} — vacío = bolsa compartida (stock arriba)
     activo: true,
   };
   _catalogoCache.push(producto);

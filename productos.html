@@ -76,9 +76,16 @@ if (productos.length === 0) {
       const agotadoColor = colorAgotado(p, c);
       return `<div class="swatch ${c === colorInicial ? 'active' : ''} ${agotadoColor ? 'swatch-agotado' : ''}" style="background:${c}" data-color="${c}" title="${agotadoColor ? 'Agotado en este color' : ''}"></div>`;
     }).join('');
-    const sizesHtml = p.tallas.map(sz => `<div class="size-chip" data-size="${sz}">${sz}</div>`).join('');
+    const sizesHtml = p.tallas.map(sz => {
+      const agotadaSz = tallaAgotada(p, sz);
+      return `<div class="size-chip ${agotadaSz ? 'size-chip-agotado' : ''}" data-size="${sz}" title="${agotadaSz ? 'Agotada' : ''}">${sz}</div>`;
+    }).join('');
     /* foto a mostrar de entrada: la del primer color con stock, si no la foto general, si no el dibujo */
     const fotoInicial = (p.fotos && p.fotos[colorInicial]) || p.foto || null;
+    /* foto de espaldas de ese color (opcional): si existe, al pasar el
+       mouse (o tocar en celular) sobre la tarjeta se muestra esa foto
+       para que el cliente vea cómo luce la prenda por detrás */
+    const fotoTraseraInicial = (p.fotosTrasera && p.fotosTrasera[colorInicial]) || null;
     const precioTachado = descuento > 0 ? p.precio : p.precio_anterior;
     const precioAnteriorHtml = precioTachado
       ? `<span class="old">$${Number(precioTachado).toLocaleString('es-CO')}</span>` : '';
@@ -100,6 +107,7 @@ if (productos.length === 0) {
           ${fotoInicial
             ? `<img src="${fotoInicial}" class="card-photo" data-photo alt="${p.nombre}">`
             : `<div data-icon>${iconoProducto(p.icono, colorInicial)}</div>`}
+          ${fotoTraseraInicial ? `<img src="${fotoTraseraInicial}" class="card-photo card-photo-trasera" data-photo-trasera alt="${p.nombre} de espaldas">` : ''}
         </div>
         <div class="card-body">
           <div class="card-cat">${p.categoria}</div>
@@ -164,6 +172,16 @@ document.querySelectorAll('[data-product]').forEach(card => {
   }
   refrescarAvisoStock();
 
+  /* en celular no existe el "hover" del mouse, así que un toque sobre
+     la foto alterna entre la vista de adelante y la de espaldas
+     (si el producto tiene foto trasera para el color elegido) */
+  const mediaEl = card.querySelector('[data-media]');
+  mediaEl.addEventListener('click', () => {
+    if (card.querySelector('[data-photo-trasera]')) {
+      card.classList.toggle('card-trasera-activa');
+    }
+  });
+
   card.querySelectorAll('.swatch').forEach(sw => {
     sw.addEventListener('click', () => {
       card.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
@@ -175,12 +193,25 @@ document.querySelectorAll('[data-product]').forEach(card => {
       });
       card.querySelector('[data-media]').style.background = colorElegido + '22';
 
-      /* si el producto tiene una foto real para este color, la mostramos */
+      /* si el producto tiene una foto real para este color, la mostramos,
+         y lo mismo con la foto de espaldas (si existe) */
       const producto = buscarProducto(id);
       const imgEl = card.querySelector('[data-photo]');
       if (imgEl && producto) {
         const fotoDelColor = (producto.fotos && producto.fotos[colorElegido]) || producto.foto;
         if (fotoDelColor) imgEl.src = fotoDelColor;
+      }
+      const imgTraseraEl = card.querySelector('[data-photo-trasera]');
+      const fotoTraseraDelColor = producto && producto.fotosTrasera && producto.fotosTrasera[colorElegido];
+      if (fotoTraseraDelColor) {
+        if (imgTraseraEl) {
+          imgTraseraEl.src = fotoTraseraDelColor;
+        } else {
+          card.querySelector('[data-media]').insertAdjacentHTML('beforeend',
+            `<img src="${fotoTraseraDelColor}" class="card-photo card-photo-trasera" data-photo-trasera alt="${producto.nombre} de espaldas">`);
+        }
+      } else if (imgTraseraEl) {
+        imgTraseraEl.remove();
       }
       refrescarAvisoStock();
     });
@@ -188,12 +219,16 @@ document.querySelectorAll('[data-product]').forEach(card => {
 
   card.querySelectorAll('.size-chip').forEach(chip => {
     chip.addEventListener('click', () => {
+      const producto = buscarProducto(id);
+      if (producto && tallaAgotada(producto, chip.dataset.size)) {
+        showToast(`Talla ${chip.dataset.size} agotada por ahora.`, true);
+        return;
+      }
       card.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       seleccion[id].talla = chip.dataset.size;
 
       /* si esa talla tiene un precio propio, actualizamos el precio mostrado */
-      const producto = buscarProducto(id);
       const priceEl = card.querySelector('[data-price-num]');
       if (producto && priceEl) {
         const finalTalla = precioConDescuentoTalla(producto, chip.dataset.size);
@@ -219,14 +254,18 @@ document.querySelectorAll('.add-btn').forEach(btn => {
     const producto = buscarProducto(id);
     if (!producto) { showToast('Ese producto ya no está disponible.', true); return; }
 
-    const stockDisponible = stockColor(producto, sel.color);
+    if (tallaAgotada(producto, sel.talla)) {
+      showToast(`${producto.nombre} está agotado en la talla ${sel.talla} por ahora.`, true);
+      return;
+    }
+    const stockDisponible = Math.min(stockColor(producto, sel.color), stockTalla(producto, sel.talla));
     if (stockDisponible <= 0) {
       showToast(`${producto.nombre} está agotado en ese color por ahora.`, true);
       return;
     }
-    const yaEnCarrito = getCarrito().filter(it => it.id == producto.id && it.color === sel.color).length;
+    const yaEnCarrito = getCarrito().filter(it => it.id == producto.id && it.color === sel.color && it.talla === sel.talla).length;
     if (yaEnCarrito >= stockDisponible) {
-      showToast(`Ya tienes en el carrito todo el stock disponible de ${producto.nombre} en ese color.`, true);
+      showToast(`Ya tienes en el carrito todo el stock disponible de ${producto.nombre} en esa combinación.`, true);
       return;
     }
 
