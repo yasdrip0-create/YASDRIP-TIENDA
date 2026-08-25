@@ -838,6 +838,19 @@ function verificarCodigoDesarrollador(codigo) {
   return String(codigo || "") === CODIGO_DESARROLLADOR;
 }
 
+/* Contraseña para ENTRAR a la pestaña "Usuarios" (solo para verla).
+   Es una contraseña fija (no la de ningún usuario del panel) y
+   además solo funciona si quien tiene la sesión abierta ahora mismo
+   es el usuario "admin" — a cualquier otro usuario del panel, aunque
+   tenga el permiso "usuarios" marcado, este candado no le deja
+   pasar. Para cambiar la contraseña, edita CLAVE_ACCESO_USUARIOS
+   aquí abajo. */
+const CLAVE_ACCESO_USUARIOS = "Admin2026**";
+
+function verificarAccesoTabUsuarios(clave) {
+  return usuarioAdminActual() === 'admin' && String(clave || "") === CLAVE_ACCESO_USUARIOS;
+}
+
 /* ---------- PERMISOS de cada usuario del panel ----------
    Cada usuario (aparte de usuario/contraseña) guarda un objeto
    "permisos" en Firestore que dice qué pestañas/acciones puede

@@ -300,8 +300,8 @@
 <div class="admin-modal-overlay" id="modalAccesoUsuarios">
   <div class="admin-modal">
     <h3>Acceso a Usuarios</h3>
-    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe tu contraseña del panel para entrar a esta pestaña.</p>
-    <input type="password" id="claveAccesoUsuarios" placeholder="Tu contraseña" autocomplete="current-password">
+    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe la contraseña de acceso a esta pestaña (solo el usuario "admin" puede entrar aquí).</p>
+    <input type="password" id="claveAccesoUsuarios" placeholder="Contraseña de acceso" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarAccesoUsuarios">Entrar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalAccesoUsuarios">Cancelar</button>
@@ -474,6 +474,10 @@ function mostrarTabUsuarios() {
 tabBtnUsuarios.addEventListener('click', () => {
   if (!permisosActuales.usuarios) return;
   if (usuariosTabDesbloqueada) { mostrarTabUsuarios(); return; }
+  if (usuarioAdminActual() !== 'admin') {
+    showToast('Solo el usuario "admin" puede entrar a esta pestaña.', true);
+    return;
+  }
   document.getElementById('claveAccesoUsuarios').value = '';
   document.getElementById('modalAccesoUsuarios').classList.add('open');
   setTimeout(() => document.getElementById('claveAccesoUsuarios').focus(), 50);
@@ -483,13 +487,10 @@ document.getElementById('btnCerrarModalAccesoUsuarios').addEventListener('click'
   document.getElementById('modalAccesoUsuarios').classList.remove('open');
 });
 
-document.getElementById('btnConfirmarAccesoUsuarios').addEventListener('click', async () => {
+document.getElementById('btnConfirmarAccesoUsuarios').addEventListener('click', () => {
   const clave = document.getElementById('claveAccesoUsuarios').value;
-  if (!clave) { showToast('Escribe tu contraseña.', true); return; }
-  const btn = document.getElementById('btnConfirmarAccesoUsuarios');
-  btn.disabled = true;
-  const ok = await verificarClaveAdminActual(clave);
-  btn.disabled = false;
+  if (!clave) { showToast('Escribe la contraseña.', true); return; }
+  const ok = verificarAccesoTabUsuarios(clave);
   if (!ok) { showToast('Contraseña incorrecta.', true); return; }
   usuariosTabDesbloqueada = true;
   document.getElementById('modalAccesoUsuarios').classList.remove('open');
