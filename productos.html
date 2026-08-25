@@ -11,7 +11,7 @@
 <div id="site-header"></div>
 
 <section class="section" id="coleccion">
-  <div class="section-head">
+  <div class="section-head reveal">
     <div>
       <div class="section-eyebrow">Catálogo completo</div>
       <h2>La colección <span class="hero-note" style="font-size:0.55em;transform:rotate(-3deg);">psst, se acaba rápido</span></h2>
@@ -26,7 +26,7 @@
 
 <div id="site-footer"></div>
 
-<div class="toast" id="toast"><span class="dot"></span><span id="toastText">Añadido al carrito</span></div>
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText">¡Sumado a tu pedido!</span></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -60,9 +60,10 @@ filtersEl.innerHTML = filtrosHtml;
 const gridEl = document.getElementById('productGrid');
 
 if (productos.length === 0) {
-  gridEl.innerHTML = `<div class="empty-state"><p>No hay productos disponibles por ahora.</p></div>`;
+  gridEl.innerHTML = `<div class="empty-state"><p>El próximo drop está por caer. Vuelve pronto ⚡</p></div>`;
 } else {
-  gridEl.innerHTML = productos.map(p => {
+  gridEl.innerHTML = productos.map((p, i) => {
+    const revealDelay = `reveal-d${(i % 6) + 1}`;
     const stockNum = stockTotalProducto(p);
     const sinStock = stockNum <= 0;
     const descuento = Number(p.descuento) || 0;
@@ -93,7 +94,7 @@ if (productos.length === 0) {
       : `Desde $${rango.min.toLocaleString('es-CO')}`;
 
     return `
-      <div class="card ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
+      <div class="card reveal ${revealDelay} ${oculto} ${sinStock ? 'sin-stock' : ''}" id="${p.id}" data-cat="${p.categoria}" data-stock="${stockNum}" data-product>
         <div class="card-media" data-media style="background:${colorInicial}22">
           ${badgeHtml}
           ${fotoInicial
@@ -108,12 +109,16 @@ if (productos.length === 0) {
           ${stockNoteHtml}
           <div class="card-bottom">
             <div class="card-price mono">${precioAnteriorHtml} <span data-price-num>${precioMostradoInicial}</span> ${descuentoHtml}</div>
-            <button class="add-btn" data-id="${p.id}" data-nombre="${p.nombre}" ${sinStock ? 'disabled' : ''}>${sinStock ? 'Agotado' : 'Añadir'}</button>
+            <button class="add-btn" data-id="${p.id}" data-nombre="${p.nombre}" ${sinStock ? 'disabled' : ''}>${sinStock ? 'Agotado' : 'Lo quiero'}</button>
           </div>
         </div>
       </div>`;
   }).join('');
 }
+
+// Las tarjetas se acaban de pintar (llegaron de Firestore), así
+// que hay que decirle al observador de scroll que las revise.
+initScrollReveal();
 
 /* ---- filtros de categoría (100% en el cliente) ---- */
 filtersEl.addEventListener('click', (e) => {
@@ -148,7 +153,7 @@ document.querySelectorAll('[data-product]').forEach(card => {
       if (addBtn) { addBtn.disabled = true; addBtn.textContent = 'Agotado en este color'; }
     } else {
       noteEl.classList.remove('stock-note-agotado');
-      if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Añadir'; }
+      if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Lo quiero'; }
       if (stockDeEseColor <= 5) {
         noteEl.textContent = `¡Quedan ${stockDeEseColor}!`;
         noteEl.style.display = 'block';
@@ -232,7 +237,7 @@ document.querySelectorAll('.add-btn').forEach(btn => {
     pill.classList.remove('pulse'); void pill.offsetWidth; pill.classList.add('pulse');
 
     const original = btn.textContent;
-    btn.textContent = 'Añadido ✓';
+    btn.textContent = '¡Sumado! ⚡';
     btn.classList.add('added');
     setTimeout(() => { btn.textContent = original; btn.classList.remove('added'); }, 1200);
 
@@ -248,7 +253,7 @@ document.querySelectorAll('.add-btn').forEach(btn => {
       setTimeout(() => { btn.disabled = true; btn.textContent = 'Agotado en este color'; }, 1200);
     }
 
-    showToast(`${producto.nombre} · talla ${sel.talla} añadido al carrito`);
+    showToast(`${producto.nombre} · talla ${sel.talla} ya es tuyo ⚡`);
   });
 });
 

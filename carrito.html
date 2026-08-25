@@ -11,7 +11,7 @@
 <div id="site-header"></div>
 
 <section class="section">
-  <div class="section-head" style="border:none;padding-bottom:0;">
+  <div class="section-head reveal" style="border:none;padding-bottom:0;">
     <div>
       <div class="section-eyebrow">Paso final</div>
       <h2>Tu carrito</h2>
@@ -99,7 +99,7 @@ function pintarCarrito() {
   if (carrito.length === 0) {
     wrap.innerHTML = `
       <div class="empty-state">
-        <p>Tu carrito está vacío. <a href="productos.html" style="color:var(--forest);font-weight:600;">Volver a la colección</a></p>
+        <p>Tu carrito está vacío. Hora de armar el fit. <a href="productos.html" style="color:var(--forest);font-weight:600;">Ver el drop →</a></p>
       </div>`;
     return;
   }
@@ -140,7 +140,7 @@ function pintarCarrito() {
           </div>
           <a href="#" class="btn-limpiar" id="btnLimpiar">${svgRayoBoton()}<span>Vaciar carrito</span></a>
           <div class="pagar-box">
-            <h2>Finalizar compra</h2>
+            <h2>Cierra tu pedido ⚡</h2>
             <form id="form-pago" novalidate>
 
               <div class="checkout-step open" data-step="1">
@@ -234,7 +234,7 @@ function pintarCarrito() {
                     <p class="tarjeta-nota">🔒 Pago simulado — esta demo aún no está conectada a una pasarela real ni a una cuenta bancaria.</p>
                   </div>
 
-                  <button type="submit" class="btn-pagar">Confirmar compra</button>
+                  <button type="submit" class="btn-pagar">Confirmar pedido ⚡</button>
                 </div>
               </div>
 
