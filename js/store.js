@@ -805,6 +805,27 @@ function traducirErrorFirebase(e) {
 const ADMIN_LATIDO_MS = 25000;        // cada cuánto avisa "sigo aquí"
 const ADMIN_SESION_VENCE_MS = 70000;  // sin latidos por más de esto = candado libre
 
+/* Código extra que solo debería conocer el desarrollador (o quien
+   tú le digas). Se pide, además del usuario y contraseña con los
+   que ya se entró al panel, para: crear usuarios nuevos, activar o
+   desactivar usuarios, eliminar usuarios, y cambiar la contraseña.
+   Así, aunque alguien ya esté adentro del panel viendo inventario y
+   pedidos, no puede tocar los usuarios ni las contraseñas sin este
+   código aparte.
+   OJO: como este es un sitio estático (sin servidor propio), este
+   código queda visible para cualquiera que abra el código fuente
+   de la página, igual que ya pasa con la contraseña del panel. No
+   es una barrera de seguridad real contra alguien que sepa
+   programación, es más bien un candado para que un miembro común
+   del equipo no entre a tocar usuarios/contraseñas por accidente
+   o sin permiso. Para cambiarlo, edita CODIGO_DESARROLLADOR aquí
+   abajo. */
+const CODIGO_DESARROLLADOR = "Admin2026**";
+
+function verificarCodigoDesarrollador(codigo) {
+  return String(codigo || "") === CODIGO_DESARROLLADOR;
+}
+
 let _adminHeartbeatTimer = null;
 
 function _generarSesionId() {

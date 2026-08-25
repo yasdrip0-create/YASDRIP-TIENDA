@@ -189,6 +189,10 @@
           <input type="text" id="nuevoUsuarioNombre" class="admin-input" placeholder="Usuario (ej: maria, bodega1)" autocomplete="off">
           <input type="password" id="nuevoUsuarioClave" class="admin-input" placeholder="Contraseña (mín. 4 caracteres)" autocomplete="new-password">
         </div>
+        <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:10px;">
+          <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
+        </div>
+        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo quien lo conoce pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
           <button class="admin-btn admin-btn-primary" id="btnCrearUsuarioPanel">Crear usuario</button>
         </div>
@@ -225,6 +229,7 @@
     <h3>Cambiar contraseña del panel</h3>
     <input type="password" id="claveActual" placeholder="Contraseña actual">
     <input type="password" id="claveNueva" placeholder="Nueva contraseña">
+    <input type="password" id="codigoDesarrolladorClave" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarClave">Guardar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalClave">Cancelar</button>
@@ -354,6 +359,11 @@ async function pintarUsuariosPanel() {
 document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async () => {
   const usuario = document.getElementById('nuevoUsuarioNombre').value;
   const clave = document.getElementById('nuevoUsuarioClave').value;
+  const codigo = document.getElementById('codigoDesarrolladorUsuario').value;
+  if (!verificarCodigoDesarrollador(codigo)) {
+    showToast('Código de desarrollador incorrecto.', true);
+    return;
+  }
   const btn = document.getElementById('btnCrearUsuarioPanel');
   btn.disabled = true;
   const res = await crearUsuarioAdminPanel(usuario, clave);
@@ -361,6 +371,7 @@ document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async 
   if (!res.ok) { showToast(res.msg, true); return; }
   document.getElementById('nuevoUsuarioNombre').value = '';
   document.getElementById('nuevoUsuarioClave').value = '';
+  document.getElementById('codigoDesarrolladorUsuario').value = '';
   showToast('Usuario creado ✓');
   pintarUsuariosPanel();
 });
@@ -371,6 +382,9 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
   if (btnToggle) {
     const usuario = btnToggle.dataset.usuario;
     const activoActual = btnToggle.dataset.activo === 'true';
+    const codigo = prompt('Código de desarrollador para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + usuario + '":');
+    if (codigo === null) return;
+    if (!verificarCodigoDesarrollador(codigo)) { showToast('Código de desarrollador incorrecto.', true); return; }
     btnToggle.disabled = true;
     const res = await cambiarEstadoUsuarioAdminPanel(usuario, !activoActual);
     btnToggle.disabled = false;
@@ -379,6 +393,9 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
     pintarUsuariosPanel();
   } else if (btnEliminar) {
     const usuario = btnEliminar.dataset.usuario;
+    const codigo = prompt('Código de desarrollador para ELIMINAR a "' + usuario + '" (no se puede deshacer):');
+    if (codigo === null) return;
+    if (!verificarCodigoDesarrollador(codigo)) { showToast('Código de desarrollador incorrecto.', true); return; }
     if (!confirm(`¿Eliminar el usuario "${usuario}"? No se puede deshacer.`)) return;
     btnEliminar.disabled = true;
     const res = await eliminarUsuarioAdminPanel(usuario);
@@ -956,12 +973,18 @@ document.getElementById('btnCerrarModalClave').addEventListener('click', () => m
 document.getElementById('btnGuardarClave').addEventListener('click', async () => {
   const actual = document.getElementById('claveActual').value;
   const nueva = document.getElementById('claveNueva').value;
+  const codigo = document.getElementById('codigoDesarrolladorClave').value;
+  if (!verificarCodigoDesarrollador(codigo)) {
+    showToast('Código de desarrollador incorrecto.', true);
+    return;
+  }
   const res = await cambiarClaveAdmin(actual, nueva);
   if (res.ok) {
     showToast('Contraseña actualizada ✓');
     modalClave.classList.remove('open');
     document.getElementById('claveActual').value = '';
     document.getElementById('claveNueva').value = '';
+    document.getElementById('codigoDesarrolladorClave').value = '';
   } else {
     showToast(res.msg, true);
   }
