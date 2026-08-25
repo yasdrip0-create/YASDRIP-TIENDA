@@ -376,6 +376,44 @@ function eliminarProductoAdmin(id) {
     .catch(e => console.error('Error eliminando el producto en la nube:', e));
 }
 
+/* ============================================================
+   CONFIGURACIÓN DEL "PRÓXIMO DROP" (cuenta regresiva de index.html)
+   Igual que el catálogo, vive en Firestore (colección "config",
+   documento "drop") para que la fecha y los productos que elijas
+   en el panel se vean iguales para todos los visitantes, desde
+   cualquier computador o celular — no solo en tu navegador.
+   ============================================================ */
+let _dropConfigCache = { fecha: null, titulo: '', productos: [] };
+
+/** Carga la config del drop desde Firestore a memoria. Cada página
+    que la necesite debe hacer "await cargarConfigDrop()" al iniciar,
+    igual que se hace con cargarCatalogo(). Si todavía no existe el
+    documento (primera vez), deja los valores por defecto de arriba. */
+async function cargarConfigDrop() {
+  try {
+    const doc = await fbDb.collection('config').doc('drop').get();
+    if (doc.exists) {
+      _dropConfigCache = { fecha: null, titulo: '', productos: [], ...doc.data() };
+    }
+  } catch (e) {
+    console.error('Error cargando la configuración del drop:', e);
+  }
+  return _dropConfigCache;
+}
+/** Lectura sincrónica de la config ya cargada en memoria. */
+function getConfigDrop() {
+  return _dropConfigCache;
+}
+/** Guarda (desde el panel admin) la fecha del próximo drop, el título
+    y/o la lista de ids de productos que se muestran cuando el tiempo
+    se acaba. "cambios" trae solo los campos que se van a actualizar. */
+function guardarConfigDropAdmin(cambios) {
+  _dropConfigCache = { ..._dropConfigCache, ...cambios };
+  fbDb.collection('config').doc('drop').set(_dropConfigCache, { merge: true })
+    .catch(e => console.error('Error guardando la configuración del drop en la nube:', e));
+  return _dropConfigCache;
+}
+
 /* ---------- CARRITO ---------- */
 function getCarrito() {
   return _leer(LS_KEYS.carrito);

@@ -59,6 +59,22 @@ los pedidos sin montar un servidor propio. Si más adelante crece
 el negocio, se puede pasar a un login de administrador real con
 Firebase Auth + "custom claims" para cerrar esto del todo.
 
+=========================================================
+ ACTUALIZACIÓN — configuración del "próximo drop"
+=========================================================
+
+La pestaña "⚡ Drop" del panel (fecha del lanzamiento, título y
+qué productos se muestran en la cuenta regresiva de index.html)
+se guarda en Firestore, colección "config", documento "drop".
+Igual que "productos", queda con lectura y escritura abiertas
+(mismo motivo: el panel admin no usa una cuenta real de Firebase).
+Agrega este bloque dentro de "match /databases/{database}/documents { ... }"
+junto con las reglas de "productos" que ya tengas pegadas:
+
+    match /config/{docId} {
+      allow read, write: if true;
+    }
+
 USA LA SEGUNDA VERSIÓN (la que permite "read: if true" en
 pedidos) para que tu panel admin funcione.
 

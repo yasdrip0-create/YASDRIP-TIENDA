@@ -358,6 +358,29 @@ body.menu-open{overflow:hidden;}
 .drop-countdown-cta:hover{background:var(--acento);color:var(--acento-ink);}
 @media (max-width:520px){.drop-unit{min-width:46px;}}
 
+/* ---- cuando el contador llega a cero: en vez del reloj, se ve una
+   fila de los productos que el vendedor eligió en el panel (pestaña
+   "Drop"), cada uno con su foto de frente y, si tiene, la de
+   espaldas al pasar el mouse (o tocar en celular) ---- */
+.drop-live-grid{
+  display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:30px;
+}
+.drop-live-grid[hidden]{display:none;}
+.drop-live-item{
+  display:flex;flex-direction:column;align-items:center;gap:10px;width:130px;
+  color:var(--white);text-align:center;
+}
+.drop-live-visual{
+  width:110px;height:110px;border-radius:18px;overflow:hidden;position:relative;
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+}
+.drop-live-visual svg{width:60%;height:60%;position:absolute;top:20%;left:20%;}
+.drop-live-img{width:100%;height:100%;object-fit:cover;transition:opacity .25s ease,transform .35s ease;}
+.drop-live-img-atras{position:absolute;inset:0;opacity:0;}
+.drop-live-item:hover .drop-live-img-frente{transform:scale(1.06);}
+.drop-live-item:hover .drop-live-img-atras{opacity:1;transform:scale(1.06);}
+.drop-live-item span{font-size:12.5px;font-weight:600;}
+
 /* ---------- BANNERS ---------- */
 .banners{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:70px clamp(20px,5vw,56px) 0;}
 @media (max-width:760px){.banners{grid-template-columns:1fr;}}
@@ -1204,7 +1227,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   padding:18px 32px;background:var(--white);border-bottom:1px solid var(--line);
 }
 .admin-topbar-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-.admin-main{max-width:1180px;margin:0 auto;padding:36px 24px 80px;}
+.admin-main{max-width:1440px;margin:0 auto;padding:36px 24px 80px;}
 .admin-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
 .admin-title-row h2{font-size:clamp(24px,3vw,32px);font-weight:600;color:var(--black);}
 
@@ -1254,7 +1277,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-foto-hint{font-size:11.5px;color:var(--gray);}
 
 .admin-foto-cell{
-  position:relative;display:flex;align-items:center;justify-content:center;
+  position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;
   width:44px;height:44px;border-radius:10px;background:var(--stone);cursor:pointer;overflow:hidden;
 }
 .admin-foto-cell svg{width:70%;height:70%;}
@@ -1284,7 +1307,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-color-foto:hover .admin-color-foto-cam{opacity:1;}
 
 .admin-table-wrap{overflow-x:auto;}
-.admin-table{width:100%;border-collapse:collapse;min-width:760px;}
+.admin-table{width:100%;border-collapse:collapse;min-width:0;table-layout:auto;}
 .admin-table th{
   text-align:left;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:0.08em;
   text-transform:uppercase;color:var(--gray);padding:10px 8px;border-bottom:2px solid var(--black);
@@ -1296,7 +1319,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-precio-final{font-weight:800;color:var(--black);white-space:nowrap;font-size:12.5px;}
 
 .admin-input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'Space Mono',monospace;font-size:13px;color:var(--black);background:var(--offwhite);}
-.admin-input-sm{width:88px;}
+.admin-input-sm{width:78px;}
 .admin-input-xs{width:66px;padding:5px 6px;font-size:11.5px;}
 
 .admin-tallas-precios{max-width:230px;}
@@ -1339,6 +1362,22 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .estado-pill.ok{background:var(--forest-tint);color:var(--forest-dark);}
 .estado-pill.out{background:var(--black);color:var(--white);}
 .admin-toggle{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--gray);cursor:pointer;}
+
+/* ---------- pestaña Drop del panel (fecha del lanzamiento + productos) ---------- */
+.admin-drop-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:640px;}
+.admin-drop-label{display:flex;flex-direction:column;gap:6px;font-family:'Space Mono',monospace;font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:0.04em;}
+.admin-drop-productos{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.admin-drop-prod-item{
+  display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;
+  padding:8px 10px;cursor:pointer;transition:border-color .15s ease,background .15s ease;
+}
+.admin-drop-prod-item:hover{border-color:var(--black);}
+.admin-drop-prod-item:has(input:checked){border-color:var(--forest);background:rgba(27,67,50,0.06);}
+.admin-drop-prod-item input{flex-shrink:0;}
+.admin-drop-prod-thumb-wrap{width:34px;height:34px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--offwhite);display:flex;align-items:center;justify-content:center;}
+.admin-drop-prod-thumb-wrap svg{width:70%;height:70%;}
+.admin-drop-prod-thumb{width:100%;height:100%;object-fit:cover;}
+.admin-drop-prod-item span:last-child{font-size:12.5px;font-weight:600;}
 
 .admin-modal-overlay{
   position:fixed;inset:0;background:rgba(21,21,18,0.55);display:none;

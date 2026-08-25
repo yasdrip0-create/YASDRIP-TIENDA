@@ -35,7 +35,7 @@
 
 <section class="drop-countdown reveal-scale" id="dropCountdown">
   <div class="drop-countdown-inner">
-    <div class="drop-countdown-label">Próximo drop en</div>
+    <div class="drop-countdown-label" id="dropLabel">Próximo drop en</div>
     <div class="drop-countdown-timer" id="dropTimer">
       <div class="drop-unit"><span id="dtDias">--</span><small>días</small></div>
       <div class="drop-sep">:</div>
@@ -45,7 +45,8 @@
       <div class="drop-sep">:</div>
       <div class="drop-unit"><span id="dtSeg">--</span><small>seg</small></div>
     </div>
-    <a href="#club" class="btn drop-countdown-cta">Avísenme primero ⚡</a>
+    <div class="drop-live-grid" id="dropLiveGrid" hidden></div>
+    <a href="#club" class="btn drop-countdown-cta" id="dropCta">Avísenme primero ⚡</a>
   </div>
 </section>
 
@@ -101,20 +102,48 @@ renderFooter();
 
 /* ============================================================
    CUENTA REGRESIVA DEL PRÓXIMO DROP
-   Para cambiar la fecha del próximo lanzamiento, edita SOLO la
-   línea de abajo (año-mes-diaTuHora:min:seg, con -05:00 que es
-   la hora de Colombia). No hay que tocar nada más del código.
+   La fecha, el título y qué productos se muestran cuando el
+   tiempo se acaba ahora se configuran desde el panel (pestaña
+   "Drop" de admin.html) — ya no hay que tocar código. Si el
+   vendedor todavía no ha configurado nada, se usa esta fecha de
+   respaldo para que la sección no se vea rota.
    ============================================================ */
-const FECHA_PROXIMO_DROP = new Date('2026-09-15T00:00:00-05:00');
+const FECHA_DROP_RESPALDO = new Date('2026-09-15T00:00:00-05:00');
 
 function actualizarCountdown() {
   const contenedor = document.getElementById('dropCountdown');
   if (!contenedor) return;
-  const diff = FECHA_PROXIMO_DROP - new Date();
+  const config = getConfigDrop();
+  const fechaObjetivo = config.fecha ? new Date(config.fecha) : FECHA_DROP_RESPALDO;
+  const diff = fechaObjetivo - new Date();
 
   if (diff <= 0) {
-    contenedor.querySelector('.drop-countdown-label').textContent = '¡Ya está aquí! ⚡';
-    contenedor.querySelector('.drop-countdown-timer').style.display = 'none';
+    document.getElementById('dropLabel').textContent = config.titulo || '¡Ya está aquí! ⚡';
+    document.getElementById('dropTimer').style.display = 'none';
+    document.getElementById('dropCta').textContent = 'Ver la colección →';
+    document.getElementById('dropCta').href = 'productos.html';
+
+    const grid = document.getElementById('dropLiveGrid');
+    const idsElegidos = config.productos || [];
+    const catalogo = getCatalogo();
+    const destacados = idsElegidos
+      .map(id => catalogo.find(p => p.id == id))
+      .filter(Boolean);
+    if (destacados.length) {
+      grid.hidden = false;
+      grid.innerHTML = destacados.map(p => {
+        const fotoFrente = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
+        const fotoAtras = p.fotosTrasera && p.fotosTrasera[p.colores[0]];
+        const visual = fotoFrente
+          ? `<img src="${fotoFrente}" class="drop-live-img drop-live-img-frente" alt="${p.nombre}">${fotoAtras ? `<img src="${fotoAtras}" class="drop-live-img drop-live-img-atras" alt="${p.nombre} de espaldas">` : ''}`
+          : iconoProducto(p.icono, p.colores[0]);
+        return `
+          <a class="drop-live-item" href="productos.html#${p.id}">
+            <div class="drop-live-visual">${visual}</div>
+            <span>${p.nombre}</span>
+          </a>`;
+      }).join('');
+    }
     return;
   }
   const dias  = Math.floor(diff / 86400000);
@@ -130,7 +159,8 @@ actualizarCountdown();
 setInterval(actualizarCountdown, 1000);
 
 (async function () {
-await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
+await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar nada
+actualizarCountdown(); // repinta ya con la fecha/productos reales, no con el respaldo
 
 /* producto destacado del hero: el primero con badge 'pocas', si existe */
 const activos = productosActivos();

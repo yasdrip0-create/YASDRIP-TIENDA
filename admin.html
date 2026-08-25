@@ -52,7 +52,7 @@
       <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
     </a>
     <div class="admin-topbar-right">
-      <a href="productos.html" target="_blank" class="admin-btn admin-btn-ghost">Ver tienda ↗</a>
+      <a href="productos.html" class="admin-btn admin-btn-ghost">Ver tienda</a>
       <button class="admin-btn admin-btn-ghost" id="btnClave">Cambiar contraseña</button>
       <button class="admin-btn admin-btn-dark" id="btnSalirAdmin">Cerrar sesión</button>
     </div>
@@ -70,6 +70,7 @@
     <div class="admin-tabs">
       <button type="button" class="admin-tab-btn active" id="tabBtnInventario">📦 Inventario</button>
       <button type="button" class="admin-tab-btn" id="tabBtnPedidos">🧾 Pedidos <span id="pedidosBadge"></span></button>
+      <button type="button" class="admin-tab-btn" id="tabBtnDrop">⚡ Drop</button>
     </div>
 
     <div id="tabInventario">
@@ -116,10 +117,8 @@
           <table class="admin-table" id="tablaProductos">
             <thead>
               <tr>
-                <th></th>
                 <th>Producto</th>
-                <th>Fotos por color</th>
-                <th>Foto trasera</th>
+                <th>Fotos</th>
                 <th>Categoría</th>
                 <th>Precio base</th>
                 <th>Precio por talla</th>
@@ -157,6 +156,25 @@
               <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabDrop" style="display:none;">
+      <div class="admin-card">
+        <p class="admin-foto-hint" style="margin-bottom:14px;">💡 Aquí configuras la cuenta regresiva de "Próximo drop" que se ve en la página de inicio. Pon la fecha y hora en que se lanza, y elige qué productos se muestran ahí mismo (con foto de frente y de espaldas) apenas el tiempo llegue a cero — sin tocar código, y se ve igual para todos los que entren a la tienda.</p>
+        <div class="admin-drop-form">
+          <label class="admin-drop-label">Fecha y hora del lanzamiento
+            <input type="datetime-local" id="dropFecha" class="admin-input" style="width:100%;">
+          </label>
+          <label class="admin-drop-label">Título cuando ya esté disponible (opcional)
+            <input type="text" id="dropTitulo" class="admin-input" placeholder="¡Ya está aquí! ⚡" style="width:100%;">
+          </label>
+        </div>
+        <p class="admin-foto-hint" style="margin:18px 0 10px;"><b>Productos a mostrar cuando se acabe el tiempo</b> — marca los que quieres destacar:</p>
+        <div class="admin-drop-productos" id="dropProductosLista"></div>
+        <div class="admin-add-actions" style="margin-top:18px;">
+          <button class="admin-btn admin-btn-primary" id="btnGuardarDrop">Guardar configuración del drop</button>
         </div>
       </div>
     </div>
@@ -201,34 +219,91 @@ function showToast(texto, esError = false) {
 async function entrarAlPanel() {
   loginView.style.display = 'none';
   dashView.style.display = 'block';
-  await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar la tabla
+  await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
 }
 
 if (sesionAdminActiva()) entrarAlPanel();
 
-/* ---------- Pestañas: Inventario / Pedidos ---------- */
+/* ---------- Pestañas: Inventario / Pedidos / Drop ---------- */
 const tabBtnInventario = document.getElementById('tabBtnInventario');
 const tabBtnPedidos = document.getElementById('tabBtnPedidos');
+const tabBtnDrop = document.getElementById('tabBtnDrop');
 const tabInventario = document.getElementById('tabInventario');
 const tabPedidos = document.getElementById('tabPedidos');
+const tabDrop = document.getElementById('tabDrop');
 const tituloTab = document.getElementById('adminTituloTab');
 
-tabBtnInventario.addEventListener('click', () => {
-  tabBtnInventario.classList.add('active');
+function ocultarTodasLasPestanas() {
+  tabBtnInventario.classList.remove('active');
   tabBtnPedidos.classList.remove('active');
-  tabInventario.style.display = 'block';
+  tabBtnDrop.classList.remove('active');
+  tabInventario.style.display = 'none';
   tabPedidos.style.display = 'none';
+  tabDrop.style.display = 'none';
+}
+
+tabBtnInventario.addEventListener('click', () => {
+  ocultarTodasLasPestanas();
+  tabBtnInventario.classList.add('active');
+  tabInventario.style.display = 'block';
   tituloTab.textContent = 'Inventario y precios';
 });
 
 tabBtnPedidos.addEventListener('click', () => {
+  ocultarTodasLasPestanas();
   tabBtnPedidos.classList.add('active');
-  tabBtnInventario.classList.remove('active');
-  tabInventario.style.display = 'none';
   tabPedidos.style.display = 'block';
   tituloTab.textContent = 'Pedidos de clientes';
   pintarPedidos();
+});
+
+tabBtnDrop.addEventListener('click', () => {
+  ocultarTodasLasPestanas();
+  tabBtnDrop.classList.add('active');
+  tabDrop.style.display = 'block';
+  tituloTab.textContent = 'Próximo drop';
+  pintarTabDrop();
+});
+
+/* ---------- pestaña Drop: fecha del lanzamiento + productos a mostrar ---------- */
+function pintarTabDrop() {
+  const config = getConfigDrop();
+  const inputFecha = document.getElementById('dropFecha');
+  const inputTitulo = document.getElementById('dropTitulo');
+  // <input type="datetime-local"> necesita "YYYY-MM-DDTHH:MM" en hora LOCAL del navegador
+  if (config.fecha) {
+    const d = new Date(config.fecha);
+    const pad = n => String(n).padStart(2, '0');
+    inputFecha.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } else {
+    inputFecha.value = '';
+  }
+  inputTitulo.value = config.titulo || '';
+
+  const productos = obtenerProductosAdmin();
+  const idsElegidos = new Set((config.productos || []).map(String));
+  const lista = document.getElementById('dropProductosLista');
+  lista.innerHTML = productos.map(p => {
+    const foto = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
+    const miniatura = foto ? `<img src="${foto}" class="admin-drop-prod-thumb">` : iconoProducto(p.icono, p.colores[0]);
+    return `
+      <label class="admin-drop-prod-item">
+        <input type="checkbox" class="chk-drop-producto" value="${p.id}" ${idsElegidos.has(String(p.id)) ? 'checked' : ''}>
+        <span class="admin-drop-prod-thumb-wrap">${miniatura}</span>
+        <span>${p.nombre}</span>
+      </label>`;
+  }).join('') || `<p class="admin-foto-hint">Todavía no hay productos en el inventario.</p>`;
+}
+
+document.getElementById('btnGuardarDrop').addEventListener('click', () => {
+  const inputFecha = document.getElementById('dropFecha');
+  const inputTitulo = document.getElementById('dropTitulo');
+  const idsElegidos = Array.from(document.querySelectorAll('.chk-drop-producto:checked')).map(chk => Number(chk.value) || chk.value);
+  // el <input datetime-local> ya está en hora local -> new Date(...) lo interpreta como local y toISOString() lo pasa a UTC para guardarlo sin ambigüedad
+  const fechaISO = inputFecha.value ? new Date(inputFecha.value).toISOString() : null;
+  guardarConfigDropAdmin({ fecha: fechaISO, titulo: inputTitulo.value.trim(), productos: idsElegidos });
+  showToast('Configuración del drop guardada ✓');
 });
 
 /* ---------- tabla de pedidos (vienen de Firestore, en la nube) ---------- */
@@ -316,7 +391,7 @@ function pintarTabla() {
   const productos = obtenerProductosAdmin();
   const tbody = document.getElementById('tablaProductosBody');
   if (!productos.length) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
     return;
   }
   tbody.innerHTML = productos.map(p => {
@@ -388,26 +463,26 @@ function pintarTabla() {
     }).join('');
     return `
       <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
-        <td data-label="Foto">
-          <label class="admin-foto-cell" title="Foto general (si no hay foto por color)">
-            ${miniatura}
-            <span class="admin-foto-cell-cam">📷</span>
-            <input type="file" accept="image/*" class="input-foto-fila" hidden>
-          </label>
+        <td data-label="Producto">
+          <div class="admin-prod-nombre">
+            <label class="admin-foto-cell admin-foto-cell-sm" title="Foto general (si no hay foto por color)">
+              ${miniatura}
+              <span class="admin-foto-cell-cam">📷</span>
+              <input type="file" accept="image/*" class="input-foto-fila" hidden>
+            </label>
+            ${p.nombre}
+          </div>
         </td>
-        <td data-label="Fotos por color">
+        <td data-label="Fotos">
           <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-color">
             ${fotosColorFaltantes > 0 ? `⚠️ ${fotosColorFaltantes} sin foto` : `Colores (${numColores})`} <span class="toggle-arrow">▾</span>
           </button>
           <div class="admin-colores-fila" hidden>${fotosColorHtml}</div>
-        </td>
-        <td data-label="Foto trasera">
           <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-trasera">
             ${fotosTraseraFaltantes > 0 && fotosTraseraFaltantes < numColores ? `⚠️ ${fotosTraseraFaltantes} sin foto` : 'Foto trasera'} <span class="toggle-arrow">▾</span>
           </button>
           <div class="admin-colores-fila" hidden>${fotosTraseraHtml}</div>
         </td>
-        <td data-label="Producto"><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td data-label="Categoría">${p.categoria}</td>
         <td data-label="Precio base"><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
         <td data-label="Precio por talla">
