@@ -1194,6 +1194,14 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   background:var(--forest-tint);color:var(--forest);font-family:'Space Mono',monospace;
   font-size:12.5px;padding:11px 14px;border-radius:10px;margin-bottom:16px;
 }
+.campo-clave{position:relative;display:block;}
+.campo-clave input{padding-right:42px !important;}
+.pass-toggle{
+  position:absolute;top:50%;right:4px;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:16px;line-height:1;
+  padding:9px;color:var(--gray);border-radius:8px;
+}
+.pass-toggle:hover{color:var(--black);background:var(--line);}
 .auth-field{margin-bottom:12px;}
 .auth-field input,.auth-field select{
   width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:12px;

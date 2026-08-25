@@ -771,38 +771,301 @@ function traducirErrorFirebase(e) {
   return mapa[codigo] || 'Ocurrió un error, intenta de nuevo.';
 }
 
-/* ---------- SESIÓN DE ADMIN (panel del vendedor) ----------
-   Usuario/contraseña por defecto: admin / yasdrip2026
-   Se puede cambiar la contraseña desde adentro del panel. */
-function inicializarAdmin() {
-  if (localStorage.getItem(LS_KEYS.admin)) return;
-  _guardar(LS_KEYS.admin, { usuario: "admin", clave: "yasdrip2026" });
+/* ============================================================
+   SESIÓN DE ADMIN (panel del vendedor) — con USUARIOS EN LA NUBE
+   ------------------------------------------------------------
+   Ya NO es un solo usuario/contraseña guardado en el navegador.
+   Ahora cada persona del equipo tiene su propio usuario, guardado
+   en Firestore (colección "admin_usuarios"), así que:
+
+   - Nadie se registra solo: tú (o quien ya tenga acceso al panel)
+     creas cada usuario desde la pestaña "Usuarios" del panel.
+   - Funciona igual desde cualquier computador o celular, porque
+     vive en la nube, no en un navegador en particular.
+
+   CANDADO DE "UNA SESIÓN A LA VEZ" POR USUARIO
+   ------------------------------------------------------------
+   Cuando alguien entra con un usuario, se guarda un "sesionId" al
+   azar en Firestore (colección "admin_sesiones"). Mientras el
+   panel sigue abierto, cada ADMIN_LATIDO_MS se manda un "aquí
+   sigo" (late) a ese documento. Si otra persona intenta entrar con
+   ESE MISMO usuario mientras el candado sigue "vivo" (hubo un
+   latido hace menos de ADMIN_SESION_VENCE_MS), se le avisa que la
+   cuenta está en uso y no la deja entrar — para que dos personas no
+   se pisen los cambios usando la misma cuenta a la vez.
+
+   Si a alguien se le cierra el navegador de golpe (se le apaga el
+   computador, por ejemplo) y nunca alcanza a "Cerrar sesión", el
+   candado se libera SOLO después de ADMIN_SESION_VENCE_MS sin
+   latidos, para que esa cuenta no quede trabada para siempre.
+
+   Esto es aparte y no afecta para nada el inicio de sesión de los
+   CLIENTES en login.html (esos usan Firebase Auth, otra cosa). */
+
+const ADMIN_LATIDO_MS = 25000;        // cada cuánto avisa "sigo aquí"
+const ADMIN_SESION_VENCE_MS = 70000;  // sin latidos por más de esto = candado libre
+
+let _adminHeartbeatTimer = null;
+
+function _generarSesionId() {
+  return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
-function loginAdmin(usuario, clave) {
-  inicializarAdmin();
-  const admin = JSON.parse(localStorage.getItem(LS_KEYS.admin));
-  if (admin.usuario === String(usuario).trim() && admin.clave === clave) {
-    _guardar(LS_KEYS.sesionAdmin, { ok: true, fecha: Date.now() });
-    return { ok: true };
+
+/** Crea el usuario "admin" (contraseña por defecto yasdrip2026) la
+    primera vez que se usa el panel, SOLO si todavía no hay ningún
+    usuario guardado en Firestore. Así el panel funciona apenas lo
+    subes, sin que tengas que crear nada a mano antes. Cámbiale la
+    contraseña (o crea tu propio usuario y borra este) desde la
+    pestaña "Usuarios" apenas entres la primera vez. */
+async function inicializarAdminPorDefecto() {
+  try {
+    const snap = await fbDb.collection('admin_usuarios').limit(1).get();
+    if (!snap.empty) return;
+    await fbDb.collection('admin_usuarios').doc('admin').set({
+      clave: 'yasdrip2026',
+      activo: true,
+      creado: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error('No se pudo crear el usuario admin por defecto:', e);
   }
-  return { ok: false, msg: "Usuario o contraseña incorrectos." };
 }
+
+/** Intenta iniciar sesión en el panel. Revisa usuario/contraseña en
+    Firestore y, si están bien, revisa que esa cuenta no esté siendo
+    usada ya en otro navegador antes de dejar pasar. */
+async function loginAdmin(usuarioInput, clave) {
+  const usuario = String(usuarioInput || '').trim().toLowerCase();
+  if (!usuario || !clave) return { ok: false, msg: 'Escribe usuario y contraseña.' };
+
+  await inicializarAdminPorDefecto();
+
+  let doc;
+  try {
+    doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+  if (!doc.exists) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
+  const datos = doc.data();
+  if (datos.clave !== clave) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
+  if (datos.activo === false) return { ok: false, msg: 'Este usuario fue desactivado. Habla con quien administra la tienda.' };
+
+  // ¿ya hay una sesión viva con este usuario en otro lado?
+  try {
+    const sesionDoc = await fbDb.collection('admin_sesiones').doc(usuario).get();
+    if (sesionDoc.exists) {
+      const s = sesionDoc.data();
+      const vive = s.ultimoLatido && (Date.now() - s.ultimoLatido) < ADMIN_SESION_VENCE_MS;
+      if (vive) {
+        return { ok: false, msg: 'Esta cuenta ya está siendo usada ahora mismo en otro dispositivo o pestaña. Pide que te creen tu propio usuario, o espera a que la otra persona cierre sesión.' };
+      }
+    }
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+
+  const sesionId = _generarSesionId();
+  try {
+    await fbDb.collection('admin_sesiones').doc(usuario).set({
+      sesionId,
+      ultimoLatido: Date.now(),
+      dispositivo: (navigator.userAgent || '').slice(0, 120),
+      desde: new Date().toISOString(),
+    });
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+
+  _guardar(LS_KEYS.sesionAdmin, { usuario, sesionId, fecha: Date.now() });
+  _iniciarLatidoAdmin(usuario, sesionId);
+  return { ok: true };
+}
+
+/** Chequeo rápido y local (para que la pantalla no parpadee
+    mientras se confirma con Firestore). La confirmación real de que
+    la sesión sigue siendo válida pasa en verificarSesionAdmin(). */
 function sesionAdminActiva() {
   try {
-    return JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.ok === true;
+    return !!JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.sesionId;
   } catch (e) {
     return false;
   }
 }
-function cerrarSesionAdmin() {
-  localStorage.removeItem(LS_KEYS.sesionAdmin);
+
+function usuarioAdminActual() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.usuario || null;
+  } catch (e) {
+    return null;
+  }
 }
-function cambiarClaveAdmin(actual, nueva) {
-  inicializarAdmin();
-  const admin = JSON.parse(localStorage.getItem(LS_KEYS.admin));
-  if (admin.clave !== actual) return { ok: false, msg: "La contraseña actual no es correcta." };
-  if (!nueva || nueva.length < 4) return { ok: false, msg: "La nueva contraseña debe tener al menos 4 caracteres." };
-  admin.clave = nueva;
-  _guardar(LS_KEYS.admin, admin);
-  return { ok: true };
+
+/** Confirma contra Firestore que el "sesionId" guardado en este
+    navegador sigue siendo el dueño del candado (que nadie más lo
+    tomó) y reactiva el latido. Se usa al abrir admin.html. Si la
+    sesión ya no es válida, la borra localmente y devuelve false. */
+async function verificarSesionAdmin() {
+  let local;
+  try { local = JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin) || 'null'); } catch (e) { local = null; }
+  if (!local || !local.sesionId) return false;
+  try {
+    const sesionDoc = await fbDb.collection('admin_sesiones').doc(local.usuario).get();
+    if (!sesionDoc.exists || sesionDoc.data().sesionId !== local.sesionId) {
+      localStorage.removeItem(LS_KEYS.sesionAdmin);
+      return false;
+    }
+  } catch (e) {
+    // sin internet en este momento: deja pasar con lo que ya había
+    // guardado localmente, para no botar a alguien solo por un
+    // corte de wifi pasajero.
+  }
+  _iniciarLatidoAdmin(local.usuario, local.sesionId);
+  return true;
+}
+
+function _iniciarLatidoAdmin(usuario, sesionId) {
+  _detenerLatidoAdmin();
+  _adminHeartbeatTimer = setInterval(async () => {
+    try {
+      await fbDb.collection('admin_sesiones').doc(usuario).set(
+        { sesionId, ultimoLatido: Date.now() }, { merge: true }
+      );
+    } catch (e) { /* sin internet: se intenta de nuevo en el próximo latido */ }
+  }, ADMIN_LATIDO_MS);
+}
+function _detenerLatidoAdmin() {
+  if (_adminHeartbeatTimer) clearInterval(_adminHeartbeatTimer);
+  _adminHeartbeatTimer = null;
+}
+
+/** Cierra sesión y libera el candado, para que ese usuario pueda
+    volver a entrar (desde este navegador o desde otro). */
+async function cerrarSesionAdmin() {
+  let local;
+  try { local = JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin) || 'null'); } catch (e) { local = null; }
+  _detenerLatidoAdmin();
+  localStorage.removeItem(LS_KEYS.sesionAdmin);
+  if (local && local.usuario) {
+    try {
+      const sesionDoc = await fbDb.collection('admin_sesiones').doc(local.usuario).get();
+      if (sesionDoc.exists && sesionDoc.data().sesionId === local.sesionId) {
+        await fbDb.collection('admin_sesiones').doc(local.usuario).delete();
+      }
+    } catch (e) { /* no pasa nada si falla: el candado igual se libera solo al vencerse */ }
+  }
+}
+
+/** Cambia la contraseña del usuario que tiene la sesión abierta ahora mismo. */
+async function cambiarClaveAdmin(actual, nueva) {
+  const usuario = usuarioAdminActual();
+  if (!usuario) return { ok: false, msg: 'Tu sesión ya no es válida, vuelve a entrar.' };
+  if (!nueva || nueva.length < 4) return { ok: false, msg: 'La nueva contraseña debe tener al menos 4 caracteres.' };
+  try {
+    const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
+    if (!doc.exists || doc.data().clave !== actual) return { ok: false, msg: 'La contraseña actual no es correcta.' };
+    await fbDb.collection('admin_usuarios').doc(usuario).update({ clave: nueva });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
+/* ---------- GESTIÓN DE USUARIOS DEL PANEL (pestaña "Usuarios") ----------
+   Cada usuario nuevo lo crea alguien que YA tiene acceso al panel
+   (por eso no hace falta un "superadmin" aparte: para llegar a
+   crear usuarios primero hay que haber entrado con uno válido).
+   Se puede desactivar a alguien (sin borrar nada, por si vuelve) o
+   eliminarlo del todo. */
+async function obtenerUsuariosAdminPanel() {
+  try {
+    const [usuariosSnap, sesionesSnap] = await Promise.all([
+      fbDb.collection('admin_usuarios').orderBy('creado').get(),
+      fbDb.collection('admin_sesiones').get(),
+    ]);
+    const sesiones = {};
+    sesionesSnap.docs.forEach(d => { sesiones[d.id] = d.data(); });
+    return usuariosSnap.docs.map(d => {
+      const s = sesiones[d.id];
+      const conectado = !!(s && s.ultimoLatido && (Date.now() - s.ultimoLatido) < ADMIN_SESION_VENCE_MS);
+      return { usuario: d.id, ...d.data(), conectado };
+    });
+  } catch (e) {
+    console.error('Error leyendo usuarios del panel:', e);
+    return [];
+  }
+}
+
+async function crearUsuarioAdminPanel(usuarioInput, clave) {
+  const usuario = String(usuarioInput || '').trim().toLowerCase().replace(/\s+/g, '');
+  if (!/^[a-z0-9._-]{3,24}$/.test(usuario)) {
+    return { ok: false, msg: 'El usuario debe tener entre 3 y 24 letras/números (sin espacios ni tildes).' };
+  }
+  if (!clave || clave.length < 4) return { ok: false, msg: 'La contraseña debe tener al menos 4 caracteres.' };
+  try {
+    const existe = await fbDb.collection('admin_usuarios').doc(usuario).get();
+    if (existe.exists) return { ok: false, msg: 'Ese usuario ya existe.' };
+    await fbDb.collection('admin_usuarios').doc(usuario).set({
+      clave, activo: true, creado: new Date().toISOString(),
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
+async function cambiarEstadoUsuarioAdminPanel(usuario, activo) {
+  try {
+    await fbDb.collection('admin_usuarios').doc(usuario).update({ activo });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
+async function eliminarUsuarioAdminPanel(usuario) {
+  try {
+    await fbDb.collection('admin_usuarios').doc(usuario).delete();
+    await fbDb.collection('admin_sesiones').doc(usuario).delete().catch(() => {});
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
+/* ============================================================
+   MOSTRAR/OCULTAR CONTRASEÑA (el "ojito")
+   ------------------------------------------------------------
+   Se aplica solo con CSS/JS a CUALQUIER <input type="password">
+   de cualquier página (login, registro, panel admin), así que no
+   hay que tocar cada formulario a mano.
+   ============================================================ */
+function _activarOjitos() {
+  document.querySelectorAll('input[type="password"]').forEach((input) => {
+    if (input.dataset.ojitoListo) return;
+    input.dataset.ojitoListo = '1';
+    const wrap = document.createElement('span');
+    wrap.className = 'campo-clave';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pass-toggle';
+    btn.tabIndex = -1;
+    btn.setAttribute('aria-label', 'Mostrar contraseña');
+    btn.textContent = '👁️';
+    wrap.appendChild(btn);
+    btn.addEventListener('click', () => {
+      const mostrar = input.type === 'password';
+      input.type = mostrar ? 'text' : 'password';
+      btn.textContent = mostrar ? '🙈' : '👁️';
+      btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      input.focus();
+    });
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _activarOjitos);
+} else {
+  _activarOjitos();
 }

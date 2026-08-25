@@ -52,6 +52,7 @@
       <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
     </a>
     <div class="admin-topbar-right">
+      <span class="admin-foto-hint" id="adminUsuarioActual" style="margin-right:2px;"></span>
       <a href="productos.html" class="admin-btn admin-btn-ghost">Ver tienda</a>
       <button class="admin-btn admin-btn-ghost" id="btnClave">Cambiar contraseña</button>
       <button class="admin-btn admin-btn-dark" id="btnSalirAdmin">Cerrar sesión</button>
@@ -71,6 +72,7 @@
       <button type="button" class="admin-tab-btn active" id="tabBtnInventario">📦 Inventario</button>
       <button type="button" class="admin-tab-btn" id="tabBtnPedidos">🧾 Pedidos <span id="pedidosBadge"></span></button>
       <button type="button" class="admin-tab-btn" id="tabBtnDrop">⚡ Drop</button>
+      <button type="button" class="admin-tab-btn" id="tabBtnUsuarios">👥 Usuarios</button>
     </div>
 
     <div id="tabInventario">
@@ -178,6 +180,40 @@
         </div>
       </div>
     </div>
+
+    <div id="tabUsuarios" style="display:none;">
+      <div class="admin-card admin-add-card">
+        <h3>Crear usuario nuevo para el panel</h3>
+        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Crea un usuario para cada persona que necesite entrar al panel. Cada quien entra con su propio usuario y contraseña, y solo se puede estar conectado con ese usuario <b>en un dispositivo a la vez</b>: si alguien ya está adentro con ese usuario, a otra persona que intente entrar con el mismo le va a salir que la cuenta está en uso.</p>
+        <div class="admin-add-grid" style="grid-template-columns:1fr 1fr;">
+          <input type="text" id="nuevoUsuarioNombre" class="admin-input" placeholder="Usuario (ej: maria, bodega1)" autocomplete="off">
+          <input type="password" id="nuevoUsuarioClave" class="admin-input" placeholder="Contraseña (mín. 4 caracteres)" autocomplete="new-password">
+        </div>
+        <div class="admin-add-actions">
+          <button class="admin-btn admin-btn-primary" id="btnCrearUsuarioPanel">Crear usuario</button>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <p class="admin-foto-hint" style="margin-bottom:8px;">🟢 = está conectado ahora mismo en algún dispositivo. Si desactivas a alguien, no puede volver a entrar (pero no se pierde nada de lo que ya hizo); si lo eliminas, deja de existir del todo.</p>
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="tablaUsuariosPanel">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Conectado</th>
+                <th>Creado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tablaUsuariosPanelBody">
+              <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -219,28 +255,43 @@ function showToast(texto, esError = false) {
 async function entrarAlPanel() {
   loginView.style.display = 'none';
   dashView.style.display = 'block';
+  const elUsuario = document.getElementById('adminUsuarioActual');
+  if (elUsuario) elUsuario.textContent = 'Conectado como: ' + (usuarioAdminActual() || '');
   await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
 }
 
-if (sesionAdminActiva()) entrarAlPanel();
+/* Al abrir el panel, primero se confirma con Firestore que la
+   sesión guardada en este navegador todavía es válida (que nadie
+   más "tomó" el usuario mientras tanto) antes de mostrar el
+   dashboard. Mientras se confirma, se ve la pantalla de login. */
+(async () => {
+  if (sesionAdminActiva()) {
+    const valida = await verificarSesionAdmin();
+    if (valida) entrarAlPanel();
+  }
+})();
 
-/* ---------- Pestañas: Inventario / Pedidos / Drop ---------- */
+/* ---------- Pestañas: Inventario / Pedidos / Drop / Usuarios ---------- */
 const tabBtnInventario = document.getElementById('tabBtnInventario');
 const tabBtnPedidos = document.getElementById('tabBtnPedidos');
 const tabBtnDrop = document.getElementById('tabBtnDrop');
+const tabBtnUsuarios = document.getElementById('tabBtnUsuarios');
 const tabInventario = document.getElementById('tabInventario');
 const tabPedidos = document.getElementById('tabPedidos');
 const tabDrop = document.getElementById('tabDrop');
+const tabUsuarios = document.getElementById('tabUsuarios');
 const tituloTab = document.getElementById('adminTituloTab');
 
 function ocultarTodasLasPestanas() {
   tabBtnInventario.classList.remove('active');
   tabBtnPedidos.classList.remove('active');
   tabBtnDrop.classList.remove('active');
+  tabBtnUsuarios.classList.remove('active');
   tabInventario.style.display = 'none';
   tabPedidos.style.display = 'none';
   tabDrop.style.display = 'none';
+  tabUsuarios.style.display = 'none';
 }
 
 tabBtnInventario.addEventListener('click', () => {
@@ -264,6 +315,78 @@ tabBtnDrop.addEventListener('click', () => {
   tabDrop.style.display = 'block';
   tituloTab.textContent = 'Próximo drop';
   pintarTabDrop();
+});
+
+tabBtnUsuarios.addEventListener('click', () => {
+  ocultarTodasLasPestanas();
+  tabBtnUsuarios.classList.add('active');
+  tabUsuarios.style.display = 'block';
+  tituloTab.textContent = 'Usuarios del panel';
+  pintarUsuariosPanel();
+});
+
+/* ---------- pestaña Usuarios: crear, activar/desactivar, eliminar ---------- */
+async function pintarUsuariosPanel() {
+  const tbody = document.getElementById('tablaUsuariosPanelBody');
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>`;
+  const usuarios = await obtenerUsuariosAdminPanel();
+  if (!usuarios.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay usuarios.</td></tr>`;
+    return;
+  }
+  const yo = usuarioAdminActual();
+  tbody.innerHTML = usuarios.map(u => {
+    const creado = u.creado ? new Date(u.creado).toLocaleDateString('es-CO', { dateStyle: 'medium' }) : '—';
+    return `
+      <tr>
+        <td data-label="Usuario"><b>${u.usuario}</b>${u.usuario === yo ? ' <span class="admin-foto-hint">(tú)</span>' : ''}</td>
+        <td data-label="Estado">${u.activo === false ? '<span style="color:var(--red);">Desactivado</span>' : '<span style="color:var(--forest);">Activo</span>'}</td>
+        <td data-label="Conectado">${u.conectado ? '🟢 Sí' : '⚪ No'}</td>
+        <td data-label="Creado" class="mono">${creado}</td>
+        <td data-label="">
+          <button type="button" class="admin-btn admin-btn-ghost btn-toggle-usuario" data-usuario="${u.usuario}" data-activo="${u.activo !== false}">${u.activo === false ? 'Activar' : 'Desactivar'}</button>
+          ${u.usuario === yo ? '' : `<button type="button" class="admin-btn admin-btn-ghost btn-eliminar-usuario" data-usuario="${u.usuario}">Eliminar</button>`}
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async () => {
+  const usuario = document.getElementById('nuevoUsuarioNombre').value;
+  const clave = document.getElementById('nuevoUsuarioClave').value;
+  const btn = document.getElementById('btnCrearUsuarioPanel');
+  btn.disabled = true;
+  const res = await crearUsuarioAdminPanel(usuario, clave);
+  btn.disabled = false;
+  if (!res.ok) { showToast(res.msg, true); return; }
+  document.getElementById('nuevoUsuarioNombre').value = '';
+  document.getElementById('nuevoUsuarioClave').value = '';
+  showToast('Usuario creado ✓');
+  pintarUsuariosPanel();
+});
+
+document.getElementById('tablaUsuariosPanelBody').addEventListener('click', async (e) => {
+  const btnToggle = e.target.closest('.btn-toggle-usuario');
+  const btnEliminar = e.target.closest('.btn-eliminar-usuario');
+  if (btnToggle) {
+    const usuario = btnToggle.dataset.usuario;
+    const activoActual = btnToggle.dataset.activo === 'true';
+    btnToggle.disabled = true;
+    const res = await cambiarEstadoUsuarioAdminPanel(usuario, !activoActual);
+    btnToggle.disabled = false;
+    if (!res.ok) { showToast(res.msg, true); return; }
+    showToast(activoActual ? 'Usuario desactivado' : 'Usuario activado');
+    pintarUsuariosPanel();
+  } else if (btnEliminar) {
+    const usuario = btnEliminar.dataset.usuario;
+    if (!confirm(`¿Eliminar el usuario "${usuario}"? No se puede deshacer.`)) return;
+    btnEliminar.disabled = true;
+    const res = await eliminarUsuarioAdminPanel(usuario);
+    btnEliminar.disabled = false;
+    if (!res.ok) { showToast(res.msg, true); return; }
+    showToast('Usuario eliminado');
+    pintarUsuariosPanel();
+  }
 });
 
 /* ---------- pestaña Drop: fecha del lanzamiento + productos a mostrar ---------- */
@@ -340,12 +463,18 @@ async function pintarPedidos() {
   }).join('');
 }
 
-document.getElementById('formAdminLogin').addEventListener('submit', (e) => {
+document.getElementById('formAdminLogin').addEventListener('submit', async (e) => {
   e.preventDefault();
   const usuario = document.getElementById('adminUsuario').value.trim();
   const clave = document.getElementById('adminClave').value;
-  const res = loginAdmin(usuario, clave);
   const msg = document.getElementById('adminAuthMsg');
+  const btn = e.target.querySelector('button[type="submit"]');
+  msg.innerHTML = '';
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  const res = await loginAdmin(usuario, clave);
+  btn.disabled = false;
+  btn.textContent = 'Entrar';
   if (res.ok) {
     entrarAlPanel();
   } else {
@@ -353,8 +482,8 @@ document.getElementById('formAdminLogin').addEventListener('submit', (e) => {
   }
 });
 
-document.getElementById('btnSalirAdmin').addEventListener('click', () => {
-  cerrarSesionAdmin();
+document.getElementById('btnSalirAdmin').addEventListener('click', async () => {
+  await cerrarSesionAdmin();
   window.location.href = 'admin.html';
 });
 
@@ -824,10 +953,10 @@ document.getElementById('btnGuardarNuevo').addEventListener('click', () => {
 const modalClave = document.getElementById('modalClave');
 document.getElementById('btnClave').addEventListener('click', () => modalClave.classList.add('open'));
 document.getElementById('btnCerrarModalClave').addEventListener('click', () => modalClave.classList.remove('open'));
-document.getElementById('btnGuardarClave').addEventListener('click', () => {
+document.getElementById('btnGuardarClave').addEventListener('click', async () => {
   const actual = document.getElementById('claveActual').value;
   const nueva = document.getElementById('claveNueva').value;
-  const res = cambiarClaveAdmin(actual, nueva);
+  const res = await cambiarClaveAdmin(actual, nueva);
   if (res.ok) {
     showToast('Contraseña actualizada ✓');
     modalClave.classList.remove('open');
