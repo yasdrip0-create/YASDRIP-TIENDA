@@ -505,6 +505,16 @@ function pintarTabla() {
     });
   });
 
+  /* ---- botón "Precio por talla": expande/colapsa el bloque para que la tabla no se vea saturada ---- */
+  tbody.querySelectorAll('.btn-toggle-tallas').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bloque = btn.nextElementSibling;
+      const abrir = bloque.hasAttribute('hidden');
+      bloque.toggleAttribute('hidden', !abrir);
+      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
+    });
+  });
+
   /* ---- chips de talla: clic muestra/oculta el input de precio de esa talla ---- */
   tbody.querySelectorAll('.talla-chip-btn').forEach(chip => {
     chip.addEventListener('click', () => {
