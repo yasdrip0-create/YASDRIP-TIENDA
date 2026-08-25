@@ -1420,7 +1420,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 .admin-modal-wide{max-width:560px;}
 .admin-modal h3{font-family:'Fraunces',serif;font-size:18px;margin-bottom:16px;}
-.admin-modal input{
+.admin-modal input:not([type="checkbox"]){
   width:100%;padding:12px 14px;margin-bottom:12px;border:1px solid var(--line);border-radius:10px;
   background:var(--offwhite);font-size:14px;
 }
