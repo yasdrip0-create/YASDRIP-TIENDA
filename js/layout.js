@@ -299,3 +299,53 @@ function renderFooter() {
     </footer>
   `;
 }
+
+/* ============================================================
+   ANIMACIONES AL HACER SCROLL ("reveal")
+   Busca cualquier elemento con class="reveal" (o sus variantes
+   reveal-left / reveal-right / reveal-scale) y le agrega
+   "visible" apenas entra a la pantalla, usando IntersectionObserver.
+
+   Se puede llamar varias veces sin problema (por ejemplo, después
+   de pintar un grid de productos que llega de Firestore): los
+   elementos ya observados se saltan gracias a data-revealBound.
+
+   Respeta "reducir movimiento" del sistema operativo: si el
+   usuario lo tiene activado, los elementos aparecen de una vez,
+   sin animación.
+   ============================================================ */
+let _revealObserver = null;
+
+function initScrollReveal() {
+  const elementos = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+  if (!elementos.length) return;
+
+  const prefiereMenosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefiereMenosMovimiento || !('IntersectionObserver' in window)) {
+    elementos.forEach(el => el.classList.add('visible'));
+    return;
+  }
+
+  if (!_revealObserver) {
+    _revealObserver = new IntersectionObserver((entradas) => {
+      entradas.forEach(entrada => {
+        if (entrada.isIntersecting) {
+          entrada.target.classList.add('visible');
+          _revealObserver.unobserve(entrada.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+  }
+
+  elementos.forEach(el => {
+    if (el.dataset.revealBound) return;
+    el.dataset.revealBound = '1';
+    _revealObserver.observe(el);
+  });
+}
+
+// Corre automáticamente en cada página apenas carga el HTML.
+// Si una página agrega elementos ".reveal" después (por ejemplo,
+// tarjetas de producto que llegan de Firestore), esa página debe
+// volver a llamar initScrollReveal() luego de pintarlos.
+document.addEventListener('DOMContentLoaded', initScrollReveal);
