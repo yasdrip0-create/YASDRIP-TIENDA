@@ -350,6 +350,9 @@ function pintarTabla() {
           <input type="file" accept="image/*" class="input-foto-trasera" data-color="${c}" hidden>
         </label>`;
     }).join('');
+    const numColores = (p.colores || []).length;
+    const fotosColorFaltantes = (p.colores || []).filter(c => !(p.fotos && p.fotos[c])).length;
+    const fotosTraseraFaltantes = (p.colores || []).filter(c => !(p.fotosTrasera && p.fotosTrasera[c])).length;
     const preciosTallaHtml = (p.tallas || []).map(t => {
       const valor = precioBaseTalla(p, t);
       const esDistinto = valor !== (Number(p.precio) || 0);
@@ -392,8 +395,18 @@ function pintarTabla() {
             <input type="file" accept="image/*" class="input-foto-fila" hidden>
           </label>
         </td>
-        <td><div class="admin-colores-fila">${fotosColorHtml}</div></td>
-        <td><div class="admin-colores-fila">${fotosTraseraHtml}</div></td>
+        <td>
+          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-color">
+            ${fotosColorFaltantes > 0 ? `⚠️ ${fotosColorFaltantes} sin foto` : `Colores (${numColores})`} <span class="toggle-arrow">▾</span>
+          </button>
+          <div class="admin-colores-fila" hidden>${fotosColorHtml}</div>
+        </td>
+        <td>
+          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-trasera">
+            ${fotosTraseraFaltantes > 0 && fotosTraseraFaltantes < numColores ? `⚠️ ${fotosTraseraFaltantes} sin foto` : 'Foto trasera'} <span class="toggle-arrow">▾</span>
+          </button>
+          <div class="admin-colores-fila" hidden>${fotosTraseraHtml}</div>
+        </td>
         <td><div class="admin-prod-nombre">${p.nombre}</div></td>
         <td>${p.categoria}</td>
         <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
@@ -482,6 +495,26 @@ function pintarTabla() {
       } catch (err) {
         showToast('No se pudo usar esa imagen.', true);
       }
+    });
+  });
+
+  /* ---- botón "Colores (N)": expande/colapsa las fotos por color, para que la tabla no se vea saturada ---- */
+  tbody.querySelectorAll('.btn-toggle-fotos-color').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bloque = btn.nextElementSibling;
+      const abrir = bloque.hasAttribute('hidden');
+      bloque.toggleAttribute('hidden', !abrir);
+      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
+    });
+  });
+
+  /* ---- botón "Foto trasera": expande/colapsa las fotos de espaldas por color ---- */
+  tbody.querySelectorAll('.btn-toggle-fotos-trasera').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bloque = btn.nextElementSibling;
+      const abrir = bloque.hasAttribute('hidden');
+      bloque.toggleAttribute('hidden', !abrir);
+      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
     });
   });
 
