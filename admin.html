@@ -254,13 +254,13 @@ async function pintarPedidos() {
     const envioTexto = [p.envio_direccion, p.envio_barrio, p.envio_municipio].filter(Boolean).join(', ');
     return `
       <tr>
-        <td class="mono" style="white-space:nowrap;">${fecha}</td>
-        <td><b>${p.nombre_cliente || '—'}</b></td>
-        <td>${p.email_cliente || ''}<br><span style="color:var(--gray);">${p.telefono_cliente || ''}</span></td>
-        <td>${p.detalle || '—'}</td>
-        <td>${envioTexto || '—'}</td>
-        <td>${p.metodo_pago === 'tarjeta' ? `Tarjeta •••• ${p.tarjeta_final || ''}` : 'Contraentrega'}</td>
-        <td class="mono"><b>$${(Number(p.total) || 0).toLocaleString('es-CO')}</b></td>
+        <td data-label="Fecha" class="mono" style="white-space:nowrap;">${fecha}</td>
+        <td data-label="Cliente"><b>${p.nombre_cliente || '—'}</b></td>
+        <td data-label="Contacto">${p.email_cliente || ''}<br><span style="color:var(--gray);">${p.telefono_cliente || ''}</span></td>
+        <td data-label="Productos">${p.detalle || '—'}</td>
+        <td data-label="Envío">${envioTexto || '—'}</td>
+        <td data-label="Pago">${p.metodo_pago === 'tarjeta' ? `Tarjeta •••• ${p.tarjeta_final || ''}` : 'Contraentrega'}</td>
+        <td data-label="Total" class="mono"><b>$${(Number(p.total) || 0).toLocaleString('es-CO')}</b></td>
       </tr>`;
   }).join('');
 }
@@ -388,29 +388,29 @@ function pintarTabla() {
     }).join('');
     return `
       <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
-        <td>
+        <td data-label="Foto">
           <label class="admin-foto-cell" title="Foto general (si no hay foto por color)">
             ${miniatura}
             <span class="admin-foto-cell-cam">📷</span>
             <input type="file" accept="image/*" class="input-foto-fila" hidden>
           </label>
         </td>
-        <td>
+        <td data-label="Fotos por color">
           <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-color">
             ${fotosColorFaltantes > 0 ? `⚠️ ${fotosColorFaltantes} sin foto` : `Colores (${numColores})`} <span class="toggle-arrow">▾</span>
           </button>
           <div class="admin-colores-fila" hidden>${fotosColorHtml}</div>
         </td>
-        <td>
+        <td data-label="Foto trasera">
           <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-trasera">
             ${fotosTraseraFaltantes > 0 && fotosTraseraFaltantes < numColores ? `⚠️ ${fotosTraseraFaltantes} sin foto` : 'Foto trasera'} <span class="toggle-arrow">▾</span>
           </button>
           <div class="admin-colores-fila" hidden>${fotosTraseraHtml}</div>
         </td>
-        <td><div class="admin-prod-nombre">${p.nombre}</div></td>
-        <td>${p.categoria}</td>
-        <td><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
-        <td>
+        <td data-label="Producto"><div class="admin-prod-nombre">${p.nombre}</div></td>
+        <td data-label="Categoría">${p.categoria}</td>
+        <td data-label="Precio base"><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
+        <td data-label="Precio por talla">
           <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-tallas">
             ${personalizadas > 0 ? `Personalizado (${personalizadas})` : 'Precio por talla'} <span class="toggle-arrow">▾</span>
           </button>
@@ -419,9 +419,9 @@ function pintarTabla() {
             <div class="talla-precio-editors">${editoresTallaHtml}</div>
           </div>
         </td>
-        <td><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
-        <td class="mono admin-precio-final" ${precioFinalTitulo}>${precioFinalTexto}</td>
-        <td>
+        <td data-label="Descuento %"><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
+        <td data-label="Precio final" class="mono admin-precio-final" ${precioFinalTitulo}>${precioFinalTexto}</td>
+        <td data-label="Stock">
           <div class="admin-stock-total mono">${stockTotal} <span style="color:var(--gray);font-weight:400;">total</span></div>
           <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-stock">
             ${coloresConStockPropio > 0 ? `⚠️ ${coloresConStockPropio} en 0` : 'Por color'} <span class="toggle-arrow">▾</span>
@@ -432,14 +432,14 @@ function pintarTabla() {
           </button>
           <div class="admin-stock-colores admin-stock-tallas" hidden>${stockTallaEditorsHtml}</div>
         </td>
-        <td>
+        <td data-label="Estado">
           <span class="estado-pill ${agotado ? 'out' : 'ok'}">${agotado ? 'Agotado' : 'Disponible'}</span>
           <label class="admin-toggle">
             <input type="checkbox" data-campo="activo" ${p.activo ? 'checked' : ''}>
             <span>Visible</span>
           </label>
         </td>
-        <td>
+        <td data-label="">
           <button class="admin-btn admin-btn-primary admin-btn-xs btn-guardar-fila">Guardar</button>
           <button class="admin-btn admin-btn-ghost admin-btn-xs btn-borrar-fila">Eliminar</button>
         </td>

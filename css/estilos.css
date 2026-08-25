@@ -1359,6 +1359,54 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   .admin-main{padding:24px 14px 60px;}
 }
 
+/* ---- en celular (iPhone/Android): las tablas del panel dejan de
+   ser una fila angosta con scroll lateral y pasan a verse como
+   tarjetas apiladas, una por producto/pedido, con el nombre del
+   campo a la izquierda — así se lee todo sin apretar el zoom ---- */
+@media (max-width:760px){
+  .admin-table-wrap{overflow-x:visible;}
+  .admin-table{min-width:0;width:100%;}
+  .admin-table thead{display:none;}
+  .admin-table tbody{display:block;}
+  .admin-table tr{
+    display:block;background:var(--white);border:1px solid var(--line);
+    border-radius:16px;padding:6px 14px;margin-bottom:14px;
+  }
+  .admin-table td{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:10px 0;border-bottom:1px solid var(--line);text-align:right;
+  }
+  .admin-table td:last-child{border-bottom:none;}
+  .admin-table td[colspan]{display:block;text-align:center;}
+  .admin-table td::before{
+    content:attr(data-label);flex:0 0 auto;text-align:left;
+    font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:0.05em;
+    text-transform:uppercase;color:var(--gray);font-weight:700;
+  }
+  .admin-table td:not([data-label]),.admin-table td[data-label=""]{justify-content:flex-end;}
+  .admin-table td:not([data-label])::before,.admin-table td[data-label=""]::before{content:none;}
+  /* celdas con contenido más ancho (botones, editores, fotos): que se
+     apilen debajo de la etiqueta en vez de aplastarse a la derecha */
+  .admin-table td:has(.admin-colores-fila),
+  .admin-table td:has(.admin-tallas-precios),
+  .admin-table td:has(.admin-stock-colores){
+    flex-direction:column;align-items:flex-start;gap:8px;
+  }
+  .admin-table td:has(.admin-colores-fila) .admin-colores-fila,
+  .admin-table td:has(.admin-tallas-precios) .admin-tallas-precios,
+  .admin-table td:has(.admin-stock-colores) .admin-stock-colores{
+    width:100%;max-width:none;
+  }
+  .admin-foto-cell{margin-left:auto;}
+  .admin-prod-nombre{justify-content:flex-end;text-align:right;}
+  .admin-stats{gap:10px;}
+  .admin-stat{flex:1 1 calc(50% - 10px);}
+}
+
+/* Safari en iOS todavía no soporta :has() en versiones viejas —
+   fallback simple: si :has() no existe, esas celdas quedan igual
+   de legibles apiladas por defecto (justify-content ya las separa). */
+
 /* ============================================================
    VERIFICACIÓN DE CUENTA (código OTP) — paleta aparte, más
    vibrante/juvenil que el resto del sitio (que es tierra/forest).
