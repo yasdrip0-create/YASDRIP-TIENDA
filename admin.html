@@ -193,17 +193,38 @@
 
         <p class="admin-foto-hint" style="margin:16px 0 8px;"><b>¿Qué puede hacer esta persona en el panel?</b> — marca lo que le vas a dejar tocar:</p>
         <div class="admin-permisos-grid" id="nuevoUsuarioPermisos">
-          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="inventario" checked><span>📦 Ver y editar Inventario</span></label>
-          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="pedidos" checked><span>🧾 Ver Pedidos</span></label>
-          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="eliminarPedidos"><span>🗑️ Eliminar pedidos</span></label>
-          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="drop"><span>⚡ Ver y editar Drop</span></label>
-          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="usuarios"><span>👥 Ver pestaña Usuarios</span></label>
+          <label class="admin-permiso-item">
+            <input type="checkbox" class="chk-permiso-nuevo" value="inventario" checked>
+            <span class="permiso-icono">📦</span>
+            <span class="permiso-texto"><b>Inventario</b><small>Ver y editar productos, precios y stock</small></span>
+          </label>
+          <label class="admin-permiso-item">
+            <input type="checkbox" class="chk-permiso-nuevo" value="pedidos" checked>
+            <span class="permiso-icono">🧾</span>
+            <span class="permiso-texto"><b>Pedidos</b><small>Ver los pedidos de clientes</small></span>
+          </label>
+          <label class="admin-permiso-item">
+            <input type="checkbox" class="chk-permiso-nuevo" value="eliminarPedidos">
+            <span class="permiso-icono">🗑️</span>
+            <span class="permiso-texto"><b>Eliminar pedidos</b><small>Además de verlos, puede borrarlos</small></span>
+          </label>
+          <label class="admin-permiso-item">
+            <input type="checkbox" class="chk-permiso-nuevo" value="drop">
+            <span class="permiso-icono">⚡</span>
+            <span class="permiso-texto"><b>Drop</b><small>Ver y editar el próximo lanzamiento</small></span>
+          </label>
+          <label class="admin-permiso-item">
+            <input type="checkbox" class="chk-permiso-nuevo" value="usuarios">
+            <span class="permiso-icono">👥</span>
+            <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
+          </label>
         </div>
 
-        <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:14px;">
+        <div class="admin-add-grid" style="grid-template-columns:1fr 1fr;margin-top:14px;">
+          <input type="password" id="claveAdminUsuario" class="admin-input" placeholder="Tu contraseña de admin" autocomplete="current-password">
           <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
         </div>
-        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo quien lo conoce pueda tocar esta pestaña.</p>
+        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide tu propia contraseña de admin + el código de desarrollador, para que solo alguien del equipo con ambos pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
           <button class="admin-btn admin-btn-primary" id="btnCrearUsuarioPanel">Crear usuario</button>
         </div>
@@ -237,19 +258,53 @@
 
 <!-- ======================= MODAL EDITAR PERMISOS ======================= -->
 <div class="admin-modal-overlay" id="modalPermisos">
-  <div class="admin-modal">
+  <div class="admin-modal admin-modal-wide">
     <h3 id="modalPermisosTitulo">Permisos</h3>
-    <div class="admin-permisos-grid" style="margin-bottom:8px;">
-      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="inventario"><span>📦 Ver y editar Inventario</span></label>
-      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="pedidos"><span>🧾 Ver Pedidos</span></label>
-      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="eliminarPedidos"><span>🗑️ Eliminar pedidos</span></label>
-      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="drop"><span>⚡ Ver y editar Drop</span></label>
-      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="usuarios"><span>👥 Ver pestaña Usuarios</span></label>
+    <div class="admin-permisos-grid" style="margin-bottom:14px;">
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="inventario">
+        <span class="permiso-icono">📦</span>
+        <span class="permiso-texto"><b>Inventario</b><small>Ver y editar productos, precios y stock</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="pedidos">
+        <span class="permiso-icono">🧾</span>
+        <span class="permiso-texto"><b>Pedidos</b><small>Ver los pedidos de clientes</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="eliminarPedidos">
+        <span class="permiso-icono">🗑️</span>
+        <span class="permiso-texto"><b>Eliminar pedidos</b><small>Además de verlos, puede borrarlos</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="drop">
+        <span class="permiso-icono">⚡</span>
+        <span class="permiso-texto"><b>Drop</b><small>Ver y editar el próximo lanzamiento</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="usuarios">
+        <span class="permiso-icono">👥</span>
+        <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
+      </label>
     </div>
+    <input type="password" id="claveAdminPermisos" placeholder="Tu contraseña de admin" autocomplete="current-password">
     <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalPermisos">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL ACCESO A USUARIOS ======================= -->
+<div class="admin-modal-overlay" id="modalAccesoUsuarios">
+  <div class="admin-modal">
+    <h3>Acceso a Usuarios</h3>
+    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe tu contraseña del panel para entrar a esta pestaña.</p>
+    <input type="password" id="claveAccesoUsuarios" placeholder="Tu contraseña" autocomplete="current-password">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnConfirmarAccesoUsuarios">Entrar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalAccesoUsuarios">Cancelar</button>
     </div>
   </div>
 </div>
@@ -309,6 +364,7 @@ async function entrarAlPanel() {
   const elUsuario = document.getElementById('adminUsuarioActual');
   if (elUsuario) elUsuario.textContent = 'Conectado como: ' + (usuarioAdminActual() || '');
   permisosActuales = await obtenerPermisosUsuarioActual();
+  usuariosTabDesbloqueada = false;
   aplicarPermisosUI();
   await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
@@ -405,13 +461,43 @@ tabBtnDrop.addEventListener('click', () => {
   pintarTabDrop();
 });
 
-tabBtnUsuarios.addEventListener('click', () => {
-  if (!permisosActuales.usuarios) return;
+let usuariosTabDesbloqueada = false;
+
+function mostrarTabUsuarios() {
   ocultarTodasLasPestanas();
   tabBtnUsuarios.classList.add('active');
   tabUsuarios.style.display = 'block';
   tituloTab.textContent = 'Usuarios del panel';
   pintarUsuariosPanel();
+}
+
+tabBtnUsuarios.addEventListener('click', () => {
+  if (!permisosActuales.usuarios) return;
+  if (usuariosTabDesbloqueada) { mostrarTabUsuarios(); return; }
+  document.getElementById('claveAccesoUsuarios').value = '';
+  document.getElementById('modalAccesoUsuarios').classList.add('open');
+  setTimeout(() => document.getElementById('claveAccesoUsuarios').focus(), 50);
+});
+
+document.getElementById('btnCerrarModalAccesoUsuarios').addEventListener('click', () => {
+  document.getElementById('modalAccesoUsuarios').classList.remove('open');
+});
+
+document.getElementById('btnConfirmarAccesoUsuarios').addEventListener('click', async () => {
+  const clave = document.getElementById('claveAccesoUsuarios').value;
+  if (!clave) { showToast('Escribe tu contraseña.', true); return; }
+  const btn = document.getElementById('btnConfirmarAccesoUsuarios');
+  btn.disabled = true;
+  const ok = await verificarClaveAdminActual(clave);
+  btn.disabled = false;
+  if (!ok) { showToast('Contraseña incorrecta.', true); return; }
+  usuariosTabDesbloqueada = true;
+  document.getElementById('modalAccesoUsuarios').classList.remove('open');
+  mostrarTabUsuarios();
+});
+
+document.getElementById('claveAccesoUsuarios').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btnConfirmarAccesoUsuarios').click();
 });
 
 /* ---------- pestaña Usuarios: crear, activar/desactivar, eliminar ---------- */
@@ -451,7 +537,11 @@ async function pintarUsuariosPanel() {
 document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async () => {
   const usuario = document.getElementById('nuevoUsuarioNombre').value;
   const clave = document.getElementById('nuevoUsuarioClave').value;
+  const claveAdmin = document.getElementById('claveAdminUsuario').value;
   const codigo = document.getElementById('codigoDesarrolladorUsuario').value;
+  if (!claveAdmin) { showToast('Escribe tu contraseña de admin.', true); return; }
+  const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
+  if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
   if (!verificarCodigoDesarrollador(codigo)) {
     showToast('Código de desarrollador incorrecto.', true);
     return;
@@ -465,6 +555,7 @@ document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async 
   if (!res.ok) { showToast(res.msg, true); return; }
   document.getElementById('nuevoUsuarioNombre').value = '';
   document.getElementById('nuevoUsuarioClave').value = '';
+  document.getElementById('claveAdminUsuario').value = '';
   document.getElementById('codigoDesarrolladorUsuario').value = '';
   document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { chk.checked = (chk.value === 'inventario' || chk.value === 'pedidos'); });
   showToast('Usuario creado ✓');
@@ -483,12 +574,17 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', (e) 
   document.querySelectorAll('.chk-permiso-editar').forEach(chk => {
     chk.checked = !!permisosActualesUsuario[chk.value];
   });
+  document.getElementById('claveAdminPermisos').value = '';
   document.getElementById('codigoDesarrolladorPermisos').value = '';
   modalPermisos.classList.add('open');
 });
 document.getElementById('btnCerrarModalPermisos').addEventListener('click', () => modalPermisos.classList.remove('open'));
 document.getElementById('btnGuardarPermisos').addEventListener('click', async () => {
+  const claveAdmin = document.getElementById('claveAdminPermisos').value;
   const codigo = document.getElementById('codigoDesarrolladorPermisos').value;
+  if (!claveAdmin) { showToast('Escribe tu contraseña de admin.', true); return; }
+  const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
+  if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
   if (!verificarCodigoDesarrollador(codigo)) {
     showToast('Código de desarrollador incorrecto.', true);
     return;
@@ -517,6 +613,10 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
   if (btnToggle) {
     const usuario = btnToggle.dataset.usuario;
     const activoActual = btnToggle.dataset.activo === 'true';
+    const claveAdmin = prompt('Tu contraseña de admin para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + usuario + '":');
+    if (claveAdmin === null) return;
+    const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
+    if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
     const codigo = prompt('Código de desarrollador para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + usuario + '":');
     if (codigo === null) return;
     if (!verificarCodigoDesarrollador(codigo)) { showToast('Código de desarrollador incorrecto.', true); return; }
@@ -528,6 +628,10 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
     pintarUsuariosPanel();
   } else if (btnEliminar) {
     const usuario = btnEliminar.dataset.usuario;
+    const claveAdmin = prompt('Tu contraseña de admin para ELIMINAR a "' + usuario + '":');
+    if (claveAdmin === null) return;
+    const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
+    if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
     const codigo = prompt('Código de desarrollador para ELIMINAR a "' + usuario + '" (no se puede deshacer):');
     if (codigo === null) return;
     if (!verificarCodigoDesarrollador(codigo)) { showToast('Código de desarrollador incorrecto.', true); return; }
