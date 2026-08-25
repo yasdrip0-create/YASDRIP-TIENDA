@@ -1387,6 +1387,20 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-drop-prod-thumb{width:100%;height:100%;object-fit:cover;}
 .admin-drop-prod-item span:last-child{font-size:12.5px;font-weight:600;}
 
+/* ---------- permisos de usuarios del panel ---------- */
+.admin-permisos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.admin-permiso-item{
+  display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;
+  padding:8px 10px;cursor:pointer;transition:border-color .15s ease,background .15s ease;font-size:12.5px;font-weight:600;
+}
+.admin-permiso-item:hover{border-color:var(--black);}
+.admin-permiso-item:has(input:checked){border-color:var(--forest);background:rgba(27,67,50,0.06);}
+.admin-permiso-item input{flex-shrink:0;}
+.admin-permiso-pill{
+  display:inline-block;padding:2px 8px;margin:1px 3px 1px 0;border-radius:999px;font-size:10px;font-weight:700;
+  letter-spacing:0.02em;text-transform:uppercase;background:var(--offwhite);border:1px solid var(--line);color:var(--gray);
+}
+
 .admin-modal-overlay{
   position:fixed;inset:0;background:rgba(21,21,18,0.55);display:none;
   align-items:center;justify-content:center;z-index:200;padding:20px;

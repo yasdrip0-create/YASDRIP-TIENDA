@@ -520,6 +520,18 @@ async function obtenerPedidosAdmin() {
   }
 }
 
+/** Borra un pedido de Firestore por completo. Quien llama a esto ya
+    tuvo que confirmar su propia contraseña antes (ver admin.html),
+    así que aquí solo se hace el borrado. */
+async function eliminarPedidoAdmin(id) {
+  try {
+    await fbDb.collection('pedidos').doc(id).delete();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
 /* ---------- SOLICITUDES DE SERVICIO (cambios, garantías, quejas) ----------
    extra puede traer:
      foto:      dataURL (jpeg) ya comprimido, o null
@@ -826,6 +838,46 @@ function verificarCodigoDesarrollador(codigo) {
   return String(codigo || "") === CODIGO_DESARROLLADOR;
 }
 
+/* ---------- PERMISOS de cada usuario del panel ----------
+   Cada usuario (aparte de usuario/contraseña) guarda un objeto
+   "permisos" en Firestore que dice qué pestañas/acciones puede
+   tocar dentro del panel:
+     inventario      -> ver y editar la pestaña Inventario
+     pedidos         -> ver la pestaña Pedidos
+     eliminarPedidos -> además de verlos, puede borrar pedidos
+                        (pide también su propia contraseña al hacerlo)
+     drop            -> ver y editar la pestaña Drop
+     usuarios        -> ver la pestaña Usuarios (crear/gestionar
+                        a otras personas del panel)
+   Quien crea o edita a otro usuario elige estas casillas a mano;
+   nadie se las da a sí mismo. */
+const PERMISOS_DISPONIBLES = ['inventario', 'pedidos', 'eliminarPedidos', 'drop', 'usuarios'];
+
+function permisosTodosActivos() {
+  const p = {};
+  PERMISOS_DISPONIBLES.forEach(k => { p[k] = true; });
+  return p;
+}
+
+function permisosNingunoActivo() {
+  const p = {};
+  PERMISOS_DISPONIBLES.forEach(k => { p[k] = false; });
+  return p;
+}
+
+/** Convierte lo que hay guardado en Firestore para un usuario en un
+    objeto de permisos completo. Si el usuario es de antes de que
+    existiera este sistema (no tiene el campo "permisos" guardado),
+    se le da acceso total, para que nadie se quede afuera del panel
+    de un día para otro por una actualización. */
+function normalizarPermisos(datosUsuario) {
+  if (!datosUsuario || !datosUsuario.permisos) return permisosTodosActivos();
+  const p = datosUsuario.permisos;
+  const out = {};
+  PERMISOS_DISPONIBLES.forEach(k => { out[k] = !!p[k]; });
+  return out;
+}
+
 let _adminHeartbeatTimer = null;
 
 function _generarSesionId() {
@@ -846,6 +898,7 @@ async function inicializarAdminPorDefecto() {
       clave: 'yasdrip2026',
       activo: true,
       creado: new Date().toISOString(),
+      permisos: permisosTodosActivos(),
     });
   } catch (e) {
     console.error('No se pudo crear el usuario admin por defecto:', e);
@@ -992,6 +1045,38 @@ async function cambiarClaveAdmin(actual, nueva) {
   }
 }
 
+/** Trae los permisos del usuario que tiene la sesión abierta ahora
+    mismo, para saber qué pestañas mostrarle y qué botones dejarle
+    usar. Si no hay internet en ese instante, se le da acceso total
+    (no se le puede pedir a Firestore, así que mejor no dejarlo
+    varado sin poder ver nada). */
+async function obtenerPermisosUsuarioActual() {
+  const usuario = usuarioAdminActual();
+  if (!usuario) return permisosTodosActivos();
+  try {
+    const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
+    return normalizarPermisos(doc.exists ? doc.data() : null);
+  } catch (e) {
+    return permisosTodosActivos();
+  }
+}
+
+/** Confirma que "clave" es la contraseña ACTUAL del usuario que
+    tiene la sesión abierta ahora mismo (no el código de
+    desarrollador). Se usa para acciones sensibles y puntuales,
+    como borrar un pedido, sin tener que abrir el modal completo
+    de cambiar contraseña. */
+async function verificarClaveAdminActual(clave) {
+  const usuario = usuarioAdminActual();
+  if (!usuario) return false;
+  try {
+    const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
+    return !!(doc.exists && doc.data().clave === clave);
+  } catch (e) {
+    return false;
+  }
+}
+
 /* ---------- GESTIÓN DE USUARIOS DEL PANEL (pestaña "Usuarios") ----------
    Cada usuario nuevo lo crea alguien que YA tiene acceso al panel
    (por eso no hace falta un "superadmin" aparte: para llegar a
@@ -1017,7 +1102,7 @@ async function obtenerUsuariosAdminPanel() {
   }
 }
 
-async function crearUsuarioAdminPanel(usuarioInput, clave) {
+async function crearUsuarioAdminPanel(usuarioInput, clave, permisos) {
   const usuario = String(usuarioInput || '').trim().toLowerCase().replace(/\s+/g, '');
   if (!/^[a-z0-9._-]{3,24}$/.test(usuario)) {
     return { ok: false, msg: 'El usuario debe tener entre 3 y 24 letras/números (sin espacios ni tildes).' };
@@ -1028,7 +1113,18 @@ async function crearUsuarioAdminPanel(usuarioInput, clave) {
     if (existe.exists) return { ok: false, msg: 'Ese usuario ya existe.' };
     await fbDb.collection('admin_usuarios').doc(usuario).set({
       clave, activo: true, creado: new Date().toISOString(),
+      permisos: permisos || permisosNingunoActivo(),
     });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
+/** Cambia las casillas de qué puede hacer un usuario en el panel. */
+async function actualizarPermisosUsuarioAdminPanel(usuario, permisos) {
+  try {
+    await fbDb.collection('admin_usuarios').doc(usuario).update({ permisos });
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };

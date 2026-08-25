@@ -152,10 +152,11 @@
                 <th>Envío</th>
                 <th>Pago</th>
                 <th>Total</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="tablaPedidosBody">
-              <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>
             </tbody>
           </table>
         </div>
@@ -189,10 +190,20 @@
           <input type="text" id="nuevoUsuarioNombre" class="admin-input" placeholder="Usuario (ej: maria, bodega1)" autocomplete="off">
           <input type="password" id="nuevoUsuarioClave" class="admin-input" placeholder="Contraseña (mín. 4 caracteres)" autocomplete="new-password">
         </div>
-        <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:10px;">
+
+        <p class="admin-foto-hint" style="margin:16px 0 8px;"><b>¿Qué puede hacer esta persona en el panel?</b> — marca lo que le vas a dejar tocar:</p>
+        <div class="admin-permisos-grid" id="nuevoUsuarioPermisos">
+          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="inventario" checked><span>📦 Ver y editar Inventario</span></label>
+          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="pedidos" checked><span>🧾 Ver Pedidos</span></label>
+          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="eliminarPedidos"><span>🗑️ Eliminar pedidos</span></label>
+          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="drop"><span>⚡ Ver y editar Drop</span></label>
+          <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-nuevo" value="usuarios"><span>👥 Ver pestaña Usuarios</span></label>
+        </div>
+
+        <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:14px;">
           <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
         </div>
-        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo quien lo conoce pueda tocar esta pestaña.</p>
+        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo quien lo conoce pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
           <button class="admin-btn admin-btn-primary" id="btnCrearUsuarioPanel">Crear usuario</button>
         </div>
@@ -206,13 +217,14 @@
               <tr>
                 <th>Usuario</th>
                 <th>Estado</th>
+                <th>Permisos</th>
                 <th>Conectado</th>
                 <th>Creado</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="tablaUsuariosPanelBody">
-              <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>
             </tbody>
           </table>
         </div>
@@ -222,6 +234,38 @@
 </div>
 
 <div class="toast" id="toast"><span class="dot"></span><span id="toastText">Guardado</span></div>
+
+<!-- ======================= MODAL EDITAR PERMISOS ======================= -->
+<div class="admin-modal-overlay" id="modalPermisos">
+  <div class="admin-modal">
+    <h3 id="modalPermisosTitulo">Permisos</h3>
+    <div class="admin-permisos-grid" style="margin-bottom:8px;">
+      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="inventario"><span>📦 Ver y editar Inventario</span></label>
+      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="pedidos"><span>🧾 Ver Pedidos</span></label>
+      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="eliminarPedidos"><span>🗑️ Eliminar pedidos</span></label>
+      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="drop"><span>⚡ Ver y editar Drop</span></label>
+      <label class="admin-permiso-item"><input type="checkbox" class="chk-permiso-editar" value="usuarios"><span>👥 Ver pestaña Usuarios</span></label>
+    </div>
+    <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalPermisos">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL BORRAR PEDIDO ======================= -->
+<div class="admin-modal-overlay" id="modalBorrarPedido">
+  <div class="admin-modal">
+    <h3>Eliminar pedido</h3>
+    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe tu contraseña del panel para confirmar. Esta acción no se puede deshacer.</p>
+    <input type="password" id="claveBorrarPedido" placeholder="Tu contraseña" autocomplete="current-password">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnConfirmarBorrarPedido">Eliminar pedido</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalBorrarPedido">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ======================= MODAL CAMBIAR CLAVE ======================= -->
 <div class="admin-modal-overlay" id="modalClave">
@@ -257,13 +301,49 @@ function showToast(texto, esError = false) {
   window._t = setTimeout(() => toast.classList.remove('show'), 2400);
 }
 
+let permisosActuales = permisosTodosActivos();
+
 async function entrarAlPanel() {
   loginView.style.display = 'none';
   dashView.style.display = 'block';
   const elUsuario = document.getElementById('adminUsuarioActual');
   if (elUsuario) elUsuario.textContent = 'Conectado como: ' + (usuarioAdminActual() || '');
+  permisosActuales = await obtenerPermisosUsuarioActual();
+  aplicarPermisosUI();
   await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
+}
+
+/** Muestra u oculta pestañas según lo que este usuario puede tocar.
+    Si no tiene ni un permiso, se le avisa en vez de dejarlo ver un
+    panel vacío sin explicación. */
+function aplicarPermisosUI() {
+  const mapa = [
+    [tabBtnInventario, 'inventario'],
+    [tabBtnPedidos, 'pedidos'],
+    [tabBtnDrop, 'drop'],
+    [tabBtnUsuarios, 'usuarios'],
+  ];
+  mapa.forEach(([btn, permiso]) => {
+    btn.style.display = permisosActuales[permiso] ? '' : 'none';
+  });
+  const btnAgregarProducto = document.getElementById('btnMostrarNuevo');
+  if (btnAgregarProducto) btnAgregarProducto.style.display = permisosActuales.inventario ? '' : 'none';
+
+  // si la pestaña que está abierta ahora mismo ya no le corresponde
+  // (o es la primera vez que entra), lo mandamos a la primera que
+  // sí pueda ver
+  const tabActivaVisible = mapa.some(([btn, permiso]) => btn.classList.contains('active') && permisosActuales[permiso]);
+  if (!tabActivaVisible) {
+    const primeraDisponible = mapa.find(([, permiso]) => permisosActuales[permiso]);
+    ocultarTodasLasPestanas();
+    if (primeraDisponible) {
+      primeraDisponible[0].click();
+    } else {
+      tituloTab.textContent = 'Sin acceso';
+      showToast('Tu usuario no tiene permisos asignados. Habla con quien administra el panel.', true);
+    }
+  }
 }
 
 /* Al abrir el panel, primero se confirma con Firestore que la
@@ -300,6 +380,7 @@ function ocultarTodasLasPestanas() {
 }
 
 tabBtnInventario.addEventListener('click', () => {
+  if (!permisosActuales.inventario) return;
   ocultarTodasLasPestanas();
   tabBtnInventario.classList.add('active');
   tabInventario.style.display = 'block';
@@ -307,6 +388,7 @@ tabBtnInventario.addEventListener('click', () => {
 });
 
 tabBtnPedidos.addEventListener('click', () => {
+  if (!permisosActuales.pedidos) return;
   ocultarTodasLasPestanas();
   tabBtnPedidos.classList.add('active');
   tabPedidos.style.display = 'block';
@@ -315,6 +397,7 @@ tabBtnPedidos.addEventListener('click', () => {
 });
 
 tabBtnDrop.addEventListener('click', () => {
+  if (!permisosActuales.drop) return;
   ocultarTodasLasPestanas();
   tabBtnDrop.classList.add('active');
   tabDrop.style.display = 'block';
@@ -323,6 +406,7 @@ tabBtnDrop.addEventListener('click', () => {
 });
 
 tabBtnUsuarios.addEventListener('click', () => {
+  if (!permisosActuales.usuarios) return;
   ocultarTodasLasPestanas();
   tabBtnUsuarios.classList.add('active');
   tabUsuarios.style.display = 'block';
@@ -333,22 +417,30 @@ tabBtnUsuarios.addEventListener('click', () => {
 /* ---------- pestaña Usuarios: crear, activar/desactivar, eliminar ---------- */
 async function pintarUsuariosPanel() {
   const tbody = document.getElementById('tablaUsuariosPanelBody');
-  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>`;
   const usuarios = await obtenerUsuariosAdminPanel();
   if (!usuarios.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay usuarios.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay usuarios.</td></tr>`;
     return;
   }
   const yo = usuarioAdminActual();
+  const ETIQUETAS_PERMISOS = { inventario: 'Inventario', pedidos: 'Pedidos', eliminarPedidos: 'Eliminar pedidos', drop: 'Drop', usuarios: 'Usuarios' };
   tbody.innerHTML = usuarios.map(u => {
     const creado = u.creado ? new Date(u.creado).toLocaleDateString('es-CO', { dateStyle: 'medium' }) : '—';
+    const permisos = normalizarPermisos(u);
+    const activos = Object.keys(permisos).filter(k => permisos[k]);
+    const permisosTexto = activos.length
+      ? activos.map(k => `<span class="admin-permiso-pill">${ETIQUETAS_PERMISOS[k]}</span>`).join(' ')
+      : '<span class="admin-foto-hint">Sin permisos</span>';
     return `
       <tr>
         <td data-label="Usuario"><b>${u.usuario}</b>${u.usuario === yo ? ' <span class="admin-foto-hint">(tú)</span>' : ''}</td>
         <td data-label="Estado">${u.activo === false ? '<span style="color:var(--red);">Desactivado</span>' : '<span style="color:var(--forest);">Activo</span>'}</td>
+        <td data-label="Permisos">${permisosTexto}</td>
         <td data-label="Conectado">${u.conectado ? '🟢 Sí' : '⚪ No'}</td>
         <td data-label="Creado" class="mono">${creado}</td>
         <td data-label="">
+          <button type="button" class="admin-btn admin-btn-ghost btn-editar-permisos" data-usuario="${u.usuario}" data-permisos='${JSON.stringify(permisos)}'>Editar permisos</button>
           <button type="button" class="admin-btn admin-btn-ghost btn-toggle-usuario" data-usuario="${u.usuario}" data-activo="${u.activo !== false}">${u.activo === false ? 'Activar' : 'Desactivar'}</button>
           ${u.usuario === yo ? '' : `<button type="button" class="admin-btn admin-btn-ghost btn-eliminar-usuario" data-usuario="${u.usuario}">Eliminar</button>`}
         </td>
@@ -364,16 +456,59 @@ document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async 
     showToast('Código de desarrollador incorrecto.', true);
     return;
   }
+  const permisos = {};
+  document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { permisos[chk.value] = chk.checked; });
   const btn = document.getElementById('btnCrearUsuarioPanel');
   btn.disabled = true;
-  const res = await crearUsuarioAdminPanel(usuario, clave);
+  const res = await crearUsuarioAdminPanel(usuario, clave, permisos);
   btn.disabled = false;
   if (!res.ok) { showToast(res.msg, true); return; }
   document.getElementById('nuevoUsuarioNombre').value = '';
   document.getElementById('nuevoUsuarioClave').value = '';
   document.getElementById('codigoDesarrolladorUsuario').value = '';
+  document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { chk.checked = (chk.value === 'inventario' || chk.value === 'pedidos'); });
   showToast('Usuario creado ✓');
   pintarUsuariosPanel();
+});
+
+/* ---------- editar permisos de un usuario existente ---------- */
+const modalPermisos = document.getElementById('modalPermisos');
+let usuarioEditandoPermisos = null;
+document.getElementById('tablaUsuariosPanelBody').addEventListener('click', (e) => {
+  const btnEditar = e.target.closest('.btn-editar-permisos');
+  if (!btnEditar) return;
+  usuarioEditandoPermisos = btnEditar.dataset.usuario;
+  const permisosActualesUsuario = JSON.parse(btnEditar.dataset.permisos || '{}');
+  document.getElementById('modalPermisosTitulo').textContent = 'Permisos de "' + usuarioEditandoPermisos + '"';
+  document.querySelectorAll('.chk-permiso-editar').forEach(chk => {
+    chk.checked = !!permisosActualesUsuario[chk.value];
+  });
+  document.getElementById('codigoDesarrolladorPermisos').value = '';
+  modalPermisos.classList.add('open');
+});
+document.getElementById('btnCerrarModalPermisos').addEventListener('click', () => modalPermisos.classList.remove('open'));
+document.getElementById('btnGuardarPermisos').addEventListener('click', async () => {
+  const codigo = document.getElementById('codigoDesarrolladorPermisos').value;
+  if (!verificarCodigoDesarrollador(codigo)) {
+    showToast('Código de desarrollador incorrecto.', true);
+    return;
+  }
+  const permisos = {};
+  document.querySelectorAll('.chk-permiso-editar').forEach(chk => { permisos[chk.value] = chk.checked; });
+  const btn = document.getElementById('btnGuardarPermisos');
+  btn.disabled = true;
+  const res = await actualizarPermisosUsuarioAdminPanel(usuarioEditandoPermisos, permisos);
+  btn.disabled = false;
+  if (!res.ok) { showToast(res.msg, true); return; }
+  showToast('Permisos actualizados ✓');
+  modalPermisos.classList.remove('open');
+  pintarUsuariosPanel();
+  // si el usuario editado es quien tiene la sesión abierta ahora
+  // mismo, sus pestañas se ajustan de una vez sin tener que recargar
+  if (usuarioEditandoPermisos === usuarioAdminActual()) {
+    permisosActuales = await obtenerPermisosUsuarioActual();
+    aplicarPermisosUI();
+  }
 });
 
 document.getElementById('tablaUsuariosPanelBody').addEventListener('click', async (e) => {
@@ -460,7 +595,7 @@ async function pintarPedidos() {
   `;
 
   if (!pedidos.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay pedidos.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay pedidos.</td></tr>`;
     return;
   }
 
@@ -476,9 +611,40 @@ async function pintarPedidos() {
         <td data-label="Envío">${envioTexto || '—'}</td>
         <td data-label="Pago">${p.metodo_pago === 'tarjeta' ? `Tarjeta •••• ${p.tarjeta_final || ''}` : 'Contraentrega'}</td>
         <td data-label="Total" class="mono"><b>$${(Number(p.total) || 0).toLocaleString('es-CO')}</b></td>
+        <td data-label="">${permisosActuales.eliminarPedidos ? `<button type="button" class="admin-btn admin-btn-ghost btn-borrar-pedido" data-id="${p.id}">Eliminar</button>` : ''}</td>
       </tr>`;
   }).join('');
 }
+
+/* ---------- eliminar un pedido (pide la contraseña del panel) ---------- */
+const modalBorrarPedido = document.getElementById('modalBorrarPedido');
+let pedidoABorrarId = null;
+document.getElementById('tablaPedidosBody').addEventListener('click', (e) => {
+  const btnBorrar = e.target.closest('.btn-borrar-pedido');
+  if (!btnBorrar) return;
+  pedidoABorrarId = btnBorrar.dataset.id;
+  document.getElementById('claveBorrarPedido').value = '';
+  modalBorrarPedido.classList.add('open');
+});
+document.getElementById('btnCerrarModalBorrarPedido').addEventListener('click', () => modalBorrarPedido.classList.remove('open'));
+document.getElementById('btnConfirmarBorrarPedido').addEventListener('click', async () => {
+  const clave = document.getElementById('claveBorrarPedido').value;
+  if (!clave) { showToast('Escribe tu contraseña.', true); return; }
+  const btn = document.getElementById('btnConfirmarBorrarPedido');
+  btn.disabled = true;
+  const claveOk = await verificarClaveAdminActual(clave);
+  if (!claveOk) {
+    btn.disabled = false;
+    showToast('Contraseña incorrecta.', true);
+    return;
+  }
+  const res = await eliminarPedidoAdmin(pedidoABorrarId);
+  btn.disabled = false;
+  if (!res.ok) { showToast(res.msg, true); return; }
+  modalBorrarPedido.classList.remove('open');
+  showToast('Pedido eliminado');
+  pintarPedidos();
+});
 
 document.getElementById('formAdminLogin').addEventListener('submit', async (e) => {
   e.preventDefault();
