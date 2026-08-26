@@ -1081,12 +1081,15 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 
 /* ---------- AUTH (LOGIN / REGISTRO) ---------- */
-.auth-page{display:flex;height:100vh;overflow:hidden;}
+/* La foto va SIEMPRE de fondo a pantalla completa (compu y celular) y la
+   tarjeta de login/registro flota encima. */
+.auth-page{position:relative;min-height:100vh;min-height:100svh;min-height:100dvh;overflow:visible;}
 .auth-visual{
-  flex:1;position:relative;overflow:hidden;
+  position:fixed;inset:0;z-index:0;
+  height:100vh;height:100svh;height:100dvh;
   background:url('../img/portada.jpeg') center/cover no-repeat;
   color:var(--offwhite);
-  padding:52px clamp(28px,5vw,64px);
+  padding:36px clamp(24px,5vw,64px);
   display:flex;flex-direction:column;justify-content:space-between;
 }
 .auth-visual::after{
@@ -1140,34 +1143,30 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   text-align:right;transform:rotate(-2deg);
 }
 .auth-form-side{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  background:var(--white);padding:40px 24px;
+  position:relative;z-index:2;background:transparent;
+  min-height:100vh;min-height:100svh;min-height:100dvh;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding:40px clamp(24px,6vw,90px);
 }
-.auth-card{width:100%;max-width:380px;}
+.auth-card{
+  width:100%;max-width:380px;
+  background:rgba(250,249,245,0.97);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:22px;
+  padding:34px 32px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.28);
+}
 
-/* ---- en celular: la foto queda de fondo a pantalla completa
-       y la tarjeta de login/registro flota encima, tipo app ---- */
+/* ---- en pantallas angostas: la tarjeta baja al fondo, tipo app ---- */
 @media (max-width:900px){
-  .auth-page{
-    display:block;position:relative;height:auto;overflow:visible;
-    min-height:100vh;min-height:100svh;min-height:100dvh;
-  }
-  .auth-visual{
-    display:flex;position:fixed;inset:0;
-    height:100vh;height:100svh;height:100dvh;
-    padding:22px 22px 0;z-index:0;
-  }
+  .auth-visual{padding:22px 22px 0;}
   .auth-stamp{display:none;}
   .auth-form-side{
-    position:relative;z-index:2;background:transparent;
-    min-height:100vh;min-height:100svh;min-height:100dvh;
-    display:flex;align-items:flex-end;justify-content:center;
+    align-items:flex-end;justify-content:center;
     padding:24px 16px calc(22px + env(safe-area-inset-bottom));
   }
   .auth-card{
     max-width:460px;
-    background:rgba(250,249,245,0.97);
-    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
     border-radius:26px 26px 22px 22px;
     padding:30px 22px 26px;
     box-shadow:0 -12px 50px rgba(0,0,0,0.28);
