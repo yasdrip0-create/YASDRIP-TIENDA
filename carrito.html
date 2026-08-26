@@ -128,6 +128,27 @@ function pintarCarrito() {
 
   const total = totalCarritoValor();
   const html = `
+    <div class="checkout-stepper" id="checkoutStepper">
+      <div class="stepper-step is-done" data-stepper="1">
+        <div class="stepper-circle">✓</div>
+        <div class="stepper-label">Carrito</div>
+      </div>
+      <div class="stepper-line" data-line="1"></div>
+      <div class="stepper-step is-active" data-stepper="2">
+        <div class="stepper-circle">2</div>
+        <div class="stepper-label">Tus datos</div>
+      </div>
+      <div class="stepper-line" data-line="2"></div>
+      <div class="stepper-step" data-stepper="3">
+        <div class="stepper-circle">3</div>
+        <div class="stepper-label">Envío</div>
+      </div>
+      <div class="stepper-line" data-line="3"></div>
+      <div class="stepper-step" data-stepper="4">
+        <div class="stepper-circle">4</div>
+        <div class="stepper-label">Pago ⚡</div>
+      </div>
+    </div>
     <div class="carrito-layout">
       <div class="carrito-items">${itemsHtml}</div>
       <div class="carrito-summary-col">
@@ -318,6 +339,21 @@ function pintarCarrito() {
       s.classList.toggle('open', Number(s.dataset.step) === n);
       refrescarNum(s);
     });
+    activarStepper(n + 1);
+  }
+
+  /* ---- stepper de arriba (Carrito → Tus datos → Envío → Pago) ---- */
+  const stepperSteps = wrap.querySelectorAll('.stepper-step');
+  const stepperLines = wrap.querySelectorAll('.stepper-line');
+  function activarStepper(n) {
+    stepperSteps.forEach(s => {
+      const num = Number(s.dataset.stepper);
+      const circle = s.querySelector('.stepper-circle');
+      s.classList.remove('is-active', 'is-done');
+      if (num < n) { s.classList.add('is-done'); circle.textContent = '✓'; }
+      else { circle.textContent = num; if (num === n) s.classList.add('is-active'); }
+    });
+    stepperLines.forEach(l => l.classList.toggle('is-done', Number(l.dataset.line) < n));
   }
 
   steps.forEach(step => {
@@ -522,6 +558,8 @@ function mostrarExito(nombreCliente, pedidoId) {
     ex.style.display = 'flex';
     document.getElementById('gracias-nombre').textContent = '✨ ¡Muchas gracias, ' + nombreCliente + '! ✨';
     document.getElementById('exito-pedido').textContent = pedidoId ? `PEDIDO #${pedidoId}` : 'PEDIDO REGISTRADO';
+    document.querySelectorAll('.stepper-step').forEach(s => { s.classList.add('is-done'); s.classList.remove('is-active'); s.querySelector('.stepper-circle').textContent = '✓'; });
+    document.querySelectorAll('.stepper-line').forEach(l => l.classList.add('is-done'));
     lanzarConfeti();
     pintarCarrito();
   }, 400);
