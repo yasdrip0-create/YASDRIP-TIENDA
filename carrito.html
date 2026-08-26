@@ -277,17 +277,6 @@ function pintarCarrito() {
       <div class="carrito-summary-col">
         <div class="carrito-summary-card">
           <div class="summary-eyebrow">Resumen del pedido</div>
-          <div class="summary-mini-items">
-            ${grupos.map(g => `
-              <div class="summary-mini-item">
-                <div class="summary-mini-photo">${g.foto ? `<img src="${g.foto}" alt="${g.nombre}">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
-                <div class="summary-mini-info">
-                  <span class="summary-mini-nombre">${g.nombre}</span>
-                  <span class="summary-mini-meta">Talla ${g.talla || '—'} · x${g.cantidad}</span>
-                </div>
-                <span class="summary-mini-precio">$${Number(g.precio * g.cantidad).toLocaleString('es-CO')}</span>
-              </div>`).join('')}
-          </div>
           <div class="summary-row"><span>Subtotal</span><span id="subtotalValor">$${Number(total).toLocaleString('es-CO')}</span></div>
           <div class="summary-row"><span>Envío</span><span id="envioValor">Elige tu municipio</span></div>
           <div class="carrito-total">
