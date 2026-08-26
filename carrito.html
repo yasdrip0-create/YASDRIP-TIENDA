@@ -128,29 +128,131 @@ function pintarCarrito() {
 
   const total = totalCarritoValor();
   const html = `
+    <div class="checkout-stepper" id="checkoutStepper">
+      <div class="stepper-step is-done" data-stepper="1">
+        <div class="stepper-circle">✓</div>
+        <div class="stepper-label">Carrito</div>
+      </div>
+      <div class="stepper-line" data-line="1"></div>
+      <div class="stepper-step is-active" data-stepper="2">
+        <div class="stepper-circle">2</div>
+        <div class="stepper-label">Tus datos</div>
+      </div>
+      <div class="stepper-line" data-line="2"></div>
+      <div class="stepper-step" data-stepper="3">
+        <div class="stepper-circle">3</div>
+        <div class="stepper-label">Envío</div>
+      </div>
+      <div class="stepper-line" data-line="3"></div>
+      <div class="stepper-step" data-stepper="4">
+        <div class="stepper-circle">4</div>
+        <div class="stepper-label">Pago ⚡</div>
+      </div>
+    </div>
     <div class="carrito-layout">
       <div class="carrito-items">
         ${itemsHtml}
-        <div class="checkout-stepper" id="checkoutStepper">
-          <div class="stepper-step is-done" data-stepper="1">
-            <div class="stepper-circle">✓</div>
-            <div class="stepper-label">Carrito</div>
-          </div>
-          <div class="stepper-line" data-line="1"></div>
-          <div class="stepper-step is-active" data-stepper="2">
-            <div class="stepper-circle">2</div>
-            <div class="stepper-label">Tus datos</div>
-          </div>
-          <div class="stepper-line" data-line="2"></div>
-          <div class="stepper-step" data-stepper="3">
-            <div class="stepper-circle">3</div>
-            <div class="stepper-label">Envío</div>
-          </div>
-          <div class="stepper-line" data-line="3"></div>
-          <div class="stepper-step" data-stepper="4">
-            <div class="stepper-circle">4</div>
-            <div class="stepper-label">Pago ⚡</div>
-          </div>
+
+        <div class="pagar-box pagar-box-abajo">
+          <h2>Cierra tu pedido ⚡</h2>
+          <form id="form-pago" novalidate>
+
+            <div class="checkout-step open" data-step="1">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">1</span>
+                  <span class="step-title">Tus datos</span>
+                </div>
+                <span class="step-summary"></span>
+              </div>
+              <div class="step-body">
+                <input type="text"  name="nombre_cliente" id="nombreCliente" placeholder="Nombre completo"    required>
+                <input type="email" name="email_cliente"  id="emailCliente"  placeholder="Correo electrónico" required>
+                <input type="tel"   name="telefono_cliente" id="telefonoCliente" placeholder="Teléfono / WhatsApp" required>
+                <button type="button" class="btn-continuar" data-next="2">Siguiente</button>
+              </div>
+            </div>
+
+            <div class="checkout-step" data-step="2">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">2</span>
+                  <span class="step-title">¿A dónde lo enviamos?</span>
+                </div>
+                <span class="step-summary"></span>
+              </div>
+              <div class="step-body">
+                <select id="municipioEnvio" required>
+                  <option value="" disabled selected>Selecciona municipio / zona</option>
+                  ${zonasEnvio().map(z => `<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-CO')}</option>`).join('')}
+                </select>
+                <div class="campo-fila">
+                  <input type="text" id="barrioCliente" placeholder="Barrio">
+                  <input type="text" id="veredaCliente" placeholder="Vereda (opcional)">
+                </div>
+                <input type="text" id="direccionCliente" placeholder="Calle / Carrera / Número" required>
+                <input type="text" id="edificioCliente" placeholder="Edificio, apto, casa, torre (opcional)">
+                <textarea id="referenciaCliente" placeholder="Indicaciones adicionales (opcional): color de la casa, cerca de..." rows="2"></textarea>
+                <button type="button" class="btn-continuar" data-next="3">Siguiente</button>
+              </div>
+            </div>
+
+            <div class="checkout-step" data-step="3">
+              <div class="step-header">
+                <div class="step-header-left">
+                  <span class="step-num">3</span>
+                  <span class="step-title">¿Cómo quieres pagar?</span>
+                </div>
+                <span class="step-summary"></span>
+              </div>
+              <div class="step-body">
+                <div class="metodo-pago-chips">
+                  <button type="button" class="metodo-chip" data-metodo="tarjeta">💳 Tarjeta</button>
+                  <button type="button" class="metodo-chip" data-metodo="contraentrega">📦 Contraentrega</button>
+                  <button type="button" class="metodo-chip" data-metodo="nequi">📲 Nequi / Daviplata</button>
+                </div>
+
+                <div class="campos-tarjeta" id="camposTarjeta">
+                  <div class="tarjeta-visual" id="tarjetaVisual">
+                    <div class="tarjeta-cara tarjeta-frente">
+                      <div class="tarjeta-top">
+                        <span class="tarjeta-chip">▮▮</span>
+                        <span class="tarjeta-marca" id="tarjetaMarca">⚡ YASDRIP PAY</span>
+                      </div>
+                      <div class="tarjeta-numero" id="tarjetaNumeroVista">•••• •••• •••• ••••</div>
+                      <div class="tarjeta-bottom">
+                        <div>
+                          <div class="tarjeta-mini-label">TITULAR</div>
+                          <div class="tarjeta-titular" id="tarjetaTitularVista">TU NOMBRE AQUÍ</div>
+                        </div>
+                        <div>
+                          <div class="tarjeta-mini-label">VENCE</div>
+                          <div class="tarjeta-venc" id="tarjetaVencVista">MM/AA</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="tarjeta-cara tarjeta-reverso">
+                      <div class="tarjeta-banda"></div>
+                      <div class="tarjeta-cvv-box">
+                        <span id="tarjetaCvvVista">•••</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <input type="text" id="tarjetaNumero" placeholder="Número de la tarjeta" inputmode="numeric" maxlength="19">
+                  <input type="text" id="tarjetaTitular" placeholder="Nombre igual que en la tarjeta">
+                  <div class="campo-fila">
+                    <input type="text" id="tarjetaVencimiento" placeholder="MM/AA" inputmode="numeric" maxlength="5">
+                    <input type="text" id="tarjetaCvv" placeholder="CVV" inputmode="numeric" maxlength="4">
+                  </div>
+                  <p class="tarjeta-nota">🔒 Pago simulado — esta demo aún no está conectada a una pasarela real ni a una cuenta bancaria.</p>
+                </div>
+
+                <button type="submit" class="btn-pagar">Confirmar pedido ⚡</button>
+              </div>
+            </div>
+
+          </form>
         </div>
       </div>
       <div class="carrito-summary-col">
@@ -163,107 +265,6 @@ function pintarCarrito() {
             <span class="total-valor" id="totalValor">$${Number(total).toLocaleString('es-CO')}</span>
           </div>
           <a href="#" class="btn-limpiar" id="btnLimpiar">${svgRayoBoton()}<span>Vaciar carrito</span></a>
-          <div class="pagar-box">
-            <h2>Cierra tu pedido ⚡</h2>
-            <form id="form-pago" novalidate>
-
-              <div class="checkout-step open" data-step="1">
-                <div class="step-header">
-                  <div class="step-header-left">
-                    <span class="step-num">1</span>
-                    <span class="step-title">Tus datos</span>
-                  </div>
-                  <span class="step-summary"></span>
-                </div>
-                <div class="step-body">
-                  <input type="text"  name="nombre_cliente" id="nombreCliente" placeholder="Nombre completo"    required>
-                  <input type="email" name="email_cliente"  id="emailCliente"  placeholder="Correo electrónico" required>
-                  <input type="tel"   name="telefono_cliente" id="telefonoCliente" placeholder="Teléfono / WhatsApp" required>
-                  <button type="button" class="btn-continuar" data-next="2">Continuar</button>
-                </div>
-              </div>
-
-              <div class="checkout-step" data-step="2">
-                <div class="step-header">
-                  <div class="step-header-left">
-                    <span class="step-num">2</span>
-                    <span class="step-title">¿A dónde lo enviamos?</span>
-                  </div>
-                  <span class="step-summary"></span>
-                </div>
-                <div class="step-body">
-                  <select id="municipioEnvio" required>
-                    <option value="" disabled selected>Selecciona municipio / zona</option>
-                    ${zonasEnvio().map(z => `<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-CO')}</option>`).join('')}
-                  </select>
-                  <div class="campo-fila">
-                    <input type="text" id="barrioCliente" placeholder="Barrio">
-                    <input type="text" id="veredaCliente" placeholder="Vereda (opcional)">
-                  </div>
-                  <input type="text" id="direccionCliente" placeholder="Calle / Carrera / Número" required>
-                  <input type="text" id="edificioCliente" placeholder="Edificio, apto, casa, torre (opcional)">
-                  <textarea id="referenciaCliente" placeholder="Indicaciones adicionales (opcional): color de la casa, cerca de..." rows="2"></textarea>
-                  <button type="button" class="btn-continuar" data-next="3">Continuar</button>
-                </div>
-              </div>
-
-              <div class="checkout-step" data-step="3">
-                <div class="step-header">
-                  <div class="step-header-left">
-                    <span class="step-num">3</span>
-                    <span class="step-title">¿Cómo quieres pagar?</span>
-                  </div>
-                  <span class="step-summary"></span>
-                </div>
-                <div class="step-body">
-                  <div class="metodo-pago-chips">
-                    <button type="button" class="metodo-chip" data-metodo="tarjeta">💳 Tarjeta</button>
-                    <button type="button" class="metodo-chip" data-metodo="contraentrega">📦 Contraentrega</button>
-                    <button type="button" class="metodo-chip" data-metodo="nequi">📲 Nequi / Daviplata</button>
-                  </div>
-
-                  <div class="campos-tarjeta" id="camposTarjeta">
-                    <div class="tarjeta-visual" id="tarjetaVisual">
-                      <div class="tarjeta-cara tarjeta-frente">
-                        <div class="tarjeta-top">
-                          <span class="tarjeta-chip">▮▮</span>
-                          <span class="tarjeta-marca" id="tarjetaMarca">⚡ YASDRIP PAY</span>
-                        </div>
-                        <div class="tarjeta-numero" id="tarjetaNumeroVista">•••• •••• •••• ••••</div>
-                        <div class="tarjeta-bottom">
-                          <div>
-                            <div class="tarjeta-mini-label">TITULAR</div>
-                            <div class="tarjeta-titular" id="tarjetaTitularVista">TU NOMBRE AQUÍ</div>
-                          </div>
-                          <div>
-                            <div class="tarjeta-mini-label">VENCE</div>
-                            <div class="tarjeta-venc" id="tarjetaVencVista">MM/AA</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="tarjeta-cara tarjeta-reverso">
-                        <div class="tarjeta-banda"></div>
-                        <div class="tarjeta-cvv-box">
-                          <span id="tarjetaCvvVista">•••</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <input type="text" id="tarjetaNumero" placeholder="Número de la tarjeta" inputmode="numeric" maxlength="19">
-                    <input type="text" id="tarjetaTitular" placeholder="Nombre igual que en la tarjeta">
-                    <div class="campo-fila">
-                      <input type="text" id="tarjetaVencimiento" placeholder="MM/AA" inputmode="numeric" maxlength="5">
-                      <input type="text" id="tarjetaCvv" placeholder="CVV" inputmode="numeric" maxlength="4">
-                    </div>
-                    <p class="tarjeta-nota">🔒 Pago simulado — esta demo aún no está conectada a una pasarela real ni a una cuenta bancaria.</p>
-                  </div>
-
-                  <button type="submit" class="btn-pagar">Confirmar pedido ⚡</button>
-                </div>
-              </div>
-
-            </form>
-          </div>
         </div>
       </div>
     </div>`;
