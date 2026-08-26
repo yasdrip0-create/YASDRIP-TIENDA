@@ -1085,12 +1085,21 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
    tarjeta de login/registro flota encima. */
 .auth-page{position:relative;min-height:100vh;min-height:100svh;min-height:100dvh;overflow:visible;}
 .auth-visual{
-  position:fixed;inset:0;z-index:0;
+  position:fixed;inset:0;z-index:0;overflow:hidden;
   height:100vh;height:100svh;height:100dvh;
-  background:url('../img/portada.jpeg') center/cover no-repeat;
   color:var(--offwhite);
   padding:36px clamp(24px,5vw,64px);
   display:flex;flex-direction:column;justify-content:space-between;
+}
+/* fondo borroso a pantalla completa (rellena las orillas sin recortar la foto) */
+.auth-visual-blur{
+  position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(120% 100% at 50% 40%, #d3d4d8 0%, #c7c8cc 55%, #b7b8bd 100%);
+}
+/* la foto completa, siempre entera, centrada encima del fondo borroso */
+.auth-visual-sharp{
+  position:absolute;inset:0;z-index:0;
+  background:url('../img/portada.jpeg') center/contain no-repeat;
 }
 .auth-visual::after{
   content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
@@ -1180,6 +1189,17 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   .auth-copy h1{font-size:clamp(24px,4.4vw,32px);}
   .auth-copy p{display:none;}
 }
+/* ---- versión "fantasma": sin caja blanca, el texto va directo sobre la foto ---- */
+.auth-card-ghost{
+  background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
+  box-shadow:none;border-radius:0;
+}
+.auth-card-ghost .auth-brand{color:var(--offwhite);}
+.auth-card-ghost .auth-brand .logo-mark{color:var(--sage);}
+.auth-card-ghost .auth-brand em{color:var(--sage);}
+.auth-card-ghost h2{color:var(--offwhite);text-shadow:0 2px 14px rgba(0,0,0,0.55);}
+.auth-card-ghost .auth-sub{color:var(--sage);text-shadow:0 1px 10px rgba(0,0,0,0.5);}
+
 .auth-brand{display:flex;align-items:center;justify-content:center;gap:8px;font-size:20px;font-weight:600;margin-bottom:34px;}
 .auth-brand .logo-mark{color:var(--forest);font-size:20px;}
 .auth-brand em{font-style:italic;color:var(--forest);}
