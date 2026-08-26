@@ -6,6 +6,7 @@
 <meta name="google" content="notranslate">
 <title>Tu carrito — YAS DRIP</title>
 <link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
@@ -19,7 +20,7 @@
     </div>
   </div>
 
-  <div class="carrito-wrap" style="margin-top:30px;" id="carritoWrap">
+  <div class="carrito-wrap" style="margin-top:6px;" id="carritoWrap">
     <!-- se rellena con JS -->
   </div>
 </section>
@@ -78,6 +79,7 @@
 <script src="js/products.js"></script>
 <script src="js/store.js"></script>
 <script src="js/layout.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 renderHeader('carrito');
 renderFooter();
@@ -154,7 +156,10 @@ function pintarCarrito() {
         ${itemsHtml}
 
         <div class="pagar-box pagar-box-abajo">
-          <h2>Cierra tu pedido ⚡</h2>
+          <div class="pagar-box-header">
+            <span class="pagar-box-eyebrow">¡Ya casi! ⚡</span>
+            <h2>Cierra tu pedido</h2>
+          </div>
           <form id="form-pago" novalidate>
 
             <div class="checkout-step open" data-step="1">
@@ -182,7 +187,11 @@ function pintarCarrito() {
                 <span class="step-summary"></span>
               </div>
               <div class="step-body">
-                <select id="municipioEnvio" required>
+                <div class="municipio-autocomplete" id="municipioAutocomplete">
+                  <input type="text" id="municipioInput" class="municipio-input" placeholder="Escribe tu ciudad o municipio..." autocomplete="off">
+                  <div class="municipio-sugerencias" id="municipioSugerencias"></div>
+                </div>
+                <select id="municipioEnvio" required style="display:none;">
                   <option value="" disabled selected>Selecciona municipio / zona</option>
                   ${zonasEnvio().map(z => `<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-CO')}</option>`).join('')}
                 </select>
@@ -193,6 +202,16 @@ function pintarCarrito() {
                 <input type="text" id="direccionCliente" placeholder="Calle / Carrera / Número" required>
                 <input type="text" id="edificioCliente" placeholder="Edificio, apto, casa, torre (opcional)">
                 <textarea id="referenciaCliente" placeholder="Indicaciones adicionales (opcional): color de la casa, cerca de..." rows="2"></textarea>
+
+                <button type="button" class="btn-mapa-toggle" id="btnMostrarMapa">📍 ¿No sabes bien tu dirección? Ubícala en el mapa</button>
+                <div class="mapa-wrap" id="mapaWrap">
+                  <div class="mapa-caja">
+                    <div id="mapaEnvio" class="mapa-envio"></div>
+                    <button type="button" class="btn-mi-ubicacion" id="btnMiUbicacion">🎯 Usar mi ubicación actual</button>
+                  </div>
+                  <p class="mapa-hint" id="mapaHint">Toca el mapa justo donde vives — llenamos la dirección sola para que el pedido te llegue bien.</p>
+                </div>
+
                 <button type="button" class="btn-continuar" data-next="3">Siguiente</button>
               </div>
             </div>
@@ -257,8 +276,19 @@ function pintarCarrito() {
       </div>
       <div class="carrito-summary-col">
         <div class="carrito-summary-card">
-          <h3>Resumen del pedido</h3>
-          <div class="summary-row"><span>${carrito.length} producto${carrito.length === 1 ? '' : 's'}</span><span id="subtotalValor">$${Number(total).toLocaleString('es-CO')}</span></div>
+          <div class="summary-eyebrow">Resumen del pedido</div>
+          <div class="summary-mini-items">
+            ${grupos.map(g => `
+              <div class="summary-mini-item">
+                <div class="summary-mini-photo">${g.foto ? `<img src="${g.foto}" alt="${g.nombre}">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
+                <div class="summary-mini-info">
+                  <span class="summary-mini-nombre">${g.nombre}</span>
+                  <span class="summary-mini-meta">Talla ${g.talla || '—'} · x${g.cantidad}</span>
+                </div>
+                <span class="summary-mini-precio">$${Number(g.precio * g.cantidad).toLocaleString('es-CO')}</span>
+              </div>`).join('')}
+          </div>
+          <div class="summary-row"><span>Subtotal</span><span id="subtotalValor">$${Number(total).toLocaleString('es-CO')}</span></div>
           <div class="summary-row"><span>Envío</span><span id="envioValor">Elige tu municipio</span></div>
           <div class="carrito-total">
             <span>TOTAL</span>
@@ -326,6 +356,105 @@ function pintarCarrito() {
       envioActual = opt ? Number(opt.dataset.costo || 0) : 0;
       envioValorEl.textContent = envioActual ? `$${envioActual.toLocaleString('es-CO')}` : 'Elige tu municipio';
       totalValorEl.textContent = `$${Number(total + envioActual).toLocaleString('es-CO')}`;
+    });
+  }
+
+  /* ---- buscador de municipio (autocompletar sobre el <select> real) ---- */
+  const municipioInput = document.getElementById('municipioInput');
+  const municipioSugerencias = document.getElementById('municipioSugerencias');
+  if (municipioInput && selectMunicipio) {
+    const zonas = zonasEnvio();
+
+    function pintarSugerencias(filtro) {
+      const texto = (filtro || '').toLowerCase();
+      const coincidencias = zonas.filter(z => z.nombre.toLowerCase().includes(texto));
+      if (!coincidencias.length) {
+        municipioSugerencias.innerHTML = `<div class="municipio-sug-vacio">No encontramos esa zona. Elige la más cercana 👇</div>` +
+          zonas.map(z => `<button type="button" class="municipio-sug" data-id="${z.id}">${z.nombre}<span class="municipio-sug-costo">$${z.costo.toLocaleString('es-CO')}</span></button>`).join('');
+      } else {
+        municipioSugerencias.innerHTML = coincidencias.map(z => `<button type="button" class="municipio-sug" data-id="${z.id}">${z.nombre}<span class="municipio-sug-costo">$${z.costo.toLocaleString('es-CO')}</span></button>`).join('');
+      }
+      municipioSugerencias.querySelectorAll('.municipio-sug').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const zona = zonas.find(z => z.id === btn.dataset.id);
+          if (!zona) return;
+          municipioInput.value = zona.nombre;
+          selectMunicipio.value = zona.id;
+          selectMunicipio.dispatchEvent(new Event('change'));
+          municipioSugerencias.classList.remove('open');
+        });
+      });
+    }
+
+    municipioInput.addEventListener('focus', () => { pintarSugerencias(municipioInput.value); municipioSugerencias.classList.add('open'); });
+    municipioInput.addEventListener('input', () => { pintarSugerencias(municipioInput.value); municipioSugerencias.classList.add('open'); });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#municipioAutocomplete')) municipioSugerencias.classList.remove('open');
+    });
+  }
+
+  /* ---- mapa para ubicar la dirección (Leaflet + OpenStreetMap, sin API key) ---- */
+  const btnMostrarMapa = document.getElementById('btnMostrarMapa');
+  const mapaWrap = document.getElementById('mapaWrap');
+  const btnMiUbicacion = document.getElementById('btnMiUbicacion');
+  const mapaHint = document.getElementById('mapaHint');
+  let mapaLeaflet = null, marcadorLeaflet = null;
+
+  function inicializarMapa(lat, lng) {
+    if (mapaLeaflet) { mapaLeaflet.invalidateSize(); return; }
+    mapaLeaflet = L.map('mapaEnvio').setView([lat, lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19
+    }).addTo(mapaLeaflet);
+    marcadorLeaflet = L.marker([lat, lng], { draggable: true }).addTo(mapaLeaflet);
+
+    async function ubicarDesdePunto(latlng) {
+      marcadorLeaflet.setLatLng(latlng);
+      mapaHint.textContent = 'Buscando la dirección de ese punto...';
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`);
+        const data = await res.json();
+        const direccionTexto = data && data.display_name ? data.display_name.split(',').slice(0, 3).join(',') : '';
+        if (direccionTexto) {
+          document.getElementById('direccionCliente').value = direccionTexto;
+          mapaHint.textContent = '📍 Dirección ubicada: ' + direccionTexto;
+        } else {
+          mapaHint.textContent = 'Ubicamos el punto en el mapa, pero escribe la dirección manualmente por si acaso.';
+        }
+      } catch (err) {
+        mapaHint.textContent = 'No pudimos leer la dirección automáticamente, pero el punto quedó marcado en el mapa.';
+      }
+    }
+
+    mapaLeaflet.on('click', (e) => ubicarDesdePunto(e.latlng));
+    marcadorLeaflet.on('dragend', () => ubicarDesdePunto(marcadorLeaflet.getLatLng()));
+  }
+
+  if (btnMostrarMapa) {
+    btnMostrarMapa.addEventListener('click', () => {
+      const yaAbierto = mapaWrap.classList.toggle('open');
+      btnMostrarMapa.textContent = yaAbierto ? '📍 Ocultar el mapa' : '📍 ¿No sabes bien tu dirección? Ubícala en el mapa';
+      if (yaAbierto) setTimeout(() => inicializarMapa(6.2442, -75.5812), 150); // centro por defecto: Medellín
+    });
+  }
+
+  if (btnMiUbicacion) {
+    btnMiUbicacion.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        showToastCarrito('Tu navegador no permite compartir ubicación.');
+        return;
+      }
+      mapaHint.textContent = 'Buscando tu ubicación...';
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (!mapaLeaflet) inicializarMapa(latitude, longitude);
+        mapaLeaflet.setView([latitude, longitude], 16);
+        marcadorLeaflet.setLatLng([latitude, longitude]);
+        marcadorLeaflet.fire('dragend');
+      }, () => {
+        showToastCarrito('No pudimos acceder a tu ubicación. Actívala en el navegador o marca el punto en el mapa.');
+      });
     });
   }
 
