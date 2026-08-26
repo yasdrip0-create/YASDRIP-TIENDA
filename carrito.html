@@ -128,29 +128,31 @@ function pintarCarrito() {
 
   const total = totalCarritoValor();
   const html = `
-    <div class="checkout-stepper" id="checkoutStepper">
-      <div class="stepper-step is-done" data-stepper="1">
-        <div class="stepper-circle">✓</div>
-        <div class="stepper-label">Carrito</div>
-      </div>
-      <div class="stepper-line" data-line="1"></div>
-      <div class="stepper-step is-active" data-stepper="2">
-        <div class="stepper-circle">2</div>
-        <div class="stepper-label">Tus datos</div>
-      </div>
-      <div class="stepper-line" data-line="2"></div>
-      <div class="stepper-step" data-stepper="3">
-        <div class="stepper-circle">3</div>
-        <div class="stepper-label">Envío</div>
-      </div>
-      <div class="stepper-line" data-line="3"></div>
-      <div class="stepper-step" data-stepper="4">
-        <div class="stepper-circle">4</div>
-        <div class="stepper-label">Pago ⚡</div>
-      </div>
-    </div>
     <div class="carrito-layout">
-      <div class="carrito-items">${itemsHtml}</div>
+      <div class="carrito-items">
+        ${itemsHtml}
+        <div class="checkout-stepper" id="checkoutStepper">
+          <div class="stepper-step is-done" data-stepper="1">
+            <div class="stepper-circle">✓</div>
+            <div class="stepper-label">Carrito</div>
+          </div>
+          <div class="stepper-line" data-line="1"></div>
+          <div class="stepper-step is-active" data-stepper="2">
+            <div class="stepper-circle">2</div>
+            <div class="stepper-label">Tus datos</div>
+          </div>
+          <div class="stepper-line" data-line="2"></div>
+          <div class="stepper-step" data-stepper="3">
+            <div class="stepper-circle">3</div>
+            <div class="stepper-label">Envío</div>
+          </div>
+          <div class="stepper-line" data-line="3"></div>
+          <div class="stepper-step" data-stepper="4">
+            <div class="stepper-circle">4</div>
+            <div class="stepper-label">Pago ⚡</div>
+          </div>
+        </div>
+      </div>
       <div class="carrito-summary-col">
         <div class="carrito-summary-card">
           <h3>Resumen del pedido</h3>
