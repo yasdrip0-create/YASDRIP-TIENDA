@@ -40,7 +40,9 @@
 
       <div id="authMsg"></div>
 
-      <form id="formLogin">
+      <button type="button" id="btnMostrarLogin" class="btn btn-primary auth-submit">Ingresar</button>
+
+      <form id="formLogin" style="display:none;">
         <div class="auth-field">
           <input type="text" id="usuarioInput" placeholder="Correo electrónico" required>
         </div>
@@ -49,14 +51,6 @@
         </div>
         <button type="submit" class="btn btn-primary auth-submit">Iniciar sesión</button>
       </form>
-
-      <a href="#" class="auth-forgot" onclick="abrirId('modalOlvide');return false;">¿Olvidaste tu contraseña?</a>
-
-      <div class="auth-divider">o</div>
-
-      <a href="registro.html" class="btn btn-ghost auth-signup">Crear cuenta nueva</a>
-
-      <p class="auth-footnote">¿Problemas para entrar? <a href="servicios.html">Contáctanos</a></p>
     </div>
   </div>
 
@@ -118,6 +112,13 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/store.js"></script>
 <script>
+document.getElementById('btnMostrarLogin').addEventListener('click', function () {
+  this.style.display = 'none';
+  const form = document.getElementById('formLogin');
+  form.style.display = 'block';
+  document.getElementById('usuarioInput').focus();
+});
+
 document.getElementById('formLogin').addEventListener('submit', async function (e) {
   e.preventDefault();
   const usuario = document.getElementById('usuarioInput').value.trim();
