@@ -143,14 +143,14 @@
           <table class="admin-table" id="tablaProductos">
             <thead>
               <tr>
-                <th>Producto</th>
+                <th class="th-ordenable" data-campo="nombre">Producto</th>
                 <th>Fotos</th>
-                <th>Categoría</th>
-                <th>Precio base</th>
+                <th class="th-ordenable" data-campo="categoria">Categoría</th>
+                <th class="th-ordenable" data-campo="precio">Precio base</th>
                 <th>Precio por talla</th>
-                <th>Descuento %</th>
-                <th>Precio final</th>
-                <th>Stock</th>
+                <th class="th-ordenable" data-campo="descuento">Descuento %</th>
+                <th class="th-ordenable" data-campo="precioFinal">Precio final</th>
+                <th class="th-ordenable" data-campo="stock">Stock</th>
                 <th>Estado</th>
                 <th></th>
               </tr>
@@ -178,18 +178,19 @@
           <label class="admin-filtro-fecha">Desde<input type="date" id="filtroFechaDesde" class="admin-input"></label>
           <label class="admin-filtro-fecha">Hasta<input type="date" id="filtroFechaHasta" class="admin-input"></label>
           <button type="button" class="admin-btn admin-btn-ghost" id="btnLimpiarFiltrosPedidos">Limpiar filtros</button>
+          <button type="button" class="admin-btn admin-btn-ghost" id="btnExportarPedidosCSV">⬇️ Exportar CSV</button>
         </div>
         <div class="admin-table-wrap">
           <table class="admin-table" id="tablaPedidos">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Cliente</th>
+                <th class="th-ordenable" data-campo="fecha">Fecha</th>
+                <th class="th-ordenable" data-campo="cliente">Cliente</th>
                 <th>Contacto</th>
                 <th>Productos</th>
                 <th>Envío</th>
                 <th>Pago</th>
-                <th>Total</th>
+                <th class="th-ordenable" data-campo="total">Total</th>
                 <th>Estado</th>
                 <th></th>
               </tr>
@@ -344,6 +345,17 @@
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarAccesoUsuarios">Entrar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalAccesoUsuarios">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL HISTORIAL DE PEDIDO ======================= -->
+<div class="admin-modal-overlay" id="modalHistorialPedido">
+  <div class="admin-modal admin-modal-wide">
+    <h3>Historial del pedido</h3>
+    <div id="historialPedidoLista" style="margin-bottom:16px;max-height:340px;overflow-y:auto;"></div>
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalHistorialPedido">Cerrar</button>
     </div>
   </div>
 </div>
@@ -791,6 +803,8 @@ document.getElementById('btnGuardarDrop').addEventListener('click', () => {
    admin escribe algo. Solo se vuelve a pedir cuando de verdad hace
    falta (al entrar a la pestaña, o después de borrar/cambiar algo). */
 let pedidosCache = [];
+let pedidosFiltradosActuales = []; // último resultado de aplicarFiltrosPedidos, lo usa "Exportar CSV"
+let ordenPedidos = { campo: null, dir: 1 }; // orden al hacer clic en un encabezado de la tabla
 
 async function pintarPedidos() {
   const tbody = document.getElementById('tablaPedidosBody');
@@ -800,16 +814,50 @@ async function pintarPedidos() {
   aplicarFiltrosPedidos();
 }
 
+function valorOrdenPedido(p, campo) {
+  if (campo === 'fecha') return p.fecha ? new Date(p.fecha).getTime() : 0;
+  if (campo === 'cliente') return (p.nombre_cliente || '').toLowerCase();
+  if (campo === 'total') return Number(p.total) || 0;
+  return 0;
+}
+function aplicarOrdenPedidos(lista) {
+  if (!ordenPedidos.campo) return lista;
+  return [...lista].sort((a, b) => {
+    const va = valorOrdenPedido(a, ordenPedidos.campo);
+    const vb = valorOrdenPedido(b, ordenPedidos.campo);
+    if (va < vb) return -1 * ordenPedidos.dir;
+    if (va > vb) return 1 * ordenPedidos.dir;
+    return 0;
+  });
+}
+/** Pone la flechita (▲/▼) solo en el encabezado por el que se está
+    ordenando ahora mismo; el resto se queda sin flecha. */
+function actualizarFlechasOrdenPedidos() {
+  document.querySelectorAll('#tablaPedidos thead .th-ordenable').forEach(th => {
+    th.classList.remove('orden-asc', 'orden-desc');
+    if (th.dataset.campo === ordenPedidos.campo) th.classList.add(ordenPedidos.dir === 1 ? 'orden-asc' : 'orden-desc');
+  });
+}
+document.querySelector('#tablaPedidos thead').addEventListener('click', (e) => {
+  const th = e.target.closest('.th-ordenable');
+  if (!th) return;
+  const campo = th.dataset.campo;
+  if (ordenPedidos.campo === campo) ordenPedidos.dir *= -1;
+  else { ordenPedidos.campo = campo; ordenPedidos.dir = 1; }
+  actualizarFlechasOrdenPedidos();
+  aplicarFiltrosPedidos();
+});
+
 /** Filtra pedidosCache según lo que haya en el buscador, el select
-    de estado y las fechas, y vuelve a pintar la tabla y las
-    estadísticas con ese subconjunto. */
+    de estado y las fechas, lo ordena según ordenPedidos, y vuelve
+    a pintar la tabla y las estadísticas con ese subconjunto. */
 function aplicarFiltrosPedidos() {
   const texto = document.getElementById('buscarPedidoAdmin').value.trim().toLowerCase();
   const estadoElegido = document.getElementById('filtroEstadoPedido').value;
   const desde = document.getElementById('filtroFechaDesde').value;
   const hasta = document.getElementById('filtroFechaHasta').value;
 
-  const pedidos = pedidosCache.filter(p => {
+  let pedidos = pedidosCache.filter(p => {
     if (texto) {
       const bolsa = `${p.nombre_cliente || ''} ${p.email_cliente || ''} ${p.telefono_cliente || ''} ${p.detalle || ''}`.toLowerCase();
       if (!bolsa.includes(texto)) return false;
@@ -822,6 +870,8 @@ function aplicarFiltrosPedidos() {
     }
     return true;
   });
+  pedidos = aplicarOrdenPedidos(pedidos);
+  pedidosFiltradosActuales = pedidos;
 
   const tbody = document.getElementById('tablaPedidosBody');
   const totalVendido = pedidos.reduce((s, p) => s + (Number(p.total) || 0), 0);
@@ -857,7 +907,10 @@ function aplicarFiltrosPedidos() {
         <td data-label="Pago">${p.metodo_pago === 'tarjeta' ? `Tarjeta •••• ${p.tarjeta_final || ''}` : 'Contraentrega'}</td>
         <td data-label="Total" class="mono"><b>$${(Number(p.total) || 0).toLocaleString('es-CO')}</b></td>
         <td data-label="Estado"><select class="admin-input select-estado-pedido estado-select-${estadoActual}" data-id="${p.id}">${opcionesEstado}</select></td>
-        <td data-label="">${permisosActuales.eliminarPedidos ? `<button type="button" class="admin-btn admin-btn-ghost btn-borrar-pedido" data-id="${p.id}">Eliminar</button>` : ''}</td>
+        <td data-label="">
+          <button type="button" class="admin-btn admin-btn-ghost btn-ver-historial" data-id="${p.id}">Historial</button>
+          ${permisosActuales.eliminarPedidos ? `<button type="button" class="admin-btn admin-btn-ghost btn-borrar-pedido" data-id="${p.id}">Eliminar</button>` : ''}
+        </td>
       </tr>`;
   }).join('');
 }
@@ -873,6 +926,50 @@ document.getElementById('btnLimpiarFiltrosPedidos').addEventListener('click', ()
   aplicarFiltrosPedidos();
 });
 
+/* ---------- exportar a CSV lo que esté filtrado en pantalla ---------- */
+document.getElementById('btnExportarPedidosCSV').addEventListener('click', () => {
+  if (!pedidosFiltradosActuales.length) { showToast('No hay pedidos para exportar.', true); return; }
+  const encabezados = ['Fecha', 'Cliente', 'Email', 'Teléfono', 'Productos', 'Envío', 'Pago', 'Total', 'Estado'];
+  const filas = pedidosFiltradosActuales.map(p => {
+    const fecha = p.fecha ? new Date(p.fecha).toLocaleString('es-CO') : '';
+    const envioTexto = [p.envio_direccion, p.envio_barrio, p.envio_municipio].filter(Boolean).join(', ');
+    const pago = p.metodo_pago === 'tarjeta' ? `Tarjeta ****${p.tarjeta_final || ''}` : 'Contraentrega';
+    return [fecha, p.nombre_cliente || '', p.email_cliente || '', p.telefono_cliente || '', p.detalle || '', envioTexto, pago, Number(p.total) || 0, ESTADOS_PEDIDO[estadoPedido(p)].label];
+  });
+  const csv = [encabezados, ...filas]
+    .map(fila => fila.map(celda => `"${String(celda).replace(/"/g, '""')}"`).join(','))
+    .join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // \uFEFF: para que Excel muestre bien las tildes
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pedidos_yasdrip_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast(`${pedidosFiltradosActuales.length} pedido(s) exportado(s) ✓`);
+});
+
+/* ---------- ver el historial de cambios de estado de un pedido ---------- */
+const modalHistorialPedido = document.getElementById('modalHistorialPedido');
+document.getElementById('tablaPedidosBody').addEventListener('click', (e) => {
+  const btnHistorial = e.target.closest('.btn-ver-historial');
+  if (!btnHistorial) return;
+  const pedido = pedidosCache.find(p => p.id === btnHistorial.dataset.id);
+  const historial = (pedido && pedido.historial_estados) || [];
+  const cont = document.getElementById('historialPedidoLista');
+  cont.innerHTML = historial.length
+    ? [...historial].reverse().map(h => {
+        const info = ESTADOS_PEDIDO[h.estado] || { emoji: '•', label: h.estado };
+        const fecha = h.fecha ? new Date(h.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        return `<div class="historial-fila"><span class="pedido-estado-pill estado-pill-${h.estado}">${info.emoji} ${info.label}</span><span class="historial-usuario">${h.usuario || 'desconocido'}</span><span class="historial-fecha mono">${fecha}</span></div>`;
+      }).join('')
+    : `<p class="admin-foto-hint">Todavía no hay cambios de estado registrados para este pedido.</p>`;
+  modalHistorialPedido.classList.add('open');
+});
+document.getElementById('btnCerrarModalHistorialPedido').addEventListener('click', () => modalHistorialPedido.classList.remove('open'));
+
 /* ---------- cambiar el estado de un pedido desde la tabla ---------- */
 document.getElementById('tablaPedidosBody').addEventListener('change', async (e) => {
   const select = e.target.closest('.select-estado-pedido');
@@ -884,7 +981,10 @@ document.getElementById('tablaPedidosBody').addEventListener('change', async (e)
   select.disabled = false;
   if (!res.ok) { showToast(res.msg, true); return; }
   const pedidoLocal = pedidosCache.find(p => p.id === id);
-  if (pedidoLocal) pedidoLocal.estado = nuevoEstado;
+  if (pedidoLocal) {
+    pedidoLocal.estado = nuevoEstado;
+    pedidoLocal.historial_estados = [...(pedidoLocal.historial_estados || []), res.entradaHistorial];
+  }
   select.className = `admin-input select-estado-pedido estado-select-${nuevoEstado}`;
   showToast('Estado del pedido actualizado ✓');
 });
@@ -1059,8 +1159,46 @@ function pintarStats() {
 }
 
 /* ---------- tabla de productos ---------- */
+let ordenProductos = { campo: null, dir: 1 }; // orden al hacer clic en un encabezado de la tabla
+
+function valorOrdenProducto(p, campo) {
+  if (campo === 'nombre') return (p.nombre || '').toLowerCase();
+  if (campo === 'categoria') return (p.categoria || '').toLowerCase();
+  if (campo === 'precio') return Number(p.precio) || 0;
+  if (campo === 'descuento') return Number(p.descuento) || 0;
+  if (campo === 'precioFinal') return rangoPrecioTallas(p).min;
+  if (campo === 'stock') return stockTotalProducto(p);
+  return 0;
+}
+function aplicarOrdenProductos(lista) {
+  if (!ordenProductos.campo) return lista;
+  return [...lista].sort((a, b) => {
+    const va = valorOrdenProducto(a, ordenProductos.campo);
+    const vb = valorOrdenProducto(b, ordenProductos.campo);
+    if (va < vb) return -1 * ordenProductos.dir;
+    if (va > vb) return 1 * ordenProductos.dir;
+    return 0;
+  });
+}
+function actualizarFlechasOrdenProductos() {
+  document.querySelectorAll('#tablaProductos thead .th-ordenable').forEach(th => {
+    th.classList.remove('orden-asc', 'orden-desc');
+    if (th.dataset.campo === ordenProductos.campo) th.classList.add(ordenProductos.dir === 1 ? 'orden-asc' : 'orden-desc');
+  });
+}
+document.querySelector('#tablaProductos thead').addEventListener('click', (e) => {
+  const th = e.target.closest('.th-ordenable');
+  if (!th) return;
+  const campo = th.dataset.campo;
+  if (ordenProductos.campo === campo) ordenProductos.dir *= -1;
+  else { ordenProductos.campo = campo; ordenProductos.dir = 1; }
+  actualizarFlechasOrdenProductos();
+  pintarTabla();
+  aplicarFiltroProductos();
+});
+
 function pintarTabla() {
-  const productos = obtenerProductosAdmin();
+  const productos = aplicarOrdenProductos(obtenerProductosAdmin());
   const tbody = document.getElementById('tablaProductosBody');
   if (!productos.length) {
     tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;

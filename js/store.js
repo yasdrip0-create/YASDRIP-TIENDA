@@ -537,12 +537,24 @@ async function obtenerPedidosAdmin() {
 
 /** Cambia el estado de un pedido (pendiente/confirmado/enviado/
     entregado/cancelado) en Firestore. Lo usa el panel admin desde
-    el selector de estado en la tabla de pedidos. */
+    el selector de estado en la tabla de pedidos. Además:
+    - guarda quién hizo el cambio y cuándo, en "historial_estados"
+      (así queda registro de quién marcó qué, con varios usuarios
+      usando el panel).
+    - avisa por Telegram (mismo canal que "pedido nuevo"), para
+      que el equipo se entere del cambio sin tener que abrir el
+      panel a cada rato. */
 async function actualizarEstadoPedidoAdmin(id, estado) {
   if (!ESTADOS_PEDIDO[estado]) return { ok: false, msg: 'Estado inválido.' };
+  const usuario = usuarioAdminActual() || 'desconocido';
+  const entradaHistorial = { estado, usuario, fecha: new Date().toISOString() };
   try {
-    await fbDb.collection('pedidos').doc(id).update({ estado });
-    return { ok: true };
+    await fbDb.collection('pedidos').doc(id).update({
+      estado,
+      historial_estados: firebase.firestore.FieldValue.arrayUnion(entradaHistorial),
+    });
+    enviarAviso({ tipo: 'pedido_estado', id, estado, usuario });
+    return { ok: true, entradaHistorial };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
