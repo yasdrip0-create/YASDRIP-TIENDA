@@ -184,6 +184,20 @@ function stockTotalProducto(p) {
   return Math.max(0, Number(p && p.stock) || 0);
 }
 /** true si no queda stock de ese producto (en NINGÚN color/talla) */
+/** A partir de cuántas unidades totales se considera "poco stock"
+    (aviso amarillo, antes de llegar a 0 = agotado del todo). */
+const STOCK_BAJO_UMBRAL = 3;
+
+/** Nivel de stock de un producto para pintar el aviso correcto en el
+    panel: 'agotado' (0 unidades), 'bajo' (quedan pocas, <= umbral) u
+    'ok' (stock normal). */
+function nivelStockProducto(p) {
+  const total = stockTotalProducto(p);
+  if (total <= 0) return 'agotado';
+  if (total <= STOCK_BAJO_UMBRAL) return 'bajo';
+  return 'ok';
+}
+
 function estaAgotado(p) {
   return stockTotalProducto(p) <= 0;
 }
@@ -521,6 +535,26 @@ const ESTADOS_PEDIDO = {
 };
 function estadoPedido(p) {
   return (p.estado && ESTADOS_PEDIDO[p.estado]) ? p.estado : 'pendiente';
+}
+
+/** El id de Firestore (ej: "aB3xY9k...") sirve para buscar el pedido
+    exacto en la base de datos, pero no es nada práctico para hablar
+    con un cliente ("tu pedido aB3xY9k9..." no dice nada). Esta
+    función arma un mapa id -> número corto ("Pedido #1", "#2"...)
+    numerando los pedidos del más viejo al más nuevo, para que el
+    número de cada pedido no cambie con el tiempo aunque entren
+    pedidos nuevos después. Se calcula sobre TODA la lista de
+    pedidos (sin filtrar), para que el número sea siempre el mismo
+    sin importar qué filtro/orden esté aplicado en la tabla. */
+function mapaNumerosPedido(todosLosPedidos) {
+  const ordenadosPorFecha = [...todosLosPedidos].sort((a, b) => {
+    const fa = a.fecha ? new Date(a.fecha).getTime() : 0;
+    const fb = b.fecha ? new Date(b.fecha).getTime() : 0;
+    return fa - fb;
+  });
+  const mapa = new Map();
+  ordenadosPorFecha.forEach((p, i) => mapa.set(p.id, i + 1));
+  return mapa;
 }
 
 /** Trae todos los pedidos guardados en la nube, del más nuevo al
@@ -869,14 +903,44 @@ const ADMIN_SESION_VENCE_MS = 70000;  // sin latidos por más de esto = candado 
    código queda visible para cualquiera que abra el código fuente
    de la página, igual que ya pasa con la contraseña del panel. No
    es una barrera de seguridad real contra alguien que sepa
-   programación, es más bien un candado para que un miembro común
-   del equipo no entre a tocar usuarios/contraseñas por accidente
-   o sin permiso. Para cambiarlo, edita CODIGO_DESARROLLADOR aquí
-   abajo. */
-const CODIGO_DESARROLLADOR = "Admin2026**";
+   programación (es JavaScript que corre en el navegador de quien
+   sea, así que cualquiera con las herramientas de desarrollador
+   puede llamar a estas funciones directo) — es más bien un candado
+   para que un miembro común del equipo no entre a tocar usuarios/
+   contraseñas por accidente o sin permiso.
 
-function verificarCodigoDesarrollador(codigo) {
-  return String(codigo || "") === CODIGO_DESARROLLADOR;
+   Antes este código estaba escrito tal cual ("Admin2026**") en este
+   archivo público, así que cualquiera que abriera "Ver código
+   fuente" en el navegador lo veía a simple vista. Ahora en vez del
+   código en texto plano se guarda su "huella" (hash SHA-256): se
+   compara la huella de lo que el usuario escribe contra esta huella
+   guardada, y de la huella no se puede recuperar el código original.
+   Sigue sin ser una protección de nivel bancario (para eso hace
+   falta mover esta verificación a un servidor/Cloud Function), pero
+   ya nadie puede leer el código mirando el código fuente de la página.
+
+   Para CAMBIAR el código de desarrollador: calcula el SHA-256 del
+   código nuevo (por ejemplo, pegándolo en la consola del navegador:
+   `crypto.subtle.digest('SHA-256', new TextEncoder().encode('TU_CODIGO_NUEVO')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))`
+   ) y pega el resultado abajo, reemplazando CODIGO_DESARROLLADOR_HASH. */
+const CODIGO_DESARROLLADOR_HASH = "95f5e4e4377dd8ede9fee4f9840c9d039a5c5bf953a2db6014c26f11a6070c04";
+
+/** Saca el SHA-256 de un texto y lo devuelve en hexadecimal, para
+    comparar códigos/contraseñas sin guardarlos ni compararlos en
+    texto plano. */
+async function _sha256Hex(texto) {
+  const datos = new TextEncoder().encode(String(texto || ""));
+  const buffer = await crypto.subtle.digest('SHA-256', datos);
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verificarCodigoDesarrollador(codigo) {
+  if (!codigo) return false;
+  try {
+    return (await _sha256Hex(codigo)) === CODIGO_DESARROLLADOR_HASH;
+  } catch (e) {
+    return false; // navegador muy viejo sin crypto.subtle, o algo falló: nunca dejar pasar por error
+  }
 }
 
 /* Contraseña para ENTRAR a la pestaña "Usuarios" (solo para verla).
@@ -884,12 +948,18 @@ function verificarCodigoDesarrollador(codigo) {
    además solo funciona si quien tiene la sesión abierta ahora mismo
    es el usuario "admin" — a cualquier otro usuario del panel, aunque
    tenga el permiso "usuarios" marcado, este candado no le deja
-   pasar. Para cambiar la contraseña, edita CLAVE_ACCESO_USUARIOS
-   aquí abajo. */
-const CLAVE_ACCESO_USUARIOS = "Admin2026**";
+   pasar. Igual que arriba, se guarda como huella SHA-256, no en
+   texto plano. Para cambiarla, calcula el hash del texto nuevo (ver
+   instrucciones arriba) y reemplaza CLAVE_ACCESO_USUARIOS_HASH. */
+const CLAVE_ACCESO_USUARIOS_HASH = "95f5e4e4377dd8ede9fee4f9840c9d039a5c5bf953a2db6014c26f11a6070c04";
 
-function verificarAccesoTabUsuarios(clave) {
-  return usuarioAdminActual() === 'admin' && String(clave || "") === CLAVE_ACCESO_USUARIOS;
+async function verificarAccesoTabUsuarios(clave) {
+  if (usuarioAdminActual() !== 'admin' || !clave) return false;
+  try {
+    return (await _sha256Hex(clave)) === CLAVE_ACCESO_USUARIOS_HASH;
+  } catch (e) {
+    return false;
+  }
 }
 
 /* ---------- PERMISOS de cada usuario del panel ----------
