@@ -309,9 +309,15 @@ function renderFooter() {
           <a href="index.html" class="foot-logo display"><span class="logo-mark">⚡</span>YAS<em>DRIP</em></a>
           <p class="footer-slogan">Drip para gente que ya trae su propia energía.</p>
           <div class="footer-socials">
-            <a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener" class="social-pill ig">📸 @yas__drip</a>
-            <a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener" class="social-pill tk">🎵 TikTok</a>
-            <a href="https://facebook.com/yasdrip" target="_blank" rel="noopener" class="social-pill fb">📘 Facebook</a>
+            <a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener" class="social-pill ig">
+              <span class="social-pill-ico">${svgInstagram()}</span>@yas__drip
+            </a>
+            <a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener" class="social-pill tk">
+              <span class="social-pill-ico">${svgTikTok()}</span>TikTok
+            </a>
+            <a href="https://facebook.com/yasdrip" target="_blank" rel="noopener" class="social-pill fb">
+              <span class="social-pill-ico">${svgFacebook()}</span>Facebook
+            </a>
           </div>
         </div>
 
@@ -328,9 +334,9 @@ function renderFooter() {
         <div class="footer-col">
           <h4>REDES SOCIALES</h4>
           <ul class="redes">
-            <li><a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener">📸 Instagram: @yas__drip</a></li>
-            <li><a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener">🎵 TikTok: @yasdrip</a></li>
-            <li><a href="https://facebook.com/yasdrip" target="_blank" rel="noopener">📘 Facebook: YAS DRIP</a></li>
+            <li><a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener"><span class="redes-ico ig">${svgInstagram()}</span>Instagram: @yas__drip</a></li>
+            <li><a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener"><span class="redes-ico tk">${svgTikTok()}</span>TikTok: @yasdrip</a></li>
+            <li><a href="https://facebook.com/yasdrip" target="_blank" rel="noopener"><span class="redes-ico fb">${svgFacebook()}</span>Facebook: YAS DRIP</a></li>
           </ul>
         </div>
       </div>
