@@ -37,8 +37,8 @@
         <svg class="ring-svg" viewBox="0 0 96 96">
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#1b4332"/>
-              <stop offset="100%" stop-color="#4c8c68"/>
+              <stop offset="0%"   stop-color="#151512"/>
+              <stop offset="100%" stop-color="#d7ff3d"/>
             </linearGradient>
           </defs>
           <circle class="ring-track"    cx="48" cy="48" r="44"/>
@@ -55,8 +55,8 @@
 
     <div class="estado-exito" id="estado-exito">
       <div class="check-circle">✅</div>
-      <div class="exito-titulo">¡Pago exitoso!</div>
-      <div class="exito-sub">Tu pedido fue registrado correctamente</div>
+      <div class="exito-titulo">¡Pago exitoso! ⚡</div>
+      <div class="exito-sub">Ya casi vuela para tu casa 🚀</div>
       <div class="gracias-nombre" id="gracias-nombre"></div>
       <div class="exito-pedido" id="exito-pedido"></div>
       <a href="productos.html" class="btn-exito-volver">Seguir comprando</a>
@@ -226,9 +226,9 @@ function pintarCarrito() {
               </div>
               <div class="step-body">
                 <div class="metodo-pago-chips">
-                  <button type="button" class="metodo-chip" data-metodo="tarjeta">💳 Tarjeta</button>
-                  <button type="button" class="metodo-chip" data-metodo="contraentrega">📦 Contraentrega</button>
-                  <button type="button" class="metodo-chip" data-metodo="nequi">📲 Nequi / Daviplata</button>
+                  <button type="button" class="metodo-chip" data-metodo="tarjeta"><span class="metodo-chip-icono">💳</span>Tarjeta</button>
+                  <button type="button" class="metodo-chip" data-metodo="contraentrega"><span class="metodo-chip-icono">📦</span>Contraentrega</button>
+                  <button type="button" class="metodo-chip" data-metodo="nequi"><span class="metodo-chip-icono">📲</span>Nequi / Daviplata</button>
                 </div>
 
                 <div class="campos-tarjeta" id="camposTarjeta">
@@ -264,7 +264,7 @@ function pintarCarrito() {
                     <input type="text" id="tarjetaVencimiento" placeholder="MM/AA" inputmode="numeric" maxlength="5">
                     <input type="text" id="tarjetaCvv" placeholder="CVV" inputmode="numeric" maxlength="4">
                   </div>
-                  <p class="tarjeta-nota">🔒 Pago simulado — esta demo aún no está conectada a una pasarela real ni a una cuenta bancaria.</p>
+                  <p class="tarjeta-nota">🔒 Tu info va segura, cero drama. (Pago simulado — demo sin pasarela ni banco real todavía.)</p>
                 </div>
 
                 <button type="submit" class="btn-pagar">Confirmar pedido ⚡</button>
@@ -654,7 +654,7 @@ function mostrarOverlay() {
   const overlay = document.getElementById('pago-overlay');
   overlay.classList.add('activo');
   iniciarParticulas();
-  const msgs = ['Comprobando pago','Verificando datos','Procesando...','Validando pago'];
+  const msgs = ['Comprobando el pago ⚡','Verificando tus datos','Casi, casi...','Sellando el pedido'];
   let mi = 0;
   const st = document.getElementById('pago-status-txt');
   overlay._iv = setInterval(() => { st.textContent = msgs[++mi % msgs.length]; }, 700);
