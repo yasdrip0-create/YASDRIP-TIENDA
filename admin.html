@@ -220,11 +220,10 @@
           </label>
         </div>
 
-        <div class="admin-add-grid" style="grid-template-columns:1fr 1fr;margin-top:14px;">
-          <input type="password" id="claveAdminUsuario" class="admin-input" placeholder="Tu contraseña de admin" autocomplete="current-password">
+        <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:14px;">
           <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
         </div>
-        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide tu propia contraseña de admin + el código de desarrollador, para que solo alguien del equipo con ambos pueda tocar esta pestaña.</p>
+        <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo alguien del equipo con ese código pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
           <button class="admin-btn admin-btn-primary" id="btnCrearUsuarioPanel">Crear usuario</button>
         </div>
@@ -287,7 +286,6 @@
         <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
       </label>
     </div>
-    <input type="password" id="claveAdminPermisos" placeholder="Tu contraseña de admin" autocomplete="current-password">
     <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
@@ -313,8 +311,8 @@
 <div class="admin-modal-overlay" id="modalBorrarPedido">
   <div class="admin-modal">
     <h3>Eliminar pedido</h3>
-    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe tu contraseña del panel para confirmar. Esta acción no se puede deshacer.</p>
-    <input type="password" id="claveBorrarPedido" placeholder="Tu contraseña" autocomplete="current-password">
+    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe el código de desarrollador para confirmar. Esta acción no se puede deshacer.</p>
+    <input type="password" id="claveBorrarPedido" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarBorrarPedido">Eliminar pedido</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalBorrarPedido">Cancelar</button>
@@ -538,11 +536,7 @@ async function pintarUsuariosPanel() {
 document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async () => {
   const usuario = document.getElementById('nuevoUsuarioNombre').value;
   const clave = document.getElementById('nuevoUsuarioClave').value;
-  const claveAdmin = document.getElementById('claveAdminUsuario').value;
   const codigo = document.getElementById('codigoDesarrolladorUsuario').value;
-  if (!claveAdmin) { showToast('Escribe tu contraseña de admin.', true); return; }
-  const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
-  if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
   if (!verificarCodigoDesarrollador(codigo)) {
     showToast('Código de desarrollador incorrecto.', true);
     return;
@@ -556,7 +550,6 @@ document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async 
   if (!res.ok) { showToast(res.msg, true); return; }
   document.getElementById('nuevoUsuarioNombre').value = '';
   document.getElementById('nuevoUsuarioClave').value = '';
-  document.getElementById('claveAdminUsuario').value = '';
   document.getElementById('codigoDesarrolladorUsuario').value = '';
   document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { chk.checked = (chk.value === 'inventario' || chk.value === 'pedidos'); });
   showToast('Usuario creado ✓');
@@ -575,17 +568,12 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', (e) 
   document.querySelectorAll('.chk-permiso-editar').forEach(chk => {
     chk.checked = !!permisosActualesUsuario[chk.value];
   });
-  document.getElementById('claveAdminPermisos').value = '';
   document.getElementById('codigoDesarrolladorPermisos').value = '';
   modalPermisos.classList.add('open');
 });
 document.getElementById('btnCerrarModalPermisos').addEventListener('click', () => modalPermisos.classList.remove('open'));
 document.getElementById('btnGuardarPermisos').addEventListener('click', async () => {
-  const claveAdmin = document.getElementById('claveAdminPermisos').value;
   const codigo = document.getElementById('codigoDesarrolladorPermisos').value;
-  if (!claveAdmin) { showToast('Escribe tu contraseña de admin.', true); return; }
-  const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
-  if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
   if (!verificarCodigoDesarrollador(codigo)) {
     showToast('Código de desarrollador incorrecto.', true);
     return;
@@ -614,10 +602,6 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
   if (btnToggle) {
     const usuario = btnToggle.dataset.usuario;
     const activoActual = btnToggle.dataset.activo === 'true';
-    const claveAdmin = prompt('Tu contraseña de admin para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + usuario + '":');
-    if (claveAdmin === null) return;
-    const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
-    if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
     const codigo = prompt('Código de desarrollador para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + usuario + '":');
     if (codigo === null) return;
     if (!verificarCodigoDesarrollador(codigo)) { showToast('Código de desarrollador incorrecto.', true); return; }
@@ -629,10 +613,6 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
     pintarUsuariosPanel();
   } else if (btnEliminar) {
     const usuario = btnEliminar.dataset.usuario;
-    const claveAdmin = prompt('Tu contraseña de admin para ELIMINAR a "' + usuario + '":');
-    if (claveAdmin === null) return;
-    const claveAdminOk = await verificarClaveAdminActual(claveAdmin);
-    if (!claveAdminOk) { showToast('Tu contraseña de admin no es correcta.', true); return; }
     const codigo = prompt('Código de desarrollador para ELIMINAR a "' + usuario + '" (no se puede deshacer):');
     if (codigo === null) return;
     if (!verificarCodigoDesarrollador(codigo)) { showToast('Código de desarrollador incorrecto.', true); return; }
@@ -733,14 +713,13 @@ document.getElementById('tablaPedidosBody').addEventListener('click', (e) => {
 });
 document.getElementById('btnCerrarModalBorrarPedido').addEventListener('click', () => modalBorrarPedido.classList.remove('open'));
 document.getElementById('btnConfirmarBorrarPedido').addEventListener('click', async () => {
-  const clave = document.getElementById('claveBorrarPedido').value;
-  if (!clave) { showToast('Escribe tu contraseña.', true); return; }
+  const codigo = document.getElementById('claveBorrarPedido').value;
+  if (!codigo) { showToast('Escribe el código de desarrollador.', true); return; }
   const btn = document.getElementById('btnConfirmarBorrarPedido');
   btn.disabled = true;
-  const claveOk = await verificarClaveAdminActual(clave);
-  if (!claveOk) {
+  if (!verificarCodigoDesarrollador(codigo)) {
     btn.disabled = false;
-    showToast('Contraseña incorrecta.', true);
+    showToast('Código de desarrollador incorrecto.', true);
     return;
   }
   const res = await eliminarPedidoAdmin(pedidoABorrarId);

@@ -499,7 +499,7 @@ async function crearPedido(datosCliente) {
     const ref = await fbDb.collection('pedidos').add(pedido);
     descontarStockCarrito(carrito);
     limpiarCarrito();
-    enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido } });
+    enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido, id: ref.id } });
     return { ...pedido, id: ref.id };
   } catch (e) {
     console.error('Error guardando el pedido en Firestore:', e);
@@ -526,6 +526,7 @@ async function obtenerPedidosAdmin() {
 async function eliminarPedidoAdmin(id) {
   try {
     await fbDb.collection('pedidos').doc(id).delete();
+    enviarAviso({ tipo: 'pedido_eliminado', id });
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
