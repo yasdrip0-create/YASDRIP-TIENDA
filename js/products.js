@@ -15,15 +15,48 @@
    ============================================================ */
 
 const PRODUCTS = [
-  { id: 1, nombre: "Buso Volt",        categoria: "Busos",       precio: 189900, precio_anterior: 229900, icono: "hoodie", colores: ["#dfe8da", "#151512", "#e7d9ee"], tallas: ["S","M","L","XL"],    badge: "pocas",  stock: 6,  activo: true },
-  { id: 2, nombre: "Buso Static",      categoria: "Busos",       precio: 179900, precio_anterior: null,   icono: "hoodie", colores: ["#151512", "#faf9f5", "#eceae3"], tallas: ["S","M","L","XL"],    badge: "nuevo",  stock: 20, activo: true },
-  { id: 3, nombre: "Buso Amp",         categoria: "Busos",       precio: 194900, precio_anterior: null,   icono: "hoodie", colores: ["#e7d9ee", "#151512"],             tallas: ["S","M","L","XL"],    badge: null,     stock: 10, activo: true },
-  { id: 4, nombre: "Camiseta Bolt",    categoria: "Camisetas",   precio: 79900,  precio_anterior: null,   icono: "tee",    colores: ["#faf9f5", "#151512", "#f3e0da"], tallas: ["S","M","L","XL"],    badge: "nuevo",  stock: 30, activo: true },
-  { id: 5, nombre: "Gorra Static",     categoria: "Gorras",      precio: 69900,  precio_anterior: null,   icono: "cap",    colores: ["#151512", "#e7d9ee"],             tallas: ["Única"],              badge: null,     stock: 25, activo: true },
-  { id: 6, nombre: "Cargo Circuit",    categoria: "Pantalones",  precio: 159900, precio_anterior: null,   icono: "pants",  colores: ["#151512", "#eceae3"],             tallas: ["28","30","32","34"], badge: "pocas",  stock: 6,  activo: true },
-  { id: 7, nombre: "Chaqueta Voltage", categoria: "Chaquetas",   precio: 249900, precio_anterior: 299900, icono: "jacket", colores: ["#151512", "#dfe8da"],             tallas: ["S","M","L","XL"],    badge: "pocas",  stock: 5,  activo: true },
-  { id: 8, nombre: "Shorts Drip",      categoria: "Shorts",      precio: 99900,  precio_anterior: null,   icono: "shorts", colores: ["#151512", "#f5ecd6"],             tallas: ["S","M","L","XL"],    badge: null,     stock: 18, activo: true },
+  { id: 1, nombre: "Buso Volt",        categoria: "Busos",       genero: ["hombre","mujer"], precio: 189900, precio_anterior: 229900, icono: "hoodie", colores: ["#dfe8da", "#151512", "#e7d9ee"], tallas: ["S","M","L","XL"],    badge: "pocas",  stock: 6,  activo: true },
+  { id: 2, nombre: "Buso Static",      categoria: "Busos",       genero: ["hombre","mujer"], precio: 179900, precio_anterior: null,   icono: "hoodie", colores: ["#151512", "#faf9f5", "#eceae3"], tallas: ["S","M","L","XL"],    badge: "nuevo",  stock: 20, activo: true },
+  { id: 3, nombre: "Buso Amp",         categoria: "Busos",       genero: ["hombre","mujer"], precio: 194900, precio_anterior: null,   icono: "hoodie", colores: ["#e7d9ee", "#151512"],             tallas: ["S","M","L","XL"],    badge: null,     stock: 10, activo: true },
+  { id: 4, nombre: "Camiseta Bolt",    categoria: "Camisetas",   genero: ["hombre","mujer"], precio: 79900,  precio_anterior: null,   icono: "tee",    colores: ["#faf9f5", "#151512", "#f3e0da"], tallas: ["S","M","L","XL"],    badge: "nuevo",  stock: 30, activo: true },
+  { id: 5, nombre: "Gorra Static",     categoria: "Gorras",      genero: ["hombre","mujer"], precio: 69900,  precio_anterior: null,   icono: "cap",    colores: ["#151512", "#e7d9ee"],             tallas: ["Única"],              badge: null,     stock: 25, activo: true },
+  { id: 6, nombre: "Cargo Circuit",    categoria: "Pantalones",  genero: ["hombre"],         precio: 159900, precio_anterior: null,   icono: "pants",  colores: ["#151512", "#eceae3"],             tallas: ["28","30","32","34"], badge: "pocas",  stock: 6,  activo: true },
+  { id: 7, nombre: "Chaqueta Voltage", categoria: "Chaquetas",   genero: ["hombre","mujer"], precio: 249900, precio_anterior: 299900, icono: "jacket", colores: ["#151512", "#dfe8da"],             tallas: ["S","M","L","XL"],    badge: "pocas",  stock: 5,  activo: true },
+  { id: 8, nombre: "Shorts Drip",      categoria: "Shorts",      genero: ["hombre","mujer"], precio: 99900,  precio_anterior: null,   icono: "shorts", colores: ["#151512", "#f5ecd6"],             tallas: ["S","M","L","XL"],    badge: null,     stock: 18, activo: true },
 ];
+
+/** Bajo qué "sección" del menú (Ropa / Accesorios) cae cada categoría.
+    Se usa para armar el menú desplegable de Hombre/Mujer/Niño/Niña,
+    tipo el de las tiendas grandes: cada género tiene sus columnas de
+    Ropa y Accesorios con las categorías que sí tienen productos. */
+const GRUPOS_CATEGORIA = {
+  "Ropa": ["Busos", "Camisetas", "Pantalones", "Chaquetas", "Shorts"],
+  "Accesorios": ["Gorras"],
+};
+
+/** Los 4 géneros que aparecen en el menú de arriba del sitio. */
+const GENEROS_MENU = [
+  { id: "hombre", etiqueta: "Hombre" },
+  { id: "mujer",  etiqueta: "Mujer" },
+  { id: "nino",   etiqueta: "Niño" },
+  { id: "nina",   etiqueta: "Niña" },
+];
+
+/** Productos activos que pertenecen a un género dado ("hombre", "mujer", "nino", "nina") */
+function productosPorGenero(genero) {
+  return productosActivos().filter(p => Array.isArray(p.genero) && p.genero.includes(genero));
+}
+
+/** Arma, para un género dado, qué categorías tiene en cada grupo
+    (Ropa / Accesorios), listas para pintar el menú desplegable.
+    Devuelve algo como: [{ grupo: "Ropa", categorias: ["Busos","Camisetas"] }, ...]
+    Solo incluye grupos que sí tienen al menos una categoría con productos. */
+function categoriasPorGeneroAgrupadas(genero) {
+  const cats = new Set(productosPorGenero(genero).map(p => p.categoria));
+  return Object.keys(GRUPOS_CATEGORIA)
+    .map(grupo => ({ grupo, categorias: GRUPOS_CATEGORIA[grupo].filter(c => cats.has(c)) }))
+    .filter(g => g.categorias.length > 0);
+}
 
 /** Devuelve solo los productos activos, leyendo el catálogo editable
     (yasdrip_catalogo en localStorage) que el admin puede modificar

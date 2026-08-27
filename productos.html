@@ -46,8 +46,17 @@ await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
 
 const params = new URLSearchParams(window.location.search);
 const filtroInicial = params.get('cat') || 'todos';
-const categorias = categoriasDisponibles();
-const productos = productosActivos();
+const generoInicial = params.get('genero') || null;
+const productosBase = productosActivos();
+const productos = generoInicial
+  ? productosBase.filter(p => Array.isArray(p.genero) && p.genero.includes(generoInicial))
+  : productosBase;
+const categorias = Array.from(new Set(productos.map(p => p.categoria))).sort();
+const etiquetaGenero = { hombre: 'Hombre', mujer: 'Mujer', nino: 'Niño', nina: 'Niña' }[generoInicial] || null;
+
+if (etiquetaGenero) {
+  document.querySelector('.section-eyebrow').textContent = 'Colección · ' + etiquetaGenero;
+}
 
 /* ---- construir botones de filtro ---- */
 const filtersEl = document.getElementById('filters');
