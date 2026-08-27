@@ -355,7 +355,7 @@
   <div class="admin-modal admin-modal-inactividad">
     <div class="admin-inactividad-ico">💤</div>
     <h3>¿Sigues ahí?</h3>
-    <p class="admin-modal-subtitulo">Por seguridad, la sesión del panel se cierra sola cuando nadie la está usando. Se cerrará en <b id="inactividadCountdown">60</b> segundos.</p>
+    <p class="admin-modal-subtitulo">Por seguridad, la sesión del panel se cierra sola cuando nadie la está usando. Se cerrará en <b id="inactividadCountdown">30</b> segundos.</p>
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnSeguirConectado">Seguir conectado</button>
       <button class="admin-btn admin-btn-ghost" id="btnSalirAhora">Cerrar sesión ahora</button>
@@ -1116,12 +1116,12 @@ document.getElementById('btnSalirAdmin').addEventListener('click', async () => {
 
 /* ============================================================
    Cierre de sesión por inactividad: si nadie toca el panel
-   durante 10 minutos, se avisa 60 segundos antes (por si la
+   durante 3 minutos, se avisa 30 segundos antes (por si la
    persona sigue ahí pero quieta leyendo algo) y si no responde,
    se cierra la sesión sola y vuelve a la pantalla de login.
    ============================================================ */
-const INACTIVIDAD_LIMITE_MS = 10 * 60 * 1000;   // 10 minutos sin tocar nada
-const INACTIVIDAD_AVISO_MS  = 60 * 1000;        // aviso 60s antes de cerrar
+const INACTIVIDAD_LIMITE_MS = 3 * 60 * 1000;    // 3 minutos sin tocar nada
+const INACTIVIDAD_AVISO_MS  = 30 * 1000;        // aviso 30s antes de cerrar
 let timerInactividad = null;
 let timerAvisoInactividad = null;
 let intervaloCuentaAtras = null;

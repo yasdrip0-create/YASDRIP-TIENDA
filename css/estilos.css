@@ -1871,51 +1871,24 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 
 /* ---------- modales ---------- */
-<<<<<<< HEAD
-/* nota: el fondo oscuro SÍ usa un desenfoque (para que se vea
-   elegante, como antes), pero el modal en sí va aislado en su
-   propia capa con backdrop-filter:none y fondo 100% sólido, para
-   que ese desenfoque nunca "se filtre" hacia adentro y deje el
-   texto ilegible (que era el problema anterior). */
+/* el fondo oscuro usa un desenfoque suave; el modal en si va
+   aislado en su propia capa con backdrop-filter:none y fondo
+   100% solido, para que el desenfoque del fondo nunca "se filtre"
+   hacia adentro y deje el texto ilegible. */
 .admin-modal-overlay{
   position:fixed;inset:0;display:none;
-  background:radial-gradient(120% 140% at 50% -10%, rgba(40,30,70,0.55), rgba(8,8,14,0.86) 60%);
+  background:radial-gradient(120% 140% at 50% -10%, rgba(40,30,70,0.55), rgba(8,8,14,0.88) 60%);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-=======
-/* nota: aquí NO se usa backdrop-filter (blur) — en algunos
-   navegadores/tarjetas gráficas ese blur "se filtra" hacia el
-   propio modal y lo deja todo verse apagado/borroso, que es
-   justo el problema que se estaba viendo. Se usa un fondo sólido
-   bien oscuro en su lugar, y el modal se aísla en su propia capa
-   para garantizar que su fondo sea 100% opaco siempre. */
-.admin-modal-overlay{
-<<<<<<< HEAD
-  position:fixed;inset:0;background:rgba(4,4,8,0.92);display:none;
-=======
-  position:fixed;inset:0;background:rgba(6,6,10,0.82);backdrop-filter:blur(3px);display:none;
->>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
->>>>>>> 5246ba65c7b5854f98e31f84c9c015d66f936f9d
   align-items:center;justify-content:center;z-index:200;padding:20px;
+  overflow-y:auto;
 }
 .admin-modal-overlay.open{display:flex;}
 .admin-modal{
-<<<<<<< HEAD
   isolation:isolate;transform:translateZ(0);backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
   background-color:var(--adm-surface);border:1px solid var(--adm-line);
   border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
   box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(139,92,246,0.12);
-=======
-<<<<<<< HEAD
-  isolation:isolate;transform:translateZ(0);
-  background-color:var(--adm-surface);border:1px solid var(--adm-line);
-  border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
-=======
-  background:var(--adm-surface);border:1px solid var(--adm-line);
-  border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
-  box-shadow:0 20px 60px rgba(0,0,0,0.55);
->>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
->>>>>>> 5246ba65c7b5854f98e31f84c9c015d66f936f9d
+  margin:auto;
 }
 .admin-modal-wide{max-width:560px;}
 .admin-modal h3{font-family:'Fraunces',serif;font-size:18px;margin-bottom:16px;color:var(--adm-text);}
@@ -1926,38 +1899,20 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-modal input:focus{outline:none;border-color:var(--adm-lime);box-shadow:0 0 0 3px rgba(215,255,61,0.15);}
 
 /* ---- modal de permisos: cabecera fija + cuerpo con scroll + pie
-   con el código de desarrollador y los botones, bien separados
+   con el codigo de desarrollador y los botones, bien separados
    para que se lea claro incluso con las 5 tarjetas de permiso ---- */
 .admin-modal-permisos{
   max-width:600px;padding:0;display:flex;flex-direction:column;max-height:min(640px,86vh);overflow:hidden;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 5246ba65c7b5854f98e31f84c9c015d66f936f9d
   background-color:var(--adm-surface);
 }
 .admin-modal-head{
   display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
   padding:22px 24px 16px;border-bottom:1px solid var(--adm-line);background-color:var(--adm-surface);
-<<<<<<< HEAD
-=======
-=======
-  background:var(--adm-surface);
-}
-.admin-modal-head{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
-  padding:22px 24px 16px;border-bottom:1px solid var(--adm-line);background:var(--adm-surface);
->>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
->>>>>>> 5246ba65c7b5854f98e31f84c9c015d66f936f9d
 }
 .admin-modal-head h3{margin-bottom:4px;}
 .admin-modal-subtitulo{font-size:12.5px;color:var(--adm-text-dim);line-height:1.4;}
 .admin-modal-close{
   flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--adm-line);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 5246ba65c7b5854f98e31f84c9c015d66f936f9d
   background-color:var(--adm-bg-2);color:var(--adm-text-dim);font-size:14px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;transition:border-color .15s ease,color .15s ease;
 }
@@ -1965,18 +1920,6 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-modal-body{padding:20px 24px;overflow-y:auto;background-color:var(--adm-bg-2);}
 .admin-modal-foot{
   padding:18px 24px 22px;border-top:1px solid var(--adm-line);background-color:var(--adm-surface);
-<<<<<<< HEAD
-=======
-=======
-  background:var(--adm-bg-2);color:var(--adm-text-dim);font-size:14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:border-color .15s ease,color .15s ease;
-}
-.admin-modal-close:hover{border-color:var(--adm-red);color:var(--adm-red);}
-.admin-modal-body{padding:20px 24px;overflow-y:auto;background:var(--adm-bg-2);}
-.admin-modal-foot{
-  padding:18px 24px 22px;border-top:1px solid var(--adm-line);background:var(--adm-surface);
->>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
->>>>>>> 5246ba65c7b5854f98e31f84c9c015d66f936f9d
 }
 .admin-modal-foot-label{
   display:block;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
