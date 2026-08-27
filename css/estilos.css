@@ -1244,6 +1244,22 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 .modal-box h3{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin-bottom:8px;}
 .modal-desc{color:var(--gray);font-size:13.5px;margin-bottom:20px;line-height:1.55;}
+
+/* ---- modal del código de acceso al panel del vendedor (la
+   "primera puerta" antes de llegar al login real de admin.html) ---- */
+.modal-box-codigo-admin{width:380px;text-align:center;}
+.codigo-admin-badge{margin:0 auto 14px;background:var(--acento);}
+#modalCodigoAdmin #inputCodigoAdmin{
+  width:100%;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;
+  background:var(--offwhite);color:var(--black);font-size:14px;text-align:center;
+  font-family:'Space Mono',monospace;letter-spacing:0.04em;
+}
+#modalCodigoAdmin #inputCodigoAdmin:focus{outline:none;border-color:var(--forest);}
+.codigo-admin-error{
+  display:none;color:var(--red);font-size:12.5px;font-weight:600;margin:-2px 0 12px;
+}
+.codigo-admin-error.show{display:block;}
+
 .campo-label{display:block;color:var(--gray);font-size:12px;font-weight:600;letter-spacing:0.02em;margin:2px 0 8px;}
 .form-solicitud input[type="text"],
 .form-solicitud input[type="date"],

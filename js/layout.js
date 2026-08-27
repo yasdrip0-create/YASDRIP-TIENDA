@@ -342,10 +342,67 @@ function renderFooter() {
       </div>
       <div class="footer-bottom">
         <p>© 2026 YAS DRIP — Todos los derechos reservados. <span class="hand">hecho en Medellín ⚡</span></p>
-        <a href="admin.html" class="footer-admin-link">Panel del vendedor</a>
+        <a href="admin.html" class="footer-admin-link" id="footerAdminLink">Panel del vendedor</a>
       </div>
     </footer>
+
+    <!-- ======================= CÓDIGO DE ACCESO AL PANEL ======================= -->
+    <div class="modal-overlay" id="modalCodigoAdmin">
+      <div class="modal-box modal-box-codigo-admin">
+        <button type="button" class="modal-cerrar" id="btnCerrarModalCodigoAdmin" aria-label="Cerrar">✕</button>
+        <div class="modal-icon-badge codigo-admin-badge">🔒</div>
+        <h3>Solo para el equipo</h3>
+        <p class="modal-desc">Escribe el código de acceso para entrar al panel del vendedor.</p>
+        <input type="password" id="inputCodigoAdmin" placeholder="Código de acceso" autocomplete="off">
+        <p class="codigo-admin-error" id="codigoAdminError">Código incorrecto, intenta de nuevo.</p>
+        <button type="button" class="btn-enviar-solicitud" id="btnConfirmarCodigoAdmin">Entrar</button>
+      </div>
+    </div>
   `;
+
+  /* ---- pide un código antes de dejar entrar al panel del vendedor.
+     Esto es solo una primera puerta (para que un cliente cualquiera
+     no caiga ahí sin querer); el panel real sigue pidiendo usuario
+     y contraseña de todas formas. Una vez que alguien acierta el
+     código en esta pestaña, no se lo vuelve a pedir hasta que
+     cierre el navegador (queda guardado en sessionStorage). */
+  const CODIGO_ACCESO_PANEL = 'yasdrip26**';
+  const linkAdmin = document.getElementById('footerAdminLink');
+  const modalCodigo = document.getElementById('modalCodigoAdmin');
+  const inputCodigo = document.getElementById('inputCodigoAdmin');
+  const errorCodigo = document.getElementById('codigoAdminError');
+
+  function abrirModalCodigoAdmin() {
+    errorCodigo.classList.remove('show');
+    inputCodigo.value = '';
+    modalCodigo.classList.add('activo');
+    setTimeout(() => inputCodigo.focus(), 50);
+  }
+  function cerrarModalCodigoAdmin() {
+    modalCodigo.classList.remove('activo');
+  }
+  function intentarEntrarAlPanel() {
+    if (inputCodigo.value.trim() === CODIGO_ACCESO_PANEL) {
+      sessionStorage.setItem('yasdrip_codigo_panel_ok', '1');
+      window.location.href = 'admin.html';
+    } else {
+      errorCodigo.classList.add('show');
+      inputCodigo.classList.add('shake');
+      setTimeout(() => inputCodigo.classList.remove('shake'), 350);
+    }
+  }
+
+  if (linkAdmin) {
+    linkAdmin.addEventListener('click', (e) => {
+      if (sessionStorage.getItem('yasdrip_codigo_panel_ok') === '1') return; // ya lo escribió bien antes en esta pestaña
+      e.preventDefault();
+      abrirModalCodigoAdmin();
+    });
+  }
+  document.getElementById('btnCerrarModalCodigoAdmin')?.addEventListener('click', cerrarModalCodigoAdmin);
+  document.getElementById('btnConfirmarCodigoAdmin')?.addEventListener('click', intentarEntrarAlPanel);
+  inputCodigo?.addEventListener('keydown', (e) => { if (e.key === 'Enter') intentarEntrarAlPanel(); });
+  modalCodigo?.addEventListener('click', (e) => { if (e.target === modalCodigo) cerrarModalCodigoAdmin(); });
 }
 
 /* ============================================================
