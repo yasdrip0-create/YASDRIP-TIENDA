@@ -469,9 +469,6 @@ body.menu-open{overflow:hidden;}
 .card:nth-child(4n+2){transform:rotate(0.8deg);}
 .card:nth-child(4n+3){transform:rotate(-0.5deg);}
 .card:nth-child(4n+4){transform:rotate(1.2deg);}
-/* cada tanto una tarjeta más grande, tipo "producto destacado" del drop */
-.grid:not(.filters) .card:nth-child(5n+1){grid-column:span 2;}
-@media (max-width:900px){.grid .card:nth-child(5n+1){grid-column:span 1;}}
 
 .card.hidden{display:none;}
 .card:hover{
