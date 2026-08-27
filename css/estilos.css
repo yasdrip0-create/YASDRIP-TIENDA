@@ -1486,6 +1486,22 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .estado-select-entregado{background:var(--forest);color:var(--white);border-color:var(--forest-dark);}
 .estado-select-cancelado{background:var(--blush);color:var(--red);border-color:var(--red);}
 
+/* ---------- pestaña Usuarios: avatares y pastillas de estado ---------- */
+.usuario-fila{display:flex;align-items:center;gap:10px;}
+.usuario-avatar{
+  flex-shrink:0;width:30px;height:30px;border-radius:50%;color:var(--white);
+  display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;
+  font-weight:700;font-size:13px;
+}
+.usuario-estado-pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
+.usuario-estado-activo{background:var(--forest-tint);color:var(--forest-dark);}
+.usuario-estado-inactivo{background:var(--blush);color:var(--red);}
+.usuario-estado-conectado{background:var(--sage);color:var(--forest-dark);}
+.usuario-estado-desconectado{background:var(--offwhite);color:var(--gray);}
+
+/* ---------- pestaña Drop: contador de productos elegidos ---------- */
+#dropProductosContador{margin-left:6px;}
+
 /* ---------- filtros de la pestaña Pedidos ---------- */
 .admin-filtros-pedidos{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:16px;}
 .admin-filtros-pedidos #buscarPedidoAdmin{flex:1;min-width:200px;}
@@ -1548,6 +1564,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   text-transform:uppercase;color:var(--gray);padding:10px 8px;border-bottom:2px solid var(--black);
 }
 .admin-table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13.5px;}
+.admin-table tbody tr:hover{background:var(--offwhite);}
 .admin-table tr.fila-inactiva{opacity:0.45;}
 .admin-prod-nombre{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--black);}
 .admin-prod-nombre svg{width:30px;height:30px;flex-shrink:0;}

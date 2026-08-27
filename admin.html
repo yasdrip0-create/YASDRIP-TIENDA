@@ -162,7 +162,7 @@
     </div>
 
     <div id="tabPedidos" style="display:none;">
-      <div class="admin-stats" id="pedidosStats"></div>
+      <div class="admin-stats admin-stats-color" id="pedidosStats"></div>
       <div class="admin-card">
         <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Estos pedidos quedan guardados en la nube (Firebase), no en este computador — los ves igual desde cualquier navegador donde entres con el usuario del panel.</p>
         <div class="admin-filtros-pedidos">
@@ -203,6 +203,7 @@
     </div>
 
     <div id="tabDrop" style="display:none;">
+      <div class="admin-stats admin-stats-color" id="dropCountdownStats"></div>
       <div class="admin-card">
         <p class="admin-foto-hint" style="margin-bottom:14px;">💡 Aquí configuras la cuenta regresiva de "Próximo drop" que se ve en la página de inicio. Pon la fecha y hora en que se lanza, y elige qué productos se muestran ahí mismo (con foto de frente y de espaldas) apenas el tiempo llegue a cero — sin tocar código, y se ve igual para todos los que entren a la tienda.</p>
         <div class="admin-drop-form">
@@ -213,7 +214,7 @@
             <input type="text" id="dropTitulo" class="admin-input" placeholder="¡Ya está aquí! ⚡" style="width:100%;">
           </label>
         </div>
-        <p class="admin-foto-hint" style="margin:18px 0 10px;"><b>Productos a mostrar cuando se acabe el tiempo</b> — marca los que quieres destacar:</p>
+        <p class="admin-foto-hint" style="margin:18px 0 10px;"><b>Productos a mostrar cuando se acabe el tiempo</b> — marca los que quieres destacar: <span id="dropProductosContador" class="admin-permiso-pill"></span></p>
         <div class="admin-drop-productos" id="dropProductosLista"></div>
         <div class="admin-add-actions" style="margin-top:18px;">
           <button class="admin-btn admin-btn-primary" id="btnGuardarDrop">Guardar configuración del drop</button>
@@ -269,6 +270,7 @@
       </div>
 
       <div class="admin-card">
+        <div class="admin-stats admin-stats-color" id="usuariosStats"></div>
         <p class="admin-foto-hint" style="margin-bottom:8px;">🟢 = está conectado ahora mismo en algún dispositivo. Si desactivas a alguien, no puede volver a entrar (pero no se pierde nada de lo que ya hizo); si lo eliminas, deja de existir del todo.</p>
         <div class="admin-table-wrap">
           <table class="admin-table" id="tablaUsuariosPanel">
@@ -472,6 +474,7 @@ const tabUsuarios = document.getElementById('tabUsuarios');
 const tituloTab = document.getElementById('adminTituloTab');
 
 function ocultarTodasLasPestanas() {
+  clearInterval(intervaloCountdownDrop);
   tabBtnResumen.classList.remove('active');
   tabBtnInventario.classList.remove('active');
   tabBtnPedidos.classList.remove('active');
@@ -563,25 +566,41 @@ async function pintarUsuariosPanel() {
   const tbody = document.getElementById('tablaUsuariosPanelBody');
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">Cargando usuarios…</td></tr>`;
   const usuarios = await obtenerUsuariosAdminPanel();
+
+  const activos = usuarios.filter(u => u.activo !== false).length;
+  const conectados = usuarios.filter(u => u.conectado).length;
+  document.getElementById('usuariosStats').innerHTML = `
+    <div class="admin-stat admin-stat-forest"><b>${usuarios.length}</b><span>Usuarios</span></div>
+    <div class="admin-stat admin-stat-sage"><b>${activos}</b><span>Activos</span></div>
+    <div class="admin-stat admin-stat-acento"><b>${conectados}</b><span>Conectados ahora</span></div>
+  `;
+
   if (!usuarios.length) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay usuarios.</td></tr>`;
     return;
   }
   const yo = usuarioAdminActual();
   const ETIQUETAS_PERMISOS = { inventario: 'Inventario', pedidos: 'Pedidos', eliminarPedidos: 'Eliminar pedidos', drop: 'Drop', usuarios: 'Usuarios' };
+  const COLORES_AVATAR = ['#1b4332', '#c9a13a', '#8a5a44', '#4a6fa5', '#a3477a', '#3b7a63'];
+  const colorAvatar = nombre => COLORES_AVATAR[[...nombre].reduce((s, c) => s + c.charCodeAt(0), 0) % COLORES_AVATAR.length];
   tbody.innerHTML = usuarios.map(u => {
     const creado = u.creado ? new Date(u.creado).toLocaleDateString('es-CO', { dateStyle: 'medium' }) : '—';
     const permisos = normalizarPermisos(u);
-    const activos = Object.keys(permisos).filter(k => permisos[k]);
-    const permisosTexto = activos.length
-      ? activos.map(k => `<span class="admin-permiso-pill">${ETIQUETAS_PERMISOS[k]}</span>`).join(' ')
+    const activosPermisos = Object.keys(permisos).filter(k => permisos[k]);
+    const permisosTexto = activosPermisos.length
+      ? activosPermisos.map(k => `<span class="admin-permiso-pill">${ETIQUETAS_PERMISOS[k]}</span>`).join(' ')
       : '<span class="admin-foto-hint">Sin permisos</span>';
     return `
       <tr>
-        <td data-label="Usuario"><b>${u.usuario}</b>${u.usuario === yo ? ' <span class="admin-foto-hint">(tú)</span>' : ''}</td>
-        <td data-label="Estado">${u.activo === false ? '<span style="color:var(--red);">Desactivado</span>' : '<span style="color:var(--forest);">Activo</span>'}</td>
+        <td data-label="Usuario">
+          <div class="usuario-fila">
+            <span class="usuario-avatar" style="background:${colorAvatar(u.usuario)}">${u.usuario.charAt(0).toUpperCase()}</span>
+            <b>${u.usuario}</b>${u.usuario === yo ? ' <span class="admin-foto-hint">(tú)</span>' : ''}
+          </div>
+        </td>
+        <td data-label="Estado"><span class="usuario-estado-pill ${u.activo === false ? 'usuario-estado-inactivo' : 'usuario-estado-activo'}">${u.activo === false ? 'Desactivado' : 'Activo'}</span></td>
         <td data-label="Permisos">${permisosTexto}</td>
-        <td data-label="Conectado">${u.conectado ? '🟢 Sí' : '⚪ No'}</td>
+        <td data-label="Conectado">${u.conectado ? '<span class="usuario-estado-pill usuario-estado-conectado">🟢 Sí</span>' : '<span class="usuario-estado-pill usuario-estado-desconectado">⚪ No</span>'}</td>
         <td data-label="Creado" class="mono">${creado}</td>
         <td data-label="">
           <button type="button" class="admin-btn admin-btn-ghost btn-editar-permisos" data-usuario="${u.usuario}" data-permisos='${JSON.stringify(permisos)}'>Editar permisos</button>
@@ -686,6 +705,8 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
 });
 
 /* ---------- pestaña Drop: fecha del lanzamiento + productos a mostrar ---------- */
+let intervaloCountdownDrop = null;
+
 function pintarTabDrop() {
   const config = getConfigDrop();
   const inputFecha = document.getElementById('dropFecha');
@@ -713,7 +734,45 @@ function pintarTabDrop() {
         <span>${p.nombre}</span>
       </label>`;
   }).join('') || `<p class="admin-foto-hint">Todavía no hay productos en el inventario.</p>`;
+
+  actualizarContadorDropProductos();
+  actualizarCountdownDrop();
+  clearInterval(intervaloCountdownDrop);
+  intervaloCountdownDrop = setInterval(actualizarCountdownDrop, 1000);
 }
+
+function actualizarContadorDropProductos() {
+  const total = document.querySelectorAll('.chk-drop-producto:checked').length;
+  document.getElementById('dropProductosContador').textContent = `${total} elegido${total === 1 ? '' : 's'}`;
+}
+document.getElementById('dropProductosLista').addEventListener('change', actualizarContadorDropProductos);
+
+/** Pinta una tarjeta con la cuenta regresiva en vivo, leyendo la
+    fecha directamente del campo (así el vendedor ve el efecto
+    antes de guardar). Se refresca cada segundo mientras la
+    pestaña Drop está abierta. */
+function actualizarCountdownDrop() {
+  const cont = document.getElementById('dropCountdownStats');
+  const valorFecha = document.getElementById('dropFecha').value;
+  if (!valorFecha) {
+    cont.innerHTML = `<div class="admin-stat"><b>—</b><span>Todavía no hay fecha configurada</span></div>`;
+    return;
+  }
+  const restante = new Date(valorFecha).getTime() - Date.now();
+  if (restante <= 0) {
+    cont.innerHTML = `<div class="admin-stat admin-stat-forest"><b>🔥 En vivo</b><span>El drop ya está disponible en la tienda</span></div>`;
+    return;
+  }
+  const dias = Math.floor(restante / 86400000);
+  const horas = Math.floor((restante % 86400000) / 3600000);
+  const minutos = Math.floor((restante % 3600000) / 60000);
+  cont.innerHTML = `
+    <div class="admin-stat admin-stat-acento"><b>${dias}</b><span>Días</span></div>
+    <div class="admin-stat admin-stat-sage"><b>${horas}</b><span>Horas</span></div>
+    <div class="admin-stat admin-stat-butter"><b>${minutos}</b><span>Minutos</span></div>
+  `;
+}
+document.getElementById('dropFecha').addEventListener('input', actualizarCountdownDrop);
 
 document.getElementById('btnGuardarDrop').addEventListener('click', () => {
   const inputFecha = document.getElementById('dropFecha');
@@ -766,9 +825,11 @@ function aplicarFiltrosPedidos() {
 
   const tbody = document.getElementById('tablaPedidosBody');
   const totalVendido = pedidos.reduce((s, p) => s + (Number(p.total) || 0), 0);
+  const pendientesFiltrados = pedidos.filter(p => estadoPedido(p) === 'pendiente').length;
   document.getElementById('pedidosStats').innerHTML = `
-    <div class="admin-stat"><b>${pedidos.length}</b><span>Pedidos</span></div>
-    <div class="admin-stat"><b>$${totalVendido.toLocaleString('es-CO')}</b><span>Total vendido</span></div>
+    <div class="admin-stat admin-stat-forest"><b>${pedidos.length}</b><span>Pedidos</span></div>
+    <div class="admin-stat admin-stat-acento"><b>$${totalVendido.toLocaleString('es-CO')}</b><span>Total vendido</span></div>
+    <div class="admin-stat admin-stat-butter"><b>${pendientesFiltrados}</b><span>Pendientes</span></div>
   `;
 
   if (!pedidosCache.length) {
