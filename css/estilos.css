@@ -1878,15 +1878,25 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
    bien oscuro en su lugar, y el modal se aísla en su propia capa
    para garantizar que su fondo sea 100% opaco siempre. */
 .admin-modal-overlay{
+<<<<<<< HEAD
   position:fixed;inset:0;background:rgba(4,4,8,0.92);display:none;
+=======
+  position:fixed;inset:0;background:rgba(6,6,10,0.82);backdrop-filter:blur(3px);display:none;
+>>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
   align-items:center;justify-content:center;z-index:200;padding:20px;
 }
 .admin-modal-overlay.open{display:flex;}
 .admin-modal{
+<<<<<<< HEAD
   isolation:isolate;transform:translateZ(0);
   background-color:var(--adm-surface);border:1px solid var(--adm-line);
   border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
   box-shadow:0 20px 60px rgba(0,0,0,0.6);
+=======
+  background:var(--adm-surface);border:1px solid var(--adm-line);
+  border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
+  box-shadow:0 20px 60px rgba(0,0,0,0.55);
+>>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
 }
 .admin-modal-wide{max-width:560px;}
 .admin-modal h3{font-family:'Fraunces',serif;font-size:18px;margin-bottom:16px;color:var(--adm-text);}
@@ -1901,16 +1911,25 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
    para que se lea claro incluso con las 5 tarjetas de permiso ---- */
 .admin-modal-permisos{
   max-width:600px;padding:0;display:flex;flex-direction:column;max-height:min(640px,86vh);overflow:hidden;
+<<<<<<< HEAD
   background-color:var(--adm-surface);
 }
 .admin-modal-head{
   display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
   padding:22px 24px 16px;border-bottom:1px solid var(--adm-line);background-color:var(--adm-surface);
+=======
+  background:var(--adm-surface);
+}
+.admin-modal-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:22px 24px 16px;border-bottom:1px solid var(--adm-line);background:var(--adm-surface);
+>>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
 }
 .admin-modal-head h3{margin-bottom:4px;}
 .admin-modal-subtitulo{font-size:12.5px;color:var(--adm-text-dim);line-height:1.4;}
 .admin-modal-close{
   flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--adm-line);
+<<<<<<< HEAD
   background-color:var(--adm-bg-2);color:var(--adm-text-dim);font-size:14px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;transition:border-color .15s ease,color .15s ease;
 }
@@ -1918,6 +1937,15 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-modal-body{padding:20px 24px;overflow-y:auto;background-color:var(--adm-bg-2);}
 .admin-modal-foot{
   padding:18px 24px 22px;border-top:1px solid var(--adm-line);background-color:var(--adm-surface);
+=======
+  background:var(--adm-bg-2);color:var(--adm-text-dim);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:border-color .15s ease,color .15s ease;
+}
+.admin-modal-close:hover{border-color:var(--adm-red);color:var(--adm-red);}
+.admin-modal-body{padding:20px 24px;overflow-y:auto;background:var(--adm-bg-2);}
+.admin-modal-foot{
+  padding:18px 24px 22px;border-top:1px solid var(--adm-line);background:var(--adm-surface);
+>>>>>>> c33c912819702302f43c4f87b13f3dd3f50e90da
 }
 .admin-modal-foot-label{
   display:block;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
