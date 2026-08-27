@@ -681,7 +681,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 
 /* ---- formulario de pago centrado debajo de la ropa ---- */
 .pagar-box-abajo{
-  max-width:480px;margin:38px auto 8px;
+  max-width:560px;margin:38px 0 8px;
 }
 .alerta{padding:14px 18px;border-radius:12px;margin-bottom:22px;font-size:14px;}
 .alerta.error{background:#fbeceb;color:var(--red);border:1px solid #f1c9c6;}
