@@ -1443,6 +1443,54 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .admin-stat span{font-size:12px;color:var(--gray);text-transform:uppercase;letter-spacing:0.05em;}
 .admin-stat-warn b{color:var(--red);}
 
+/* ---------- tarjetas de estadística con color (pestaña Resumen) ---------- */
+.admin-stats-color .admin-stat{border-left:4px solid var(--line);flex:1;min-width:160px;}
+.admin-stat-forest{border-left-color:var(--forest) !important;background:var(--forest-tint);}
+.admin-stat-forest b{color:var(--forest-dark);}
+.admin-stat-acento{border-left-color:var(--acento-ink) !important;background:linear-gradient(180deg,var(--acento) 0%,#eaffb0 100%);}
+.admin-stat-acento b,.admin-stat-acento span{color:var(--acento-ink);}
+.admin-stat-butter{border-left-color:#c9a13a !important;background:var(--butter);}
+.admin-stat-sage{border-left-color:var(--forest) !important;background:var(--sage);}
+
+/* ---------- pestaña Resumen: layout, gráfica y top productos ---------- */
+.admin-resumen-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;}
+@media (max-width:900px){.admin-resumen-grid{grid-template-columns:1fr;}}
+
+.admin-chart-bars{display:flex;align-items:flex-end;gap:10px;height:180px;padding-top:10px;}
+.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px;}
+.chart-bar{width:100%;max-width:34px;background:linear-gradient(180deg,var(--forest) 0%,var(--forest-dark) 100%);border-radius:8px 8px 3px 3px;transition:height .3s ease;min-height:4px;}
+.chart-bar-label{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--gray);text-transform:capitalize;}
+
+.top-prod-fila{display:grid;grid-template-columns:1fr 2fr auto;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+.top-prod-fila:last-child{border-bottom:none;}
+.top-prod-nombre{font-size:13px;font-weight:600;color:var(--black);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.top-prod-barra-wrap{background:var(--offwhite);border-radius:999px;height:10px;overflow:hidden;}
+.top-prod-barra{height:100%;background:var(--acento);border-radius:999px;}
+.top-prod-cantidad{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--forest-dark);}
+
+/* ---------- estado de pedido: pastilla y select coloreado ---------- */
+.pedido-estado-pill{
+  display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
+  font-size:11px;font-weight:700;white-space:nowrap;
+}
+.estado-pill-pendiente{background:var(--butter);color:#7a5a12;}
+.estado-pill-confirmado{background:var(--sage);color:var(--forest-dark);}
+.estado-pill-enviado{background:var(--forest-tint);color:var(--forest-dark);}
+.estado-pill-entregado{background:var(--forest);color:var(--white);}
+.estado-pill-cancelado{background:var(--blush);color:var(--red);}
+
+.select-estado-pedido{font-family:'Work Sans',sans-serif;font-weight:700;font-size:12px;cursor:pointer;border-radius:999px;padding:6px 10px;}
+.estado-select-pendiente{background:var(--butter);color:#7a5a12;border-color:#c9a13a;}
+.estado-select-confirmado{background:var(--sage);color:var(--forest-dark);border-color:var(--forest);}
+.estado-select-enviado{background:var(--forest-tint);color:var(--forest-dark);border-color:var(--forest);}
+.estado-select-entregado{background:var(--forest);color:var(--white);border-color:var(--forest-dark);}
+.estado-select-cancelado{background:var(--blush);color:var(--red);border-color:var(--red);}
+
+/* ---------- filtros de la pestaña Pedidos ---------- */
+.admin-filtros-pedidos{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:16px;}
+.admin-filtros-pedidos #buscarPedidoAdmin{flex:1;min-width:200px;}
+.admin-filtro-fecha{display:flex;flex-direction:column;gap:4px;font-family:'Space Mono',monospace;font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:0.04em;}
+
 .admin-card{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:22px;margin-bottom:20px;}
 .admin-card h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:16px;color:var(--black);}
 

@@ -69,13 +69,37 @@
     </div>
 
     <div class="admin-tabs">
-      <button type="button" class="admin-tab-btn active" id="tabBtnInventario">📦 Inventario</button>
+      <button type="button" class="admin-tab-btn active" id="tabBtnResumen">📊 Resumen</button>
+      <button type="button" class="admin-tab-btn" id="tabBtnInventario">📦 Inventario</button>
       <button type="button" class="admin-tab-btn" id="tabBtnPedidos">🧾 Pedidos <span id="pedidosBadge"></span></button>
       <button type="button" class="admin-tab-btn" id="tabBtnDrop">⚡ Drop</button>
       <button type="button" class="admin-tab-btn" id="tabBtnUsuarios">👥 Usuarios</button>
     </div>
 
-    <div id="tabInventario">
+    <div id="tabResumen">
+      <div class="admin-stats admin-stats-color" id="resumenStats"></div>
+      <div class="admin-resumen-grid">
+        <div class="admin-card">
+          <h3>Ventas de los últimos 7 días</h3>
+          <div class="admin-chart-bars" id="resumenChart"></div>
+        </div>
+        <div class="admin-card">
+          <h3>Productos más vendidos</h3>
+          <div class="admin-top-productos" id="resumenTopProductos"></div>
+        </div>
+      </div>
+      <div class="admin-card">
+        <h3>Últimos pedidos</h3>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead>
+            <tbody id="resumenUltimosPedidos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabInventario" style="display:none;">
       <div class="admin-stats" id="adminStats"></div>
 
       <div class="admin-card admin-add-card" id="cardNuevoProducto" style="display:none;">
@@ -141,6 +165,20 @@
       <div class="admin-stats" id="pedidosStats"></div>
       <div class="admin-card">
         <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Estos pedidos quedan guardados en la nube (Firebase), no en este computador — los ves igual desde cualquier navegador donde entres con el usuario del panel.</p>
+        <div class="admin-filtros-pedidos">
+          <input type="text" id="buscarPedidoAdmin" class="admin-input" placeholder="🔍 Buscar por cliente, contacto o producto…">
+          <select id="filtroEstadoPedido" class="admin-input">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">🕓 Pendiente</option>
+            <option value="confirmado">✅ Confirmado</option>
+            <option value="enviado">🚚 Enviado</option>
+            <option value="entregado">📦 Entregado</option>
+            <option value="cancelado">✕ Cancelado</option>
+          </select>
+          <label class="admin-filtro-fecha">Desde<input type="date" id="filtroFechaDesde" class="admin-input"></label>
+          <label class="admin-filtro-fecha">Hasta<input type="date" id="filtroFechaHasta" class="admin-input"></label>
+          <button type="button" class="admin-btn admin-btn-ghost" id="btnLimpiarFiltrosPedidos">Limpiar filtros</button>
+        </div>
         <div class="admin-table-wrap">
           <table class="admin-table" id="tablaPedidos">
             <thead>
@@ -152,11 +190,12 @@
                 <th>Envío</th>
                 <th>Pago</th>
                 <th>Total</th>
+                <th>Estado</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="tablaPedidosBody">
-              <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>
             </tbody>
           </table>
         </div>
@@ -372,15 +411,23 @@ async function entrarAlPanel() {
     Si no tiene ni un permiso, se le avisa en vez de dejarlo ver un
     panel vacío sin explicación. */
 function aplicarPermisosUI() {
+  // Resumen combina datos de inventario y pedidos, así que se ve
+  // si el usuario tiene al menos uno de los dos permisos.
+  const puedeVerResumen = !!(permisosActuales.inventario || permisosActuales.pedidos);
+  tabBtnResumen.style.display = puedeVerResumen ? '' : 'none';
+
   const mapa = [
+    [tabBtnResumen, '__resumen__'],
     [tabBtnInventario, 'inventario'],
     [tabBtnPedidos, 'pedidos'],
     [tabBtnDrop, 'drop'],
     [tabBtnUsuarios, 'usuarios'],
   ];
   mapa.forEach(([btn, permiso]) => {
+    if (permiso === '__resumen__') return; // ya se resolvió arriba
     btn.style.display = permisosActuales[permiso] ? '' : 'none';
   });
+  permisosActuales.__resumen__ = puedeVerResumen;
   const btnAgregarProducto = document.getElementById('btnMostrarNuevo');
   if (btnAgregarProducto) btnAgregarProducto.style.display = permisosActuales.inventario ? '' : 'none';
 
@@ -411,11 +458,13 @@ function aplicarPermisosUI() {
   }
 })();
 
-/* ---------- Pestañas: Inventario / Pedidos / Drop / Usuarios ---------- */
+/* ---------- Pestañas: Resumen / Inventario / Pedidos / Drop / Usuarios ---------- */
+const tabBtnResumen = document.getElementById('tabBtnResumen');
 const tabBtnInventario = document.getElementById('tabBtnInventario');
 const tabBtnPedidos = document.getElementById('tabBtnPedidos');
 const tabBtnDrop = document.getElementById('tabBtnDrop');
 const tabBtnUsuarios = document.getElementById('tabBtnUsuarios');
+const tabResumen = document.getElementById('tabResumen');
 const tabInventario = document.getElementById('tabInventario');
 const tabPedidos = document.getElementById('tabPedidos');
 const tabDrop = document.getElementById('tabDrop');
@@ -423,15 +472,25 @@ const tabUsuarios = document.getElementById('tabUsuarios');
 const tituloTab = document.getElementById('adminTituloTab');
 
 function ocultarTodasLasPestanas() {
+  tabBtnResumen.classList.remove('active');
   tabBtnInventario.classList.remove('active');
   tabBtnPedidos.classList.remove('active');
   tabBtnDrop.classList.remove('active');
   tabBtnUsuarios.classList.remove('active');
+  tabResumen.style.display = 'none';
   tabInventario.style.display = 'none';
   tabPedidos.style.display = 'none';
   tabDrop.style.display = 'none';
   tabUsuarios.style.display = 'none';
 }
+
+tabBtnResumen.addEventListener('click', () => {
+  ocultarTodasLasPestanas();
+  tabBtnResumen.classList.add('active');
+  tabResumen.style.display = 'block';
+  tituloTab.textContent = 'Resumen';
+  pintarResumen();
+});
 
 tabBtnInventario.addEventListener('click', () => {
   if (!permisosActuales.inventario) return;
@@ -666,27 +725,67 @@ document.getElementById('btnGuardarDrop').addEventListener('click', () => {
   showToast('Configuración del drop guardada ✓');
 });
 
-/* ---------- tabla de pedidos (vienen de Firestore, en la nube) ---------- */
+/* ---------- tabla de pedidos (vienen de Firestore, en la nube) ----------
+   pedidosCache guarda la última lectura de Firestore para que los
+   filtros (buscador, estado, fechas) se apliquen al instante sin
+   tener que volver a pedirle los datos a la nube cada vez que el
+   admin escribe algo. Solo se vuelve a pedir cuando de verdad hace
+   falta (al entrar a la pestaña, o después de borrar/cambiar algo). */
+let pedidosCache = [];
+
 async function pintarPedidos() {
   const tbody = document.getElementById('tablaPedidosBody');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>`;
-  const pedidos = await obtenerPedidosAdmin();
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Cargando pedidos…</td></tr>`;
+  pedidosCache = await obtenerPedidosAdmin();
+  document.getElementById('pedidosBadge').textContent = pedidosCache.length ? `(${pedidosCache.length})` : '';
+  aplicarFiltrosPedidos();
+}
 
-  document.getElementById('pedidosBadge').textContent = pedidos.length ? `(${pedidos.length})` : '';
+/** Filtra pedidosCache según lo que haya en el buscador, el select
+    de estado y las fechas, y vuelve a pintar la tabla y las
+    estadísticas con ese subconjunto. */
+function aplicarFiltrosPedidos() {
+  const texto = document.getElementById('buscarPedidoAdmin').value.trim().toLowerCase();
+  const estadoElegido = document.getElementById('filtroEstadoPedido').value;
+  const desde = document.getElementById('filtroFechaDesde').value;
+  const hasta = document.getElementById('filtroFechaHasta').value;
+
+  const pedidos = pedidosCache.filter(p => {
+    if (texto) {
+      const bolsa = `${p.nombre_cliente || ''} ${p.email_cliente || ''} ${p.telefono_cliente || ''} ${p.detalle || ''}`.toLowerCase();
+      if (!bolsa.includes(texto)) return false;
+    }
+    if (estadoElegido && estadoPedido(p) !== estadoElegido) return false;
+    if (p.fecha) {
+      const fechaPedido = p.fecha.slice(0, 10); // YYYY-MM-DD
+      if (desde && fechaPedido < desde) return false;
+      if (hasta && fechaPedido > hasta) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('tablaPedidosBody');
   const totalVendido = pedidos.reduce((s, p) => s + (Number(p.total) || 0), 0);
   document.getElementById('pedidosStats').innerHTML = `
     <div class="admin-stat"><b>${pedidos.length}</b><span>Pedidos</span></div>
     <div class="admin-stat"><b>$${totalVendido.toLocaleString('es-CO')}</b><span>Total vendido</span></div>
   `;
 
+  if (!pedidosCache.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay pedidos.</td></tr>`;
+    return;
+  }
   if (!pedidos.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay pedidos.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Ningún pedido coincide con el filtro.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = pedidos.map(p => {
     const fecha = p.fecha ? new Date(p.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
     const envioTexto = [p.envio_direccion, p.envio_barrio, p.envio_municipio].filter(Boolean).join(', ');
+    const estadoActual = estadoPedido(p);
+    const opcionesEstado = Object.entries(ESTADOS_PEDIDO).map(([valor, info]) =>
+      `<option value="${valor}" ${valor === estadoActual ? 'selected' : ''}>${info.emoji} ${info.label}</option>`).join('');
     return `
       <tr>
         <td data-label="Fecha" class="mono" style="white-space:nowrap;">${fecha}</td>
@@ -696,10 +795,38 @@ async function pintarPedidos() {
         <td data-label="Envío">${envioTexto || '—'}</td>
         <td data-label="Pago">${p.metodo_pago === 'tarjeta' ? `Tarjeta •••• ${p.tarjeta_final || ''}` : 'Contraentrega'}</td>
         <td data-label="Total" class="mono"><b>$${(Number(p.total) || 0).toLocaleString('es-CO')}</b></td>
+        <td data-label="Estado"><select class="admin-input select-estado-pedido estado-select-${estadoActual}" data-id="${p.id}">${opcionesEstado}</select></td>
         <td data-label="">${permisosActuales.eliminarPedidos ? `<button type="button" class="admin-btn admin-btn-ghost btn-borrar-pedido" data-id="${p.id}">Eliminar</button>` : ''}</td>
       </tr>`;
   }).join('');
 }
+
+['buscarPedidoAdmin', 'filtroEstadoPedido', 'filtroFechaDesde', 'filtroFechaHasta'].forEach(id => {
+  document.getElementById(id).addEventListener('input', aplicarFiltrosPedidos);
+});
+document.getElementById('btnLimpiarFiltrosPedidos').addEventListener('click', () => {
+  document.getElementById('buscarPedidoAdmin').value = '';
+  document.getElementById('filtroEstadoPedido').value = '';
+  document.getElementById('filtroFechaDesde').value = '';
+  document.getElementById('filtroFechaHasta').value = '';
+  aplicarFiltrosPedidos();
+});
+
+/* ---------- cambiar el estado de un pedido desde la tabla ---------- */
+document.getElementById('tablaPedidosBody').addEventListener('change', async (e) => {
+  const select = e.target.closest('.select-estado-pedido');
+  if (!select) return;
+  const id = select.dataset.id;
+  const nuevoEstado = select.value;
+  select.disabled = true;
+  const res = await actualizarEstadoPedidoAdmin(id, nuevoEstado);
+  select.disabled = false;
+  if (!res.ok) { showToast(res.msg, true); return; }
+  const pedidoLocal = pedidosCache.find(p => p.id === id);
+  if (pedidoLocal) pedidoLocal.estado = nuevoEstado;
+  select.className = `admin-input select-estado-pedido estado-select-${nuevoEstado}`;
+  showToast('Estado del pedido actualizado ✓');
+});
 
 /* ---------- eliminar un pedido (pide la contraseña del panel) ---------- */
 const modalBorrarPedido = document.getElementById('modalBorrarPedido');
@@ -753,6 +880,94 @@ document.getElementById('btnSalirAdmin').addEventListener('click', async () => {
   await cerrarSesionAdmin();
   window.location.href = 'admin.html';
 });
+
+/* ---------- pestaña Resumen: estadísticas, gráfica y top productos ---------- */
+async function pintarResumen() {
+  const contResumen = document.getElementById('resumenStats');
+  contResumen.innerHTML = `<div class="admin-stat"><b>…</b><span>Cargando</span></div>`;
+
+  const [productos, pedidos] = await Promise.all([
+    Promise.resolve(obtenerProductosAdmin()),
+    obtenerPedidosAdmin(),
+  ]);
+  pedidosCache = pedidos; // así la pestaña Pedidos no tiene que volver a pedirlos si el admin la abre después
+
+  const totalVendido = pedidos.reduce((s, p) => s + (Number(p.total) || 0), 0);
+  const pendientes = pedidos.filter(p => estadoPedido(p) === 'pendiente').length;
+
+  if (permisosActuales.pedidos) {
+    contResumen.innerHTML = `
+      <div class="admin-stat admin-stat-forest"><b>${pedidos.length}</b><span>Pedidos</span></div>
+      <div class="admin-stat admin-stat-acento"><b>$${totalVendido.toLocaleString('es-CO')}</b><span>Total vendido</span></div>
+      <div class="admin-stat admin-stat-butter"><b>${pendientes}</b><span>Pedidos pendientes</span></div>
+      <div class="admin-stat admin-stat-sage"><b>${productos.length}</b><span>Productos</span></div>
+    `;
+  } else {
+    // usuario sin permiso de pedidos: solo mostramos lo de inventario
+    contResumen.innerHTML = `
+      <div class="admin-stat admin-stat-sage"><b>${productos.length}</b><span>Productos</span></div>
+      <div class="admin-stat admin-stat-warn"><b>${productos.filter(p => estaAgotado(p)).length}</b><span>Agotados</span></div>
+    `;
+  }
+
+  if (!permisosActuales.pedidos) {
+    document.getElementById('resumenChart').innerHTML = `<p class="admin-foto-hint">No tienes permiso para ver los pedidos.</p>`;
+    document.getElementById('resumenTopProductos').innerHTML = '';
+    document.getElementById('resumenUltimosPedidos').innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray);">Sin acceso.</td></tr>`;
+    return;
+  }
+
+  /* --- gráfica de ventas de los últimos 7 días --- */
+  const hoy = new Date();
+  const dias = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(hoy);
+    d.setDate(d.getDate() - i);
+    dias.push({ clave: d.toISOString().slice(0, 10), etiqueta: d.toLocaleDateString('es-CO', { weekday: 'short' }) });
+  }
+  const ventasPorDia = dias.map(d => ({
+    ...d,
+    total: pedidos.filter(p => p.fecha && p.fecha.slice(0, 10) === d.clave).reduce((s, p) => s + (Number(p.total) || 0), 0),
+  }));
+  const maxVenta = Math.max(1, ...ventasPorDia.map(d => d.total));
+  document.getElementById('resumenChart').innerHTML = ventasPorDia.map(d => `
+    <div class="chart-bar-col" title="$${d.total.toLocaleString('es-CO')}">
+      <div class="chart-bar" style="height:${Math.max(4, Math.round(d.total / maxVenta * 100))}%"></div>
+      <span class="chart-bar-label">${d.etiqueta}</span>
+    </div>
+  `).join('') || `<p class="admin-foto-hint">Todavía no hay ventas.</p>`;
+
+  /* --- productos más vendidos (contando cuántas veces aparece cada nombre en los pedidos) --- */
+  const conteoProductos = {};
+  pedidos.forEach(p => (p.items || []).forEach(it => {
+    conteoProductos[it.nombre] = (conteoProductos[it.nombre] || 0) + 1;
+  }));
+  const topProductos = Object.entries(conteoProductos).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxCantidad = Math.max(1, ...topProductos.map(([, c]) => c));
+  document.getElementById('resumenTopProductos').innerHTML = topProductos.length
+    ? topProductos.map(([nombre, cantidad]) => `
+        <div class="top-prod-fila">
+          <span class="top-prod-nombre">${nombre}</span>
+          <div class="top-prod-barra-wrap"><div class="top-prod-barra" style="width:${Math.round(cantidad / maxCantidad * 100)}%"></div></div>
+          <span class="top-prod-cantidad">${cantidad}</span>
+        </div>`).join('')
+    : `<p class="admin-foto-hint">Todavía no hay ventas.</p>`;
+
+  /* --- últimos 5 pedidos --- */
+  const ultimos = pedidos.slice(0, 5);
+  document.getElementById('resumenUltimosPedidos').innerHTML = ultimos.length
+    ? ultimos.map(p => {
+        const fecha = p.fecha ? new Date(p.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        const est = estadoPedido(p);
+        return `<tr>
+          <td data-label="Fecha" class="mono" style="white-space:nowrap;">${fecha}</td>
+          <td data-label="Cliente"><b>${p.nombre_cliente || '—'}</b></td>
+          <td data-label="Total" class="mono">$${(Number(p.total) || 0).toLocaleString('es-CO')}</td>
+          <td data-label="Estado"><span class="pedido-estado-pill estado-pill-${est}">${ESTADOS_PEDIDO[est].emoji} ${ESTADOS_PEDIDO[est].label}</span></td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray);">Todavía no hay pedidos.</td></tr>`;
+}
 
 /* ---------- estadísticas rápidas ---------- */
 function pintarStats() {
@@ -1107,6 +1322,7 @@ function pintarTodo() {
   pintarStats();
   pintarTabla();
   aplicarFiltroProductos();
+  if (tabResumen.style.display !== 'none') pintarResumen();
 }
 
 /* ---------- buscador del inventario (filtra la tabla ya pintada) ---------- */

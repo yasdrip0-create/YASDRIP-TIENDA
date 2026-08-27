@@ -508,6 +508,21 @@ async function crearPedido(datosCliente) {
   }
 }
 
+/** Estados posibles de un pedido, en el orden en que avanzan.
+    Un pedido que todavía no tiene campo "estado" guardado (los
+    que se crearon antes de que existiera esto) se trata como
+    "pendiente". */
+const ESTADOS_PEDIDO = {
+  pendiente:  { label: 'Pendiente',  emoji: '🕓' },
+  confirmado: { label: 'Confirmado', emoji: '✅' },
+  enviado:    { label: 'Enviado',    emoji: '🚚' },
+  entregado:  { label: 'Entregado',  emoji: '📦' },
+  cancelado:  { label: 'Cancelado',  emoji: '✕' },
+};
+function estadoPedido(p) {
+  return (p.estado && ESTADOS_PEDIDO[p.estado]) ? p.estado : 'pendiente';
+}
+
 /** Trae todos los pedidos guardados en la nube, del más nuevo al
     más viejo. Lo usa el panel admin. */
 async function obtenerPedidosAdmin() {
@@ -517,6 +532,19 @@ async function obtenerPedidosAdmin() {
   } catch (e) {
     console.error('Error leyendo pedidos:', e);
     return [];
+  }
+}
+
+/** Cambia el estado de un pedido (pendiente/confirmado/enviado/
+    entregado/cancelado) en Firestore. Lo usa el panel admin desde
+    el selector de estado en la tabla de pedidos. */
+async function actualizarEstadoPedidoAdmin(id, estado) {
+  if (!ESTADOS_PEDIDO[estado]) return { ok: false, msg: 'Estado inválido.' };
+  try {
+    await fbDb.collection('pedidos').doc(id).update({ estado });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
   }
 }
 
