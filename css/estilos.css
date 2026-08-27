@@ -1414,21 +1414,38 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 
 /* ---- login del panel del vendedor: la tarjeta va centrada en
-   vez de pegada a un lado, y lleva un poco más de estilo (marca
-   "acceso privado" y un borde con degradado) para que se note
-   que es la entrada del equipo y no el login de un cliente. ---- */
+   vez de pegada a un lado, y lleva más estilo streetwear/juvenil
+   (sticker rotado, punto pulsando, palabra resaltada en lima)
+   para que no se sienta tan plana ni parezca el login de un
+   cliente cualquiera. ---- */
 .auth-form-side-center{justify-content:center;}
 .auth-card-admin{
-  position:relative;max-width:400px;
+  position:relative;max-width:400px;overflow:visible;
   border:1px solid transparent;
   background-image:
     linear-gradient(rgba(250,249,245,0.97),rgba(250,249,245,0.97)),
-    linear-gradient(120deg,var(--forest),var(--sage) 45%,var(--butter));
+    linear-gradient(120deg,var(--forest),var(--acento) 45%,var(--butter));
   background-origin:border-box;background-clip:padding-box,border-box;
 }
+.auth-card-admin-sticker{
+  position:absolute;top:-14px;right:-14px;z-index:3;
+  background:var(--acento);color:var(--acento-ink);
+  font-family:'Space Mono',monospace;font-weight:700;font-size:11px;letter-spacing:0.06em;
+  padding:7px 12px;border-radius:8px;transform:rotate(9deg);
+  box-shadow:0 6px 16px rgba(0,0,0,0.25),0 0 0 3px var(--offwhite);
+}
 .auth-card-admin-eyebrow{
+  display:flex;align-items:center;justify-content:center;gap:8px;
   font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
-  color:var(--forest);text-align:center;margin-bottom:14px;opacity:0.8;
+  color:var(--forest);text-align:center;margin-bottom:14px;opacity:0.85;
+}
+.auth-card-admin-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--forest);
+  box-shadow:0 0 0 3px rgba(27,67,50,0.18);animation:blink 1.4s infinite;
+}
+.auth-card-admin h2 em{
+  font-style:normal;color:var(--black);background:var(--acento);
+  padding:0 6px;box-decoration-break:clone;-webkit-box-decoration-break:clone;
 }
 
 /* ---- en pantallas angostas: la tarjeta baja al fondo, tipo app ---- */
@@ -1902,12 +1919,25 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   overflow-y:auto;
 }
 .admin-modal-overlay.open{display:flex;}
+/* los modales van SIEMPRE en fondo blanco con letras negras, a
+   propósito: es el mayor contraste posible y así nunca hay duda
+   de que se lee bien, sin importar el tema oscuro del resto del
+   panel. Como estas variables son las mismas que usa todo el
+   contenido de adentro (inputs, textos, botones, tarjetas de
+   permisos), con solo redefinirlas aquí ya se pone todo blanco. */
 .admin-modal{
+  --adm-surface:#ffffff;
+  --adm-surface-2:#f2f2f6;
+  --adm-bg-2:#f6f6fa;
+  --adm-text:#14141a;
+  --adm-text-dim:#55555f;
+  --adm-line:#dedee6;
   background-color:var(--adm-surface);border:1px solid var(--adm-line);
   border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
-  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(139,92,246,0.12);
+  box-shadow:0 20px 60px rgba(0,0,0,0.35),0 0 0 1px rgba(139,92,246,0.12);
   margin:auto;
 }
+.admin-modal .admin-btn-ghost:hover{color:var(--adm-text);}
 .admin-modal-wide{max-width:560px;}
 .admin-modal h3{font-family:'Fraunces',serif;font-size:18px;margin-bottom:16px;color:var(--adm-text);}
 .admin-modal input:not([type="checkbox"]){
