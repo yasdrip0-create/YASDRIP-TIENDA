@@ -1413,6 +1413,24 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   box-shadow:0 20px 60px rgba(0,0,0,0.28);
 }
 
+/* ---- login del panel del vendedor: la tarjeta va centrada en
+   vez de pegada a un lado, y lleva un poco más de estilo (marca
+   "acceso privado" y un borde con degradado) para que se note
+   que es la entrada del equipo y no el login de un cliente. ---- */
+.auth-form-side-center{justify-content:center;}
+.auth-card-admin{
+  position:relative;max-width:400px;
+  border:1px solid transparent;
+  background-image:
+    linear-gradient(rgba(250,249,245,0.97),rgba(250,249,245,0.97)),
+    linear-gradient(120deg,var(--forest),var(--sage) 45%,var(--butter));
+  background-origin:border-box;background-clip:padding-box,border-box;
+}
+.auth-card-admin-eyebrow{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--forest);text-align:center;margin-bottom:14px;opacity:0.8;
+}
+
 /* ---- en pantallas angostas: la tarjeta baja al fondo, tipo app ---- */
 @media (max-width:900px){
   .auth-visual{padding:22px 22px 0;}
@@ -1871,20 +1889,20 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 
 /* ---------- modales ---------- */
-/* el fondo oscuro usa un desenfoque suave; el modal en si va
-   aislado en su propia capa con backdrop-filter:none y fondo
-   100% solido, para que el desenfoque del fondo nunca "se filtre"
-   hacia adentro y deje el texto ilegible. */
+/* nota: aqui NO se usa backdrop-filter (blur) sobre el fondo del
+   overlay a proposito. En Chromium/Brave ese desenfoque a veces
+   "se filtra" hacia el modal de encima y deja el texto lavado e
+   ilegible, sin importar trucos de aislar capas. En su lugar se
+   usa un fondo solido bien oscuro, que da el mismo efecto de
+   "oscurecer detrás" sin ese riesgo. */
 .admin-modal-overlay{
   position:fixed;inset:0;display:none;
-  background:radial-gradient(120% 140% at 50% -10%, rgba(40,30,70,0.55), rgba(8,8,14,0.88) 60%);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  background:rgba(6,5,12,0.92);
   align-items:center;justify-content:center;z-index:200;padding:20px;
   overflow-y:auto;
 }
 .admin-modal-overlay.open{display:flex;}
 .admin-modal{
-  isolation:isolate;transform:translateZ(0);backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
   background-color:var(--adm-surface);border:1px solid var(--adm-line);
   border-radius:20px;padding:26px;max-width:360px;width:100%;color:var(--adm-text);
   box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(139,92,246,0.12);
@@ -1897,6 +1915,22 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   background-color:var(--adm-bg-2);font-size:14px;color:var(--adm-text);
 }
 .admin-modal input:focus{outline:none;border-color:var(--adm-lime);box-shadow:0 0 0 3px rgba(215,255,61,0.15);}
+
+/* ---- campos "restringidos": contraseña de acceso a usuarios y
+   código de desarrollador. Llevan un color distinto (violeta) a
+   propósito, para que se note de inmediato que es un campo
+   sensible/privilegiado y no una contraseña cualquiera. ---- */
+.admin-input-restringido{
+  border-color:rgba(139,92,246,0.55) !important;
+  background-color:rgba(139,92,246,0.08) !important;
+  color:var(--adm-text) !important;
+}
+.admin-input-restringido::placeholder{color:#b9a8f7;}
+.admin-input-restringido:focus{
+  border-color:var(--adm-violet) !important;
+  box-shadow:0 0 0 3px rgba(139,92,246,0.22) !important;
+  background-color:rgba(139,92,246,0.12) !important;
+}
 
 /* ---- modal de permisos: cabecera fija + cuerpo con scroll + pie
    con el codigo de desarrollador y los botones, bien separados

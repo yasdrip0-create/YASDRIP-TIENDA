@@ -23,8 +23,9 @@
     <div class="auth-stamp stamp-font">underground<br>drip co.</div>
   </div>
 
-  <div class="auth-form-side">
-    <div class="auth-card">
+  <div class="auth-form-side auth-form-side-center">
+    <div class="auth-card auth-card-admin">
+      <div class="auth-card-admin-eyebrow">⚡ Acceso privado</div>
       <a href="index.html" class="auth-brand">
         <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
       </a>
@@ -265,7 +266,7 @@
         </div>
 
         <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:14px;">
-          <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
+          <input type="password" id="codigoDesarrolladorUsuario" class="admin-input admin-input-restringido" placeholder="Código de desarrollador" autocomplete="off">
         </div>
         <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo alguien del equipo con ese código pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
@@ -341,7 +342,7 @@
     </div>
     <div class="admin-modal-foot">
       <label class="admin-modal-foot-label" for="codigoDesarrolladorPermisos">Código de desarrollador</label>
-      <input type="password" id="codigoDesarrolladorPermisos" placeholder="••••••••" autocomplete="off">
+      <input type="password" id="codigoDesarrolladorPermisos" class="admin-input-restringido" placeholder="••••••••" autocomplete="off">
       <div class="admin-add-actions">
         <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar cambios</button>
         <button class="admin-btn admin-btn-ghost" id="btnCerrarModalPermisos">Cancelar</button>
@@ -368,7 +369,7 @@
   <div class="admin-modal">
     <h3>Acceso a Usuarios</h3>
     <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe la contraseña de acceso a esta pestaña (solo el usuario "admin" puede entrar aquí).</p>
-    <input type="password" id="claveAccesoUsuarios" placeholder="Contraseña de acceso" autocomplete="off">
+    <input type="password" id="claveAccesoUsuarios" class="admin-input-restringido" placeholder="Contraseña de acceso" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarAccesoUsuarios">Entrar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalAccesoUsuarios">Cancelar</button>
@@ -392,7 +393,7 @@
   <div class="admin-modal">
     <h3>Eliminar pedido</h3>
     <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe el código de desarrollador para confirmar. Esta acción no se puede deshacer.</p>
-    <input type="password" id="claveBorrarPedido" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="password" id="claveBorrarPedido" class="admin-input-restringido" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarBorrarPedido">Eliminar pedido</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalBorrarPedido">Cancelar</button>
@@ -406,7 +407,7 @@
     <h3>Cambiar contraseña del panel</h3>
     <input type="password" id="claveActual" placeholder="Contraseña actual">
     <input type="password" id="claveNueva" placeholder="Nueva contraseña">
-    <input type="password" id="codigoDesarrolladorClave" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="password" id="codigoDesarrolladorClave" class="admin-input-restringido" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarClave">Guardar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalClave">Cancelar</button>
