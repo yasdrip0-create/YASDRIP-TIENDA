@@ -80,6 +80,7 @@
 
     <div id="tabResumen">
       <div class="admin-stats admin-stats-color" id="resumenStats"></div>
+      <div class="admin-stock-alerta" id="resumenAlertaStock" style="display:none;"></div>
       <div class="admin-resumen-grid">
         <div class="admin-card">
           <h3>Ventas de los últimos 7 días</h3>
@@ -1218,6 +1219,32 @@ async function pintarResumen() {
     `;
   }
 
+  /* --- aviso de stock (siempre visible en Resumen, aunque no se
+     entre a la pestaña Inventario, para no enterarse tarde de
+     que algo se está por agotar) --- */
+  const agotadosResumen = productos.filter(p => estaAgotado(p) && p.activo !== false);
+  const bajosResumen = productos.filter(p => !estaAgotado(p) && p.activo !== false && nivelStockProducto(p) === 'bajo');
+  const alertaStock = document.getElementById('resumenAlertaStock');
+  if (permisosActuales.inventario && (agotadosResumen.length || bajosResumen.length)) {
+    const partes = [];
+    if (agotadosResumen.length) partes.push(`<b>${agotadosResumen.length}</b> agotado${agotadosResumen.length > 1 ? 's' : ''}`);
+    if (bajosResumen.length) partes.push(`<b>${bajosResumen.length}</b> con poco stock (≤ ${STOCK_BAJO_UMBRAL})`);
+    const nombres = [...agotadosResumen, ...bajosResumen].slice(0, 4).map(p => p.nombre).join(', ');
+    const yMas = (agotadosResumen.length + bajosResumen.length) > 4 ? ` y ${(agotadosResumen.length + bajosResumen.length) - 4} más` : '';
+    alertaStock.innerHTML = `
+      <span class="admin-stock-alerta-icono">⚠️</span>
+      <div class="admin-stock-alerta-texto">
+        <b>Revisa el inventario:</b> ${partes.join(' · ')}.
+        <span class="admin-stock-alerta-nombres">${nombres}${yMas}</span>
+      </div>
+      <button type="button" class="admin-btn admin-btn-dark" id="btnIrAInventarioDesdeAlerta">Ver inventario →</button>
+    `;
+    alertaStock.style.display = 'flex';
+    document.getElementById('btnIrAInventarioDesdeAlerta').onclick = () => tabBtnInventario.click();
+  } else {
+    alertaStock.style.display = 'none';
+  }
+
   if (!permisosActuales.pedidos) {
     document.getElementById('resumenChart').innerHTML = `<p class="admin-foto-hint">No tienes permiso para ver los pedidos.</p>`;
     document.getElementById('resumenTopProductos').innerHTML = '';
@@ -1394,7 +1421,7 @@ function pintarTabla(productosPagina, sinResultados, hayFiltro) {
       : `title="Varía según la talla: $${rango.min.toLocaleString('es-CO')} a $${rango.max.toLocaleString('es-CO')}"`;
     const fotoPrincipal = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
     const miniatura = fotoPrincipal
-      ? `<img src="${fotoPrincipal}" class="admin-prod-thumb">`
+      ? `<img src="${fotoPrincipal}" class="admin-prod-thumb" loading="lazy" decoding="async">`
       : iconoProducto(p.icono, p.colores[0]);
     const fotosColorHtml = (p.colores || []).map(c => {
       const fotoColor = p.fotos && p.fotos[c];

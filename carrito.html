@@ -59,6 +59,11 @@
       <div class="exito-sub">Ya casi vuela para tu casa 🚀</div>
       <div class="gracias-nombre" id="gracias-nombre"></div>
       <div class="exito-pedido" id="exito-pedido"></div>
+      <p class="exito-guarda-num">Guarda este número para hacerle seguimiento a tu pedido más tarde.</p>
+      <div class="exito-acciones">
+        <button type="button" class="btn-exito-copiar" id="btnCopiarPedido">📋 Copiar número</button>
+        <a href="#" class="btn-exito-copiar" id="linkSeguirPedido" target="_blank" rel="noopener">📦 Ver estado</a>
+      </div>
       <a href="productos.html" class="btn-exito-volver">Seguir comprando</a>
     </div>
 
@@ -113,7 +118,7 @@ function pintarCarrito() {
   grupos.forEach(g => {
     itemsHtml += `
       <div class="producto-carrito">
-        <div class="prod-icon-wrap">${g.foto ? `<img src="${g.foto}" class="prod-icon-photo" alt="${g.nombre}">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
+        <div class="prod-icon-wrap">${g.foto ? `<img src="${g.foto}" class="prod-icon-photo" alt="${g.nombre}" loading="lazy" decoding="async">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
         <div class="producto-info">
           <h3>${g.nombre}</h3>
           <div class="producto-meta">TALLA ${g.talla || '—'} · ${g.categoria || ''}</div>
@@ -679,6 +684,20 @@ function mostrarExito(nombreCliente, pedidoId) {
     ex.style.display = 'flex';
     document.getElementById('gracias-nombre').textContent = '✨ ¡Muchas gracias, ' + nombreCliente + '! ✨';
     document.getElementById('exito-pedido').textContent = pedidoId ? `PEDIDO #${pedidoId}` : 'PEDIDO REGISTRADO';
+    const btnCopiar = document.getElementById('btnCopiarPedido');
+    const linkSeguir = document.getElementById('linkSeguirPedido');
+    if (pedidoId) {
+      btnCopiar.onclick = () => {
+        navigator.clipboard.writeText(pedidoId).then(() => {
+          btnCopiar.textContent = '✅ Copiado';
+          setTimeout(() => { btnCopiar.textContent = '📋 Copiar número'; }, 1800);
+        });
+      };
+      linkSeguir.href = 'seguimiento.html?pedido=' + encodeURIComponent(pedidoId);
+    } else {
+      btnCopiar.style.display = 'none';
+      linkSeguir.style.display = 'none';
+    }
     document.querySelectorAll('.stepper-step').forEach(s => { s.classList.add('is-done'); s.classList.remove('is-active'); s.querySelector('.stepper-circle').textContent = '✓'; });
     document.querySelectorAll('.stepper-line').forEach(l => l.classList.add('is-done'));
     lanzarConfeti();

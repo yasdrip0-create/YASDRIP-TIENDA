@@ -327,6 +327,7 @@ function renderFooter() {
             <li><a href="tel:+573239523623">📞 +57 323 952 3623</a></li>
             <li><a href="https://wa.me/573239523623" target="_blank" rel="noopener">💬 WhatsApp: +57 323 952 3623</a></li>
             <li><a href="mailto:contacto@yasdrip.co">✉️ contacto@yasdrip.co</a></li>
+            <li><a href="seguimiento.html">📦 Seguir mi pedido</a></li>
             <li>📍 Calle 50 #45-30, Medellín, Colombia</li>
           </ul>
         </div>
