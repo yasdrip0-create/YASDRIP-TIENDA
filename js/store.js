@@ -36,6 +36,7 @@ const LS_KEYS = {
   productos: "yasdrip_catalogo",
   admin: "yasdrip_admin",
   sesionAdmin: "yasdrip_sesion_admin",
+  favoritos: "yasdrip_favoritos",
 };
 
 function _leer(key) {
@@ -475,6 +476,53 @@ function limpiarCarrito() {
 }
 function totalCarritoValor() {
   return getCarrito().reduce((sum, item) => sum + Number(item.precio), 0);
+}
+
+/* ---------- FAVORITOS / LISTA DE DESEOS ----------
+   Guarda, en localStorage del navegador, los ids de los productos
+   que el cliente marcó con el corazón (sin comprarlos todavía). */
+function getFavoritos() {
+  return _leer(LS_KEYS.favoritos);
+}
+/** true si el producto (por id) ya está en favoritos */
+function esFavorito(id) {
+  return getFavoritos().some(f => f == id);
+}
+/** Agrega o quita un producto de favoritos. Devuelve la lista resultante. */
+function toggleFavorito(id) {
+  const favs = getFavoritos();
+  const idx = favs.findIndex(f => f == id);
+  if (idx > -1) favs.splice(idx, 1);
+  else favs.push(id);
+  _guardar(LS_KEYS.favoritos, favs);
+  return favs;
+}
+function totalFavoritosCount() {
+  return getFavoritos().length;
+}
+/** Productos activos del catálogo que el cliente marcó como favoritos. */
+function productosFavoritos() {
+  const favs = getFavoritos();
+  return productosActivos().filter(p => favs.some(f => f == p.id));
+}
+
+/* ---------- ORDEN DEL CATÁLOGO ----------
+   "orden" puede ser: 'relevancia' (por defecto, el orden del
+   catálogo), 'precio_asc', 'precio_desc' o 'nuevo' (los productos
+   agregados más recientemente primero — se asume que un id más
+   alto se agregó después). */
+function ordenarProductos(lista, orden) {
+  const copia = lista.slice();
+  switch (orden) {
+    case 'precio_asc':
+      return copia.sort((a, b) => rangoPrecioTallas(a).min - rangoPrecioTallas(b).min);
+    case 'precio_desc':
+      return copia.sort((a, b) => rangoPrecioTallas(b).min - rangoPrecioTallas(a).min);
+    case 'nuevo':
+      return copia.sort((a, b) => Number(b.id) - Number(a.id));
+    default:
+      return copia;
+  }
 }
 
 /* ---------- PEDIDOS ----------

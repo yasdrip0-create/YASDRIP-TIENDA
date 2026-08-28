@@ -23,14 +23,12 @@
     <div class="auth-stamp stamp-font">underground<br>drip co.</div>
   </div>
 
-  <div class="auth-form-side auth-form-side-center">
-    <div class="auth-card auth-card-admin">
-      <div class="auth-card-admin-sticker">🔒 STAFF</div>
-      <div class="auth-card-admin-eyebrow"><span class="auth-card-admin-dot"></span>Acceso privado</div>
+  <div class="auth-form-side">
+    <div class="auth-card">
       <a href="index.html" class="auth-brand">
         <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
       </a>
-      <h2>Entrar al <em>panel</em></h2>
+      <h2>Entrar al panel</h2>
       <p class="auth-sub">Usuario y contraseña del administrador de la tienda.</p>
       <div id="adminAuthMsg"></div>
       <form id="formAdminLogin">
@@ -80,7 +78,6 @@
 
     <div id="tabResumen">
       <div class="admin-stats admin-stats-color" id="resumenStats"></div>
-      <div class="admin-stock-alerta" id="resumenAlertaStock" style="display:none;"></div>
       <div class="admin-resumen-grid">
         <div class="admin-card">
           <h3>Ventas de los últimos 7 días</h3>
@@ -268,7 +265,7 @@
         </div>
 
         <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:14px;">
-          <input type="password" id="codigoDesarrolladorUsuario" class="admin-input admin-input-restringido" placeholder="Código de desarrollador" autocomplete="off">
+          <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
         </div>
         <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo alguien del equipo con ese código pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
@@ -305,63 +302,39 @@
 
 <!-- ======================= MODAL EDITAR PERMISOS ======================= -->
 <div class="admin-modal-overlay" id="modalPermisos">
-  <div class="admin-modal admin-modal-wide admin-modal-permisos">
-    <div class="admin-modal-head">
-      <div>
-        <h3 id="modalPermisosTitulo">Permisos</h3>
-        <p class="admin-modal-subtitulo">Marca lo que esta persona sí puede ver y tocar en el panel.</p>
-      </div>
-      <button type="button" class="admin-modal-close" id="btnCerrarModalPermisosX" aria-label="Cerrar">✕</button>
+  <div class="admin-modal admin-modal-wide">
+    <h3 id="modalPermisosTitulo">Permisos</h3>
+    <div class="admin-permisos-grid" style="margin-bottom:14px;">
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="inventario">
+        <span class="permiso-icono">📦</span>
+        <span class="permiso-texto"><b>Inventario</b><small>Ver y editar productos, precios y stock</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="pedidos">
+        <span class="permiso-icono">🧾</span>
+        <span class="permiso-texto"><b>Pedidos</b><small>Ver los pedidos de clientes</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="eliminarPedidos">
+        <span class="permiso-icono">🗑️</span>
+        <span class="permiso-texto"><b>Eliminar pedidos</b><small>Además de verlos, puede borrarlos</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="drop">
+        <span class="permiso-icono">⚡</span>
+        <span class="permiso-texto"><b>Drop</b><small>Ver y editar el próximo lanzamiento</small></span>
+      </label>
+      <label class="admin-permiso-item">
+        <input type="checkbox" class="chk-permiso-editar" value="usuarios">
+        <span class="permiso-icono">👥</span>
+        <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
+      </label>
     </div>
-    <div class="admin-modal-body">
-      <div class="admin-permisos-grid">
-        <label class="admin-permiso-item">
-          <input type="checkbox" class="chk-permiso-editar" value="inventario">
-          <span class="permiso-icono">📦</span>
-          <span class="permiso-texto"><b>Inventario</b><small>Ver y editar productos, precios y stock</small></span>
-        </label>
-        <label class="admin-permiso-item">
-          <input type="checkbox" class="chk-permiso-editar" value="pedidos">
-          <span class="permiso-icono">🧾</span>
-          <span class="permiso-texto"><b>Pedidos</b><small>Ver los pedidos de clientes</small></span>
-        </label>
-        <label class="admin-permiso-item">
-          <input type="checkbox" class="chk-permiso-editar" value="eliminarPedidos">
-          <span class="permiso-icono">🗑️</span>
-          <span class="permiso-texto"><b>Eliminar pedidos</b><small>Además de verlos, puede borrarlos</small></span>
-        </label>
-        <label class="admin-permiso-item">
-          <input type="checkbox" class="chk-permiso-editar" value="drop">
-          <span class="permiso-icono">⚡</span>
-          <span class="permiso-texto"><b>Drop</b><small>Ver y editar el próximo lanzamiento</small></span>
-        </label>
-        <label class="admin-permiso-item">
-          <input type="checkbox" class="chk-permiso-editar" value="usuarios">
-          <span class="permiso-icono">👥</span>
-          <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
-        </label>
-      </div>
-    </div>
-    <div class="admin-modal-foot">
-      <label class="admin-modal-foot-label" for="codigoDesarrolladorPermisos">Código de desarrollador</label>
-      <input type="password" id="codigoDesarrolladorPermisos" class="admin-input-restringido" placeholder="••••••••" autocomplete="off">
-      <div class="admin-add-actions">
-        <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar cambios</button>
-        <button class="admin-btn admin-btn-ghost" id="btnCerrarModalPermisos">Cancelar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ======================= AVISO DE SESIÓN POR INACTIVIDAD ======================= -->
-<div class="admin-modal-overlay" id="modalInactividad">
-  <div class="admin-modal admin-modal-inactividad">
-    <div class="admin-inactividad-ico">💤</div>
-    <h3>¿Sigues ahí?</h3>
-    <p class="admin-modal-subtitulo">Por seguridad, la sesión del panel se cierra sola cuando nadie la está usando. Se cerrará en <b id="inactividadCountdown">30</b> segundos.</p>
+    <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
-      <button class="admin-btn admin-btn-primary" id="btnSeguirConectado">Seguir conectado</button>
-      <button class="admin-btn admin-btn-ghost" id="btnSalirAhora">Cerrar sesión ahora</button>
+      <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalPermisos">Cancelar</button>
     </div>
   </div>
 </div>
@@ -371,7 +344,7 @@
   <div class="admin-modal">
     <h3>Acceso a Usuarios</h3>
     <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe la contraseña de acceso a esta pestaña (solo el usuario "admin" puede entrar aquí).</p>
-    <input type="password" id="claveAccesoUsuarios" class="admin-input-restringido" placeholder="Contraseña de acceso" autocomplete="off">
+    <input type="password" id="claveAccesoUsuarios" placeholder="Contraseña de acceso" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarAccesoUsuarios">Entrar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalAccesoUsuarios">Cancelar</button>
@@ -395,7 +368,7 @@
   <div class="admin-modal">
     <h3>Eliminar pedido</h3>
     <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe el código de desarrollador para confirmar. Esta acción no se puede deshacer.</p>
-    <input type="password" id="claveBorrarPedido" class="admin-input-restringido" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="password" id="claveBorrarPedido" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarBorrarPedido">Eliminar pedido</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalBorrarPedido">Cancelar</button>
@@ -409,7 +382,7 @@
     <h3>Cambiar contraseña del panel</h3>
     <input type="password" id="claveActual" placeholder="Contraseña actual">
     <input type="password" id="claveNueva" placeholder="Nueva contraseña">
-    <input type="password" id="codigoDesarrolladorClave" class="admin-input-restringido" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="password" id="codigoDesarrolladorClave" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarClave">Guardar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalClave">Cancelar</button>
@@ -449,7 +422,6 @@ async function entrarAlPanel() {
   aplicarPermisosUI();
   await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
-  iniciarVigilanciaInactividad();
 }
 
 /** Muestra u oculta pestañas según lo que este usuario puede tocar.
@@ -693,7 +665,6 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', (e) 
   modalPermisos.classList.add('open');
 });
 document.getElementById('btnCerrarModalPermisos').addEventListener('click', () => modalPermisos.classList.remove('open'));
-document.getElementById('btnCerrarModalPermisosX').addEventListener('click', () => modalPermisos.classList.remove('open'));
 document.getElementById('btnGuardarPermisos').addEventListener('click', async () => {
   const codigo = document.getElementById('codigoDesarrolladorPermisos').value;
   if (!(await verificarCodigoDesarrollador(codigo))) {
@@ -1112,81 +1083,8 @@ document.getElementById('formAdminLogin').addEventListener('submit', async (e) =
 });
 
 document.getElementById('btnSalirAdmin').addEventListener('click', async () => {
-  detenerVigilanciaInactividad();
   await cerrarSesionAdmin();
   window.location.href = 'admin.html';
-});
-
-/* ============================================================
-   Cierre de sesión por inactividad: si nadie toca el panel
-   durante 3 minutos, se avisa 30 segundos antes (por si la
-   persona sigue ahí pero quieta leyendo algo) y si no responde,
-   se cierra la sesión sola y vuelve a la pantalla de login.
-   ============================================================ */
-const INACTIVIDAD_LIMITE_MS = 3 * 60 * 1000;    // 3 minutos sin tocar nada
-const INACTIVIDAD_AVISO_MS  = 30 * 1000;        // aviso 30s antes de cerrar
-let timerInactividad = null;
-let timerAvisoInactividad = null;
-let intervaloCuentaAtras = null;
-const modalInactividad = document.getElementById('modalInactividad');
-
-function iniciarVigilanciaInactividad() {
-  ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev => {
-    document.addEventListener(ev, registrarActividad, { passive: true });
-  });
-  reprogramarInactividad();
-}
-
-function detenerVigilanciaInactividad() {
-  ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev => {
-    document.removeEventListener(ev, registrarActividad);
-  });
-  clearTimeout(timerInactividad);
-  clearTimeout(timerAvisoInactividad);
-  clearInterval(intervaloCuentaAtras);
-  modalInactividad.classList.remove('open');
-}
-
-function registrarActividad() {
-  // mientras el aviso de "¿sigues ahí?" está abierto, cualquier
-  // movimiento no cuenta solo: hay que apretar "Seguir conectado"
-  if (modalInactividad.classList.contains('open')) return;
-  reprogramarInactividad();
-}
-
-function reprogramarInactividad() {
-  clearTimeout(timerInactividad);
-  clearTimeout(timerAvisoInactividad);
-  timerAvisoInactividad = setTimeout(mostrarAvisoInactividad, INACTIVIDAD_LIMITE_MS - INACTIVIDAD_AVISO_MS);
-}
-
-function mostrarAvisoInactividad() {
-  let restante = Math.round(INACTIVIDAD_AVISO_MS / 1000);
-  document.getElementById('inactividadCountdown').textContent = restante;
-  modalInactividad.classList.add('open');
-  intervaloCuentaAtras = setInterval(() => {
-    restante -= 1;
-    document.getElementById('inactividadCountdown').textContent = Math.max(restante, 0);
-    if (restante <= 0) clearInterval(intervaloCuentaAtras);
-  }, 1000);
-  timerInactividad = setTimeout(cerrarPorInactividad, INACTIVIDAD_AVISO_MS);
-}
-
-async function cerrarPorInactividad() {
-  detenerVigilanciaInactividad();
-  await cerrarSesionAdmin();
-  window.location.href = 'admin.html';
-  setTimeout(() => showToast('Cerramos tu sesión por inactividad, por seguridad.', true), 300);
-}
-
-document.getElementById('btnSeguirConectado').addEventListener('click', () => {
-  clearTimeout(timerInactividad);
-  clearInterval(intervaloCuentaAtras);
-  modalInactividad.classList.remove('open');
-  reprogramarInactividad();
-});
-document.getElementById('btnSalirAhora').addEventListener('click', () => {
-  document.getElementById('btnSalirAdmin').click();
 });
 
 /* ---------- pestaña Resumen: estadísticas, gráfica y top productos ---------- */
@@ -1217,32 +1115,6 @@ async function pintarResumen() {
       <div class="admin-stat admin-stat-sage"><b>${productos.length}</b><span>Productos</span></div>
       <div class="admin-stat admin-stat-warn"><b>${productos.filter(p => estaAgotado(p)).length}</b><span>Agotados</span></div>
     `;
-  }
-
-  /* --- aviso de stock (siempre visible en Resumen, aunque no se
-     entre a la pestaña Inventario, para no enterarse tarde de
-     que algo se está por agotar) --- */
-  const agotadosResumen = productos.filter(p => estaAgotado(p) && p.activo !== false);
-  const bajosResumen = productos.filter(p => !estaAgotado(p) && p.activo !== false && nivelStockProducto(p) === 'bajo');
-  const alertaStock = document.getElementById('resumenAlertaStock');
-  if (permisosActuales.inventario && (agotadosResumen.length || bajosResumen.length)) {
-    const partes = [];
-    if (agotadosResumen.length) partes.push(`<b>${agotadosResumen.length}</b> agotado${agotadosResumen.length > 1 ? 's' : ''}`);
-    if (bajosResumen.length) partes.push(`<b>${bajosResumen.length}</b> con poco stock (≤ ${STOCK_BAJO_UMBRAL})`);
-    const nombres = [...agotadosResumen, ...bajosResumen].slice(0, 4).map(p => p.nombre).join(', ');
-    const yMas = (agotadosResumen.length + bajosResumen.length) > 4 ? ` y ${(agotadosResumen.length + bajosResumen.length) - 4} más` : '';
-    alertaStock.innerHTML = `
-      <span class="admin-stock-alerta-icono">⚠️</span>
-      <div class="admin-stock-alerta-texto">
-        <b>Revisa el inventario:</b> ${partes.join(' · ')}.
-        <span class="admin-stock-alerta-nombres">${nombres}${yMas}</span>
-      </div>
-      <button type="button" class="admin-btn admin-btn-dark" id="btnIrAInventarioDesdeAlerta">Ver inventario →</button>
-    `;
-    alertaStock.style.display = 'flex';
-    document.getElementById('btnIrAInventarioDesdeAlerta').onclick = () => tabBtnInventario.click();
-  } else {
-    alertaStock.style.display = 'none';
   }
 
   if (!permisosActuales.pedidos) {
@@ -1421,7 +1293,7 @@ function pintarTabla(productosPagina, sinResultados, hayFiltro) {
       : `title="Varía según la talla: $${rango.min.toLocaleString('es-CO')} a $${rango.max.toLocaleString('es-CO')}"`;
     const fotoPrincipal = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
     const miniatura = fotoPrincipal
-      ? `<img src="${fotoPrincipal}" class="admin-prod-thumb" loading="lazy" decoding="async">`
+      ? `<img src="${fotoPrincipal}" class="admin-prod-thumb">`
       : iconoProducto(p.icono, p.colores[0]);
     const fotosColorHtml = (p.colores || []).map(c => {
       const fotoColor = p.fotos && p.fotos[c];
@@ -1524,7 +1396,7 @@ function pintarTabla(productosPagina, sinResultados, hayFiltro) {
           <div class="admin-stock-colores admin-stock-tallas" hidden>${stockTallaEditorsHtml}</div>
         </td>
         <td data-label="Estado">
-          <span class="estado-pill ${!p.activo ? 'inactivo' : (agotado ? 'out' : (nivelStockProducto(p) === 'bajo' ? 'low' : 'ok'))}" data-agotado="${agotado ? '1' : '0'}" data-nivel="${nivelStockProducto(p)}" data-stock="${stockTotal}">${!p.activo ? '🔴 No disponible' : (agotado ? 'Agotado' : (nivelStockProducto(p) === 'bajo' ? `⚠️ Quedan ${stockTotal}` : 'Disponible'))}</span>
+          <span class="estado-pill ${agotado ? 'out' : (nivelStockProducto(p) === 'bajo' ? 'low' : 'ok')}">${agotado ? 'Agotado' : (nivelStockProducto(p) === 'bajo' ? `⚠️ Quedan ${stockTotal}` : 'Disponible')}</span>
           <label class="admin-toggle">
             <input type="checkbox" data-campo="activo" ${p.activo ? 'checked' : ''}>
             <span>Visible</span>
@@ -1685,25 +1557,6 @@ function pintarTabla(productosPagina, sinResultados, hayFiltro) {
     inputsTalla.forEach(inp => inp.addEventListener('input', refrescarFinal));
     inputsStockColor.forEach(inp => inp.addEventListener('input', refrescarTotalStock));
     inputsStockTalla.forEach(inp => inp.addEventListener('input', refrescarTotalStock));
-
-    /* ---- al destildar/tildar "Visible" el pastel de estado cambia
-       al instante (rojo "No disponible"), sin esperar a Guardar ---- */
-    const chkActivo = fila.querySelector('[data-campo="activo"]');
-    const pillEstado = fila.querySelector('.estado-pill');
-    if (chkActivo && pillEstado) {
-      chkActivo.addEventListener('change', () => {
-        fila.classList.toggle('fila-inactiva', !chkActivo.checked);
-        if (!chkActivo.checked) {
-          pillEstado.className = 'estado-pill inactivo';
-          pillEstado.textContent = '🔴 No disponible';
-        } else {
-          pillEstado.className = `estado-pill ${pillEstado.dataset.agotado === '1' ? 'out' : (pillEstado.dataset.nivel === 'bajo' ? 'low' : 'ok')}`;
-          pillEstado.textContent = pillEstado.dataset.agotado === '1'
-            ? 'Agotado'
-            : (pillEstado.dataset.nivel === 'bajo' ? `⚠️ Quedan ${pillEstado.dataset.stock}` : 'Disponible');
-        }
-      });
-    }
 
     fila.querySelector('.btn-guardar-fila').addEventListener('click', () => {
       const id = fila.dataset.rowId;

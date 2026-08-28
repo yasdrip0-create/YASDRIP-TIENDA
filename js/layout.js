@@ -116,6 +116,10 @@ function renderHeader(paginaActual = "") {
           <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         </button>
         ${cuentaHtml}
+        <a class="fav-pill" href="favoritos.html" aria-label="Mis favoritos" title="Mis favoritos">
+          <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5s-7.6-4.6-10-9.3C.5 7.8 2.3 4.5 5.6 4c2-.3 3.9.7 5 2.3.1.15.3.15.4 0 1.1-1.6 3-2.6 5-2.3 3.3.5 5.1 3.8 3.6 7.2-2.4 4.7-10 9.3-10 9.3z"/></svg>
+          <span id="favCount" class="fav-count ${totalFavoritosCount() === 0 ? 'hidden' : ''}">${totalFavoritosCount()}</span>
+        </a>
         <a class="cart-pill" href="carrito.html">
           <svg class="icon-btn cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2.5 3h2l1.6 9.6a2 2 0 0 0 2 1.7h8.6a2 2 0 0 0 2-1.6l1.3-6.7H6.2"/>
@@ -309,15 +313,9 @@ function renderFooter() {
           <a href="index.html" class="foot-logo display"><span class="logo-mark">⚡</span>YAS<em>DRIP</em></a>
           <p class="footer-slogan">Drip para gente que ya trae su propia energía.</p>
           <div class="footer-socials">
-            <a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener" class="social-pill ig">
-              <span class="social-pill-ico">${svgInstagram()}</span>@yas__drip
-            </a>
-            <a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener" class="social-pill tk">
-              <span class="social-pill-ico">${svgTikTok()}</span>TikTok
-            </a>
-            <a href="https://facebook.com/yasdrip" target="_blank" rel="noopener" class="social-pill fb">
-              <span class="social-pill-ico">${svgFacebook()}</span>Facebook
-            </a>
+            <a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener" class="social-pill ig">📸 @yas__drip</a>
+            <a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener" class="social-pill tk">🎵 TikTok</a>
+            <a href="https://facebook.com/yasdrip" target="_blank" rel="noopener" class="social-pill fb">📘 Facebook</a>
           </div>
         </div>
 
@@ -327,7 +325,6 @@ function renderFooter() {
             <li><a href="tel:+573239523623">📞 +57 323 952 3623</a></li>
             <li><a href="https://wa.me/573239523623" target="_blank" rel="noopener">💬 WhatsApp: +57 323 952 3623</a></li>
             <li><a href="mailto:contacto@yasdrip.co">✉️ contacto@yasdrip.co</a></li>
-            <li><a href="seguimiento.html">📦 Seguir mi pedido</a></li>
             <li>📍 Calle 50 #45-30, Medellín, Colombia</li>
           </ul>
         </div>
@@ -335,75 +332,18 @@ function renderFooter() {
         <div class="footer-col">
           <h4>REDES SOCIALES</h4>
           <ul class="redes">
-            <li><a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener"><span class="redes-ico ig">${svgInstagram()}</span>Instagram: @yas__drip</a></li>
-            <li><a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener"><span class="redes-ico tk">${svgTikTok()}</span>TikTok: @yasdrip</a></li>
-            <li><a href="https://facebook.com/yasdrip" target="_blank" rel="noopener"><span class="redes-ico fb">${svgFacebook()}</span>Facebook: YAS DRIP</a></li>
+            <li><a href="https://www.instagram.com/yas__drip/" target="_blank" rel="noopener">📸 Instagram: @yas__drip</a></li>
+            <li><a href="https://tiktok.com/@yasdrip" target="_blank" rel="noopener">🎵 TikTok: @yasdrip</a></li>
+            <li><a href="https://facebook.com/yasdrip" target="_blank" rel="noopener">📘 Facebook: YAS DRIP</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
         <p>© 2026 YAS DRIP — Todos los derechos reservados. <span class="hand">hecho en Medellín ⚡</span></p>
-        <a href="admin.html" class="footer-admin-link" id="footerAdminLink">Panel del vendedor</a>
+        <a href="admin.html" class="footer-admin-link">Panel del vendedor</a>
       </div>
     </footer>
-
-    <!-- ======================= CÓDIGO DE ACCESO AL PANEL ======================= -->
-    <div class="modal-overlay" id="modalCodigoAdmin">
-      <div class="modal-box modal-box-codigo-admin">
-        <button type="button" class="modal-cerrar" id="btnCerrarModalCodigoAdmin" aria-label="Cerrar">✕</button>
-        <div class="modal-icon-badge codigo-admin-badge">🔒</div>
-        <h3>Solo para el equipo</h3>
-        <p class="modal-desc">Escribe el código de acceso para entrar al panel del vendedor.</p>
-        <input type="password" id="inputCodigoAdmin" placeholder="Código de acceso" autocomplete="off">
-        <p class="codigo-admin-error" id="codigoAdminError">Código incorrecto, intenta de nuevo.</p>
-        <button type="button" class="btn-enviar-solicitud" id="btnConfirmarCodigoAdmin">Entrar</button>
-      </div>
-    </div>
   `;
-
-  /* ---- pide un código antes de dejar entrar al panel del vendedor.
-     Esto es solo una primera puerta (para que un cliente cualquiera
-     no caiga ahí sin querer); el panel real sigue pidiendo usuario
-     y contraseña de todas formas. Una vez que alguien acierta el
-     código en esta pestaña, no se lo vuelve a pedir hasta que
-     cierre el navegador (queda guardado en sessionStorage). */
-  const CODIGO_ACCESO_PANEL = 'yasdrip26**';
-  const linkAdmin = document.getElementById('footerAdminLink');
-  const modalCodigo = document.getElementById('modalCodigoAdmin');
-  const inputCodigo = document.getElementById('inputCodigoAdmin');
-  const errorCodigo = document.getElementById('codigoAdminError');
-
-  function abrirModalCodigoAdmin() {
-    errorCodigo.classList.remove('show');
-    inputCodigo.value = '';
-    modalCodigo.classList.add('activo');
-    setTimeout(() => inputCodigo.focus(), 50);
-  }
-  function cerrarModalCodigoAdmin() {
-    modalCodigo.classList.remove('activo');
-  }
-  function intentarEntrarAlPanel() {
-    if (inputCodigo.value.trim() === CODIGO_ACCESO_PANEL) {
-      sessionStorage.setItem('yasdrip_codigo_panel_ok', '1');
-      window.location.href = 'admin.html';
-    } else {
-      errorCodigo.classList.add('show');
-      inputCodigo.classList.add('shake');
-      setTimeout(() => inputCodigo.classList.remove('shake'), 350);
-    }
-  }
-
-  if (linkAdmin) {
-    linkAdmin.addEventListener('click', (e) => {
-      if (sessionStorage.getItem('yasdrip_codigo_panel_ok') === '1') return; // ya lo escribió bien antes en esta pestaña
-      e.preventDefault();
-      abrirModalCodigoAdmin();
-    });
-  }
-  document.getElementById('btnCerrarModalCodigoAdmin')?.addEventListener('click', cerrarModalCodigoAdmin);
-  document.getElementById('btnConfirmarCodigoAdmin')?.addEventListener('click', intentarEntrarAlPanel);
-  inputCodigo?.addEventListener('keydown', (e) => { if (e.key === 'Enter') intentarEntrarAlPanel(); });
-  modalCodigo?.addEventListener('click', (e) => { if (e.target === modalCodigo) cerrarModalCodigoAdmin(); });
 }
 
 /* ============================================================

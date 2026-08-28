@@ -67,18 +67,6 @@ function svgEquisBoton() {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
 }
 
-/** Íconos de marca para los botones de redes sociales del footer
-    (reemplazan los emoji por SVG limpio, mismo trazo en las 3). */
-function svgInstagram() {
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.2" cy="6.8" r="1.15" fill="currentColor" stroke="none"/></svg>`;
-}
-function svgTikTok() {
-  return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 3c.5 2.3 2 3.8 4.4 4v3c-1.6.1-3-.4-4.4-1.3v6.7c0 3.6-2.9 6.1-6.2 6.1S4.2 19 4.2 15.4c0-3.4 2.6-6 6-6.1.4 0 .8 0 1.3.1v3.2c-.4-.1-.8-.2-1.3-.2-1.6 0-2.9 1.3-2.9 3s1.3 3 2.9 3 3-1.2 3-3V3h3.4Z"/></svg>`;
-}
-function svgFacebook() {
-  return `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 21v-7.6h2.6l.4-3H14.5V8.4c0-.9.2-1.5 1.5-1.5h1.6V4.2C17.3 4.1 16.3 4 15.1 4c-2.5 0-4.2 1.5-4.2 4.3v2.1H8.3v3h2.6V21h3.6Z"/></svg>`;
-}
-
 /** Etiqueta legible + clase css para el badge de un producto */
 function badgeInfo(badge) {
   if (!badge) return null;
