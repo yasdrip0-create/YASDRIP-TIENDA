@@ -5,7 +5,7 @@
 QUÉ ES ESTO
 ------------------------------------------------------------
 Cada persona del equipo, además de correo + contraseña, ahora
-necesita un CÓDIGO DE ACCESO (4 a 6 números) para entrar al
+necesita un CÓDIGO DE ACCESO (6 números) para entrar al
 panel — se lo asignas tú desde la pestaña "Usuarios" al crear
 su perfil (o le cambias uno nuevo con "Editar permisos").
 
@@ -19,6 +19,12 @@ mostrar el mensaje pero NO va a llegar ningún correo de verdad
 — hay que agregar esta parte en tu Apps Script, igual que se
 hizo con el correo de confirmación de pedido
 (GUIA_CORREO_CONFIRMACION.txt).
+
+Además, si alguien escribe el código mal 5 veces seguidas (con
+la contraseña ya bien puesta), esa cuenta queda bloqueada 15
+minutos antes de poder volver a intentar — así, aunque alguien
+se robe una contraseña, no puede sentarse a probar códigos uno
+por uno.
 
 ------------------------------------------------------------
 QUÉ AGREGAR A TU APPS SCRIPT

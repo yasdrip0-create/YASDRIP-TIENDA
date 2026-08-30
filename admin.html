@@ -44,11 +44,12 @@
           <input type="password" id="adminClave" placeholder="Contraseña" autocomplete="current-password" required>
         </div>
         <div class="auth-field">
-          <input type="text" id="adminCodigoPanel" placeholder="Código de acceso" inputmode="numeric" autocomplete="off">
+          <input type="text" id="adminCodigoPanel" placeholder="Código de acceso (6 números)" inputmode="numeric" maxlength="6" autocomplete="off">
         </div>
         <button type="submit" class="btn btn-primary auth-submit">Entrar</button>
       </form>
       <p class="auth-footnote"><a href="#" id="linkOlvideCodigoPanel">¿Olvidaste tu código de acceso?</a></p>
+      <p class="auth-footnote"><a href="#" id="linkOlvideClavePanel">¿Olvidaste tu contraseña?</a></p>
       <p class="auth-footnote"><a href="index.html">← Volver a la tienda</a></p>
     </div>
   </div>
@@ -63,6 +64,19 @@
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnEnviarRecuperarCodigoPanel">Enviar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalRecuperarCodigoPanel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL RECUPERAR CONTRASEÑA ======================= -->
+<div class="admin-modal-overlay" id="modalRecuperarClavePanel">
+  <div class="admin-modal">
+    <h3>Recuperar contraseña</h3>
+    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe el correo de tu cuenta del panel. Si existe, Firebase te manda un enlace para poner una contraseña nueva (esto no tiene nada que ver con tu código de acceso).</p>
+    <input type="email" id="correoRecuperarClavePanel" placeholder="Tu correo" autocomplete="email">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnEnviarRecuperarClavePanel">Enviar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalRecuperarClavePanel">Cancelar</button>
     </div>
   </div>
 </div>
@@ -289,7 +303,7 @@
           <input type="email" id="nuevoUsuarioClave" class="admin-input" placeholder="Correo de esa cuenta" autocomplete="off">
         </div>
         <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:10px;">
-          <input type="text" id="nuevoUsuarioCodigoPanel" class="admin-input" placeholder="Código de acceso al panel (4 a 6 números)" inputmode="numeric" autocomplete="off">
+          <input type="text" id="nuevoUsuarioCodigoPanel" class="admin-input" placeholder="Código de acceso al panel (6 números)" inputmode="numeric" maxlength="6" autocomplete="off">
         </div>
 
         <p class="admin-foto-hint" style="margin:16px 0 8px;"><b>¿Qué puede hacer esta persona en el panel?</b> — marca lo que le vas a dejar tocar:</p>
@@ -388,7 +402,7 @@
         <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
       </label>
     </div>
-    <input type="text" id="nuevoCodigoPanelPermisos" placeholder="Nuevo código de acceso (déjalo vacío para no cambiarlo)" inputmode="numeric" autocomplete="off" style="margin-bottom:10px;">
+    <input type="text" id="nuevoCodigoPanelPermisos" placeholder="Nuevo código de acceso (6 números, déjalo vacío para no cambiarlo)" inputmode="numeric" maxlength="6" autocomplete="off" style="margin-bottom:10px;">
     <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
@@ -483,6 +497,32 @@ function showToast(texto, esError = false) {
 
 let permisosActuales = permisosTodosActivos();
 
+/* ---------- Cierre de sesión por inactividad ----------
+   Si nadie toca nada (mouse, teclado, scroll, clics) durante este
+   rato, se cierra la sesión sola — pensado para un compu compartido
+   del local donde alguien se puede olvidar el panel abierto. */
+const INACTIVIDAD_LIMITE_MS = 30 * 60 * 1000; // 30 minutos
+let _ultimaActividadAdmin = Date.now();
+let _vigiaInactividadIniciada = false;
+function _marcarActividadAdmin() { _ultimaActividadAdmin = Date.now(); }
+function iniciarVigiaInactividadAdmin() {
+  _marcarActividadAdmin();
+  if (_vigiaInactividadIniciada) return;
+  _vigiaInactividadIniciada = true;
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(ev => {
+    document.addEventListener(ev, _marcarActividadAdmin, { passive: true });
+  });
+  setInterval(async () => {
+    if (dashView.style.display === 'none') return; // ya no hay sesión abierta en pantalla
+    if (Date.now() - _ultimaActividadAdmin >= INACTIVIDAD_LIMITE_MS) {
+      await cerrarSesionAdmin();
+      dashView.style.display = 'none';
+      loginView.style.display = 'block';
+      showToast('Se cerró tu sesión por estar inactivo mucho rato.', true);
+    }
+  }, 60 * 1000); // revisa cada minuto
+}
+
 async function entrarAlPanel() {
   loginView.style.display = 'none';
   dashView.style.display = 'block';
@@ -494,6 +534,7 @@ async function entrarAlPanel() {
   await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
   pintarVoltageClub();
+  iniciarVigiaInactividadAdmin();
 }
 
 /* ---------- pestaña Resumen: correos del Voltage Club ---------- */
@@ -1273,6 +1314,26 @@ document.getElementById('btnEnviarRecuperarCodigoPanel').addEventListener('click
   btn.disabled = false;
   showToast(res.msg, !res.ok);
   if (res.ok) modalRecuperarCodigoPanel.classList.remove('open');
+});
+
+/* ---------- "olvidé mi contraseña" ---------- */
+const modalRecuperarClavePanel = document.getElementById('modalRecuperarClavePanel');
+document.getElementById('linkOlvideClavePanel').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('correoRecuperarClavePanel').value = document.getElementById('adminUsuario').value.trim();
+  modalRecuperarClavePanel.classList.add('open');
+});
+document.getElementById('btnCerrarModalRecuperarClavePanel').addEventListener('click', () => {
+  modalRecuperarClavePanel.classList.remove('open');
+});
+document.getElementById('btnEnviarRecuperarClavePanel').addEventListener('click', async () => {
+  const correo = document.getElementById('correoRecuperarClavePanel').value.trim();
+  const btn = document.getElementById('btnEnviarRecuperarClavePanel');
+  btn.disabled = true;
+  const res = await recuperarClavePanel(correo);
+  btn.disabled = false;
+  showToast(res.msg, !res.ok);
+  if (res.ok) modalRecuperarClavePanel.classList.remove('open');
 });
 
 document.getElementById('btnSalirAdmin').addEventListener('click', async () => {

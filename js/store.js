@@ -1034,6 +1034,14 @@ function traducirErrorFirebase(e) {
 const ADMIN_LATIDO_MS = 25000;        // cada cuánto avisa "sigo aquí"
 const ADMIN_SESION_VENCE_MS = 70000;  // sin latidos por más de esto = candado libre
 
+/* Bloqueo del código de acceso al panel: después de este número de
+   intentos SEGUIDOS con el código mal (con la contraseña ya bien
+   verificada), la cuenta queda bloqueada por este rato. Esto es lo
+   que evita que alguien que ya se robó una contraseña se siente a
+   probar códigos de 6 números uno por uno. */
+const CODIGO_PANEL_MAX_INTENTOS = 5;
+const CODIGO_PANEL_BLOQUEO_MS = 15 * 60 * 1000; // 15 minutos
+
 /* Código extra que solo debería conocer el desarrollador (o quien
    tú le digas). Se pide, además de estar logueado en el panel,
    para: crear usuarios nuevos, editar sus permisos, activar/
@@ -1140,7 +1148,7 @@ function _generarSesionId() {
 /** Intenta iniciar sesión en el panel con una cuenta REAL de
     Firebase Auth (correo + contraseña) MÁS el código de acceso al
     panel que le asignaron (campo "codigoPanel" en su perfil de
-    admin_usuarios, 4 a 6 números, lo pone quien administra desde la
+    admin_usuarios, 6 números fijo, lo pone quien administra desde la
     pestaña "Usuarios"). Si la cuenta y la contraseña son correctas
     pero el código no coincide, no la deja entrar. Si a esa cuenta
     todavía no le han asignado ningún código (por ejemplo, el primer
@@ -1199,10 +1207,42 @@ async function loginAdmin(correoInput, clave, codigoPanelInput) {
   }
 
   // Código de acceso al panel: si esta cuenta ya tiene uno asignado,
-  // tiene que coincidir con lo que escribió en el login.
-  if (datos.codigoPanel && codigoPanel !== datos.codigoPanel) {
-    try { await fbAuth.signOut(); } catch (_) {}
-    return { ok: false, msg: 'Código de acceso incorrecto.' };
+  // tiene que coincidir con lo que escribió en el login. Después de
+  // varios intentos seguidos con el código mal, se bloquea la cuenta
+  // un rato — así, aunque alguien ya se haya robado la contraseña,
+  // no puede sentarse a probar códigos uno por uno.
+  if (datos.codigoPanel) {
+    const ahora = Date.now();
+    if (datos.codigoBloqueadoHasta && Number(datos.codigoBloqueadoHasta) > ahora) {
+      try { await fbAuth.signOut(); } catch (_) {}
+      const minutosFaltan = Math.ceil((Number(datos.codigoBloqueadoHasta) - ahora) / 60000);
+      return { ok: false, msg: `Demasiados intentos con el código incorrecto. Espera ${minutosFaltan} minuto${minutosFaltan === 1 ? '' : 's'} y vuelve a intentar.` };
+    }
+    if (codigoPanel !== datos.codigoPanel) {
+      const intentos = (Number(datos.codigoIntentosFallidos) || 0) + 1;
+      const cambios = { codigoIntentosFallidos: intentos };
+      let bloqueado = false;
+      if (intentos >= CODIGO_PANEL_MAX_INTENTOS) {
+        cambios.codigoIntentosFallidos = 0;
+        cambios.codigoBloqueadoHasta = ahora + CODIGO_PANEL_BLOQUEO_MS;
+        bloqueado = true;
+      }
+      try { await fbDb.collection('admin_usuarios').doc(uid).update(cambios); } catch (_) {}
+      try { await fbAuth.signOut(); } catch (_) {}
+      if (bloqueado) {
+        return { ok: false, msg: 'Código incorrecto. Por seguridad, esta cuenta queda bloqueada 15 minutos.' };
+      }
+      return { ok: false, msg: `Código de acceso incorrecto (te quedan ${CODIGO_PANEL_MAX_INTENTOS - intentos} intento${CODIGO_PANEL_MAX_INTENTOS - intentos === 1 ? '' : 's'}).` };
+    }
+    // código correcto: si quedaba algún intento fallido anotado, se limpia
+    if (datos.codigoIntentosFallidos || datos.codigoBloqueadoHasta) {
+      try {
+        await fbDb.collection('admin_usuarios').doc(uid).update({
+          codigoIntentosFallidos: 0,
+          codigoBloqueadoHasta: firebase.firestore.FieldValue.delete(),
+        });
+      } catch (_) {}
+    }
   }
 
   // ¿ya hay una sesión viva con esta cuenta en otro lado?
@@ -1452,8 +1492,8 @@ async function crearUsuarioAdminPanel(uidInput, correoInput, permisos, codigoPan
     return { ok: false, msg: 'Ese UID no parece válido. Cópialo tal cual desde Firebase Authentication → Users (columna "User UID").' };
   }
   if (!correo || !correo.includes('@')) return { ok: false, msg: 'Escribe el correo con el que esa persona inició su cuenta de Firebase.' };
-  if (!/^[0-9]{4,6}$/.test(codigoPanel)) {
-    return { ok: false, msg: 'El código de acceso al panel debe tener entre 4 y 6 números.' };
+  if (!/^[0-9]{6}$/.test(codigoPanel)) {
+    return { ok: false, msg: 'El código de acceso al panel debe tener exactamente 6 números.' };
   }
   try {
     const existe = await fbDb.collection('admin_usuarios').doc(uid).get();
@@ -1495,8 +1535,8 @@ async function actualizarPermisosUsuarioAdminPanel(uid, permisos) {
 async function cambiarCodigoPanelUsuario(uid, correoInput, nuevoCodigo) {
   const correo = String(correoInput || '').trim().toLowerCase();
   const codigo = String(nuevoCodigo || '').trim();
-  if (!/^[0-9]{4,6}$/.test(codigo)) {
-    return { ok: false, msg: 'El código debe tener entre 4 y 6 números.' };
+  if (!/^[0-9]{6}$/.test(codigo)) {
+    return { ok: false, msg: 'El código debe tener exactamente 6 números.' };
   }
   try {
     await fbDb.collection('admin_usuarios').doc(uid).update({ codigoPanel: codigo });
@@ -1559,6 +1599,24 @@ async function recuperarCodigoPanelPorCorreo(correoInput) {
     }
   } catch (e) {
     // No se revela nada aunque falle la búsqueda: mismo mensaje.
+  }
+  return { ok: true, msg: msgGenerico };
+}
+
+/** "Olvidé mi contraseña" del panel: usa el mismo sistema de Firebase
+    Auth que ya usan los clientes en login.html (un enlace real que
+    Firebase manda directo al correo de esa cuenta, para poner una
+    contraseña nueva — nada de esto pasa por tu Apps Script). Siempre
+    devuelve el mismo mensaje exista o no esa cuenta, para no delatar
+    qué correos sí tienen acceso al panel. */
+async function recuperarClavePanel(correoInput) {
+  const correo = String(correoInput || '').trim().toLowerCase();
+  const msgGenerico = 'Si ese correo tiene una cuenta, en unos minutos le llega un enlace de Firebase para poner una contraseña nueva.';
+  if (!correo || !correo.includes('@')) return { ok: false, msg: 'Escribe un correo válido.' };
+  try {
+    await fbAuth.sendPasswordResetEmail(correo);
+  } catch (e) {
+    // No se revela nada aunque la cuenta no exista: mismo mensaje.
   }
   return { ok: true, msg: msgGenerico };
 }
