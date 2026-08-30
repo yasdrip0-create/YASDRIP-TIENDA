@@ -976,13 +976,14 @@ function traducirErrorFirebase(e) {
    PARA DAR ACCESO A ALGUIEN NUEVO DEL EQUIPO:
    1) Créale su cuenta en Firebase Auth (consola -> Authentication
       -> Users -> Add user) y copia su UID.
-   2) Agrega ese UID a la lista de la función isAdmin() en
-      firestore.rules y publica las reglas.
-   3) Desde la pestaña "Usuarios" de este panel, crea su perfil
+   2) Desde la pestaña "Usuarios" de este panel, crea su perfil
       pegando ese mismo UID y su correo, y marca sus permisos.
-   Si se salta el paso 2, la persona puede iniciar sesión (la
-   contraseña la valida Firebase Auth), pero Firestore le va a
-   rechazar todo lo demás porque su UID no está autorizado ahí.
+   Con eso ya queda con acceso real a Firestore: el panel agrega
+   su UID solo a la lista admin_config/admins (la que de verdad
+   lee la función isAdmin() de firestore.rules) — ya NO hay que
+   editar firestore.rules a mano cada vez que entra alguien nuevo.
+   Desactivar a alguien desde el panel también le quita el acceso
+   real, no solo el login.
 
    CANDADO DE "UNA SESIÓN A LA VEZ" POR USUARIO
    ------------------------------------------------------------
@@ -1109,17 +1110,25 @@ function _generarSesionId() {
 }
 
 /** Intenta iniciar sesión en el panel con una cuenta REAL de
-    Firebase Auth (correo + contraseña). Si la cuenta es válida
-    pero Firestore no la reconoce como admin (su UID no está en
-    isAdmin() de firestore.rules, o no tiene perfil creado en
-    "admin_usuarios" todavía), se le avisa en vez de dejarla
-    pasar. Si es la PRIMERA cuenta que entra y ya está autorizada
-    en las reglas pero nunca se le creó su perfil, se le crea uno
-    con todos los permisos y marcada como superAdmin — para que
-    quien acaba de terminar de configurar Firebase no tenga que
-    crear su propio usuario a mano desde ningún lado. */
-async function loginAdmin(correoInput, clave) {
+    Firebase Auth (correo + contraseña) MÁS el código de acceso al
+    panel que le asignaron (campo "codigoPanel" en su perfil de
+    admin_usuarios, 4 a 6 números, lo pone quien administra desde la
+    pestaña "Usuarios"). Si la cuenta y la contraseña son correctas
+    pero el código no coincide, no la deja entrar. Si a esa cuenta
+    todavía no le han asignado ningún código (por ejemplo, el primer
+    admin recién creado), se le deja pasar igual, pero conviene que
+    le asignen uno cuanto antes desde "Usuarios".
+    Si la cuenta es válida pero Firestore no la reconoce como admin
+    (su UID no está autorizado, o no tiene perfil creado en
+    "admin_usuarios" todavía), se le avisa en vez de dejarla pasar.
+    Si es la PRIMERA cuenta que entra y ya está autorizada en las
+    reglas pero nunca se le creó su perfil, se le crea uno con todos
+    los permisos y marcada como superAdmin — para que quien acaba de
+    terminar de configurar Firebase no tenga que crear su propio
+    usuario a mano desde ningún lado. */
+async function loginAdmin(correoInput, clave, codigoPanelInput) {
   const correo = String(correoInput || '').trim().toLowerCase();
+  const codigoPanel = String(codigoPanelInput || '').trim();
   if (!correo || !clave) return { ok: false, msg: 'Escribe correo y contraseña.' };
 
   let cred;
@@ -1146,7 +1155,7 @@ async function loginAdmin(correoInput, clave) {
     // Cuenta autorizada en las reglas pero sin perfil todavía: se
     // crea automáticamente con acceso total, para no dejar a nadie
     // sin poder entrar después de publicar las reglas por primera vez.
-    datos = { correo, activo: true, creado: new Date().toISOString(), permisos: permisosTodosActivos(), superAdmin: true };
+    datos = { correo, activo: true, creado: new Date().toISOString(), permisos: permisosTodosActivos(), superAdmin: true, codigoPanel: null };
     try {
       await fbDb.collection('admin_usuarios').doc(uid).set(datos);
     } catch (e) {
@@ -1159,6 +1168,13 @@ async function loginAdmin(correoInput, clave) {
       try { await fbAuth.signOut(); } catch (_) {}
       return { ok: false, msg: 'Este usuario fue desactivado. Habla con quien administra la tienda.' };
     }
+  }
+
+  // Código de acceso al panel: si esta cuenta ya tiene uno asignado,
+  // tiene que coincidir con lo que escribió en el login.
+  if (datos.codigoPanel && codigoPanel !== datos.codigoPanel) {
+    try { await fbAuth.signOut(); } catch (_) {}
+    return { ok: false, msg: 'Código de acceso incorrecto.' };
   }
 
   // ¿ya hay una sesión viva con esta cuenta en otro lado?
@@ -1192,7 +1208,7 @@ async function loginAdmin(correoInput, clave) {
 
   _guardar(LS_KEYS.sesionAdmin, { uid, correo: datos.correo || correo, superAdmin: !!datos.superAdmin, sesionId, fecha: Date.now() });
   _iniciarLatidoAdmin(uid, sesionId);
-  return { ok: true };
+  return { ok: true, sinCodigoAsignado: !datos.codigoPanel };
 }
 
 /** Chequeo rápido y local (para que la pantalla no parpadee
@@ -1383,24 +1399,51 @@ async function obtenerUsuariosAdminPanel() {
   }
 }
 
-async function crearUsuarioAdminPanel(uidInput, correoInput, permisos) {
+/** Agrega/quita un UID de la lista admin_config/admins (la lista
+    "de verdad" que lee isAdmin() en firestore.rules). Esto es lo
+    que reemplaza tener que editar firestore.rules a mano cada vez
+    que entra o sale alguien del equipo. */
+async function _agregarUidAListaAdmins(uid) {
+  await fbDb.collection('admin_config').doc('admins').set(
+    { uids: firebase.firestore.FieldValue.arrayUnion(uid) },
+    { merge: true }
+  );
+}
+async function _quitarUidDeListaAdmins(uid) {
+  await fbDb.collection('admin_config').doc('admins').set(
+    { uids: firebase.firestore.FieldValue.arrayRemove(uid) },
+    { merge: true }
+  );
+}
+
+async function crearUsuarioAdminPanel(uidInput, correoInput, permisos, codigoPanelInput) {
   const uid = String(uidInput || '').trim();
   const correo = String(correoInput || '').trim().toLowerCase();
+  const codigoPanel = String(codigoPanelInput || '').trim();
   if (!/^[A-Za-z0-9]{15,40}$/.test(uid)) {
     return { ok: false, msg: 'Ese UID no parece válido. Cópialo tal cual desde Firebase Authentication → Users (columna "User UID").' };
   }
   if (!correo || !correo.includes('@')) return { ok: false, msg: 'Escribe el correo con el que esa persona inició su cuenta de Firebase.' };
+  if (!/^[0-9]{4,6}$/.test(codigoPanel)) {
+    return { ok: false, msg: 'El código de acceso al panel debe tener entre 4 y 6 números.' };
+  }
   try {
     const existe = await fbDb.collection('admin_usuarios').doc(uid).get();
     if (existe.exists) return { ok: false, msg: 'Ya existe un perfil del panel con ese UID.' };
     await fbDb.collection('admin_usuarios').doc(uid).set({
       correo, activo: true, creado: new Date().toISOString(),
       permisos: permisos || permisosNingunoActivo(),
+      codigoPanel,
     });
+    // Le da acceso real a Firestore sin tocar firestore.rules.
+    await _agregarUidAListaAdmins(uid);
+    // Guarda el código también por correo, para que "olvidé mi
+    // código" pueda encontrarlo sin necesitar el UID.
+    await fbDb.collection('panel_codigos').doc(correo).set({ codigo: codigoPanel, uid });
     return { ok: true };
   } catch (e) {
     if (e && e.code === 'permission-denied') {
-      return { ok: false, msg: 'Firestore rechazó esto. Revisa que tu propio UID esté en la lista isAdmin() de firestore.rules, publicada.' };
+      return { ok: false, msg: 'Firestore rechazó esto. Revisa que tu propio UID esté autorizado (isAdmin() en firestore.rules, ya publicada).' };
     }
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
@@ -1416,23 +1459,80 @@ async function actualizarPermisosUsuarioAdminPanel(uid, permisos) {
   }
 }
 
-async function cambiarEstadoUsuarioAdminPanel(uid, activo) {
+/** Cambia el código de acceso al panel de un usuario (el que
+    loginAdmin() le pide además de correo+contraseña). Actualiza su
+    perfil (admin_usuarios) y el documento por correo (panel_codigos)
+    que usa la recuperación por correo, para que ambos queden en el
+    mismo valor. */
+async function cambiarCodigoPanelUsuario(uid, correoInput, nuevoCodigo) {
+  const correo = String(correoInput || '').trim().toLowerCase();
+  const codigo = String(nuevoCodigo || '').trim();
+  if (!/^[0-9]{4,6}$/.test(codigo)) {
+    return { ok: false, msg: 'El código debe tener entre 4 y 6 números.' };
+  }
   try {
-    await fbDb.collection('admin_usuarios').doc(uid).update({ activo });
+    await fbDb.collection('admin_usuarios').doc(uid).update({ codigoPanel: codigo });
+    if (correo) await fbDb.collection('panel_codigos').doc(correo).set({ codigo, uid });
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
 }
 
-async function eliminarUsuarioAdminPanel(uid) {
+async function cambiarEstadoUsuarioAdminPanel(uid, activo) {
   try {
-    await fbDb.collection('admin_usuarios').doc(uid).delete();
-    await fbDb.collection('admin_sesiones').doc(uid).delete().catch(() => {});
+    await fbDb.collection('admin_usuarios').doc(uid).update({ activo });
+    // Desactivar ahora también le quita el acceso real a Firestore
+    // (antes solo le bloqueaba volver a iniciar sesión, pero si ya
+    // tenía una pestaña abierta seguía pudiendo escribir). Reactivar
+    // se lo devuelve.
+    if (activo) await _agregarUidAListaAdmins(uid);
+    else await _quitarUidDeListaAdmins(uid);
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
+}
+
+async function eliminarUsuarioAdminPanel(uid, correoInput) {
+  try {
+    await fbDb.collection('admin_usuarios').doc(uid).delete();
+    await fbDb.collection('admin_sesiones').doc(uid).delete().catch(() => {});
+    await _quitarUidDeListaAdmins(uid).catch(() => {});
+    const correo = String(correoInput || '').trim().toLowerCase();
+    if (correo && correo.includes('@')) {
+      await fbDb.collection('panel_codigos').doc(correo).delete().catch(() => {});
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, msg: 'No hay conexión a internet.' };
+  }
+}
+
+/** "Olvidé mi código de acceso al panel": busca, sabiendo solo el
+    correo, el código guardado en "panel_codigos" y lo manda a ese
+    mismo correo a través del Apps Script que ya usas para el correo
+    de confirmación de pedidos (ver GUIA_CODIGO_PANEL_CORREO.txt para
+    agregar ese envío ahí). Nunca muestra el código en pantalla, y
+    siempre devuelve el mismo mensaje exista o no ese correo en el
+    panel, para no delatar qué correos sí tienen acceso. */
+async function recuperarCodigoPanelPorCorreo(correoInput) {
+  const correo = String(correoInput || '').trim().toLowerCase();
+  const msgGenerico = 'Si ese correo tiene una cuenta en el panel, en unos minutos le llega un correo con su código.';
+  if (!correo || !correo.includes('@')) return { ok: false, msg: 'Escribe un correo válido.' };
+  try {
+    const doc = await fbDb.collection('panel_codigos').doc(correo).get();
+    if (doc.exists && doc.data() && doc.data().codigo) {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({ tipo: 'codigo_panel_recuperacion', correo, codigo: doc.data().codigo }),
+      }).catch(() => {});
+    }
+  } catch (e) {
+    // No se revela nada aunque falle la búsqueda: mismo mensaje.
+  }
+  return { ok: true, msg: msgGenerico };
 }
 
 /* ============================================================

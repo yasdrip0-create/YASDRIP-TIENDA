@@ -34,7 +34,7 @@
         <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
       </a>
       <h2>Entrar al panel</h2>
-      <p class="auth-sub">Correo y contraseña de tu cuenta del equipo.</p>
+      <p class="auth-sub">Correo, contraseña y tu código de acceso.</p>
       <div id="adminAuthMsg"></div>
       <form id="formAdminLogin">
         <div class="auth-field">
@@ -43,9 +43,26 @@
         <div class="auth-field">
           <input type="password" id="adminClave" placeholder="Contraseña" autocomplete="current-password" required>
         </div>
+        <div class="auth-field">
+          <input type="text" id="adminCodigoPanel" placeholder="Código de acceso" inputmode="numeric" autocomplete="off">
+        </div>
         <button type="submit" class="btn btn-primary auth-submit">Entrar</button>
       </form>
+      <p class="auth-footnote"><a href="#" id="linkOlvideCodigoPanel">¿Olvidaste tu código de acceso?</a></p>
       <p class="auth-footnote"><a href="index.html">← Volver a la tienda</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL RECUPERAR CÓDIGO DE ACCESO ======================= -->
+<div class="admin-modal-overlay" id="modalRecuperarCodigoPanel">
+  <div class="admin-modal">
+    <h3>Recuperar código de acceso</h3>
+    <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe el correo de tu cuenta del panel. Si tiene un código asignado, te llega por correo.</p>
+    <input type="email" id="correoRecuperarCodigoPanel" placeholder="Tu correo" autocomplete="email">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnEnviarRecuperarCodigoPanel">Enviar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCerrarModalRecuperarCodigoPanel">Cancelar</button>
     </div>
   </div>
 </div>
@@ -251,10 +268,13 @@
     <div id="tabUsuarios" style="display:none;">
       <div class="admin-card admin-add-card">
         <h3>Dar acceso al panel a alguien nuevo</h3>
-        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Primero créale su cuenta en <b>Firebase Authentication → Users → Add user</b> (correo + contraseña) y agrega su UID a la lista <code>isAdmin()</code> de <code>firestore.rules</code> (y publica las reglas). Después pega aquí ese mismo UID y correo para crear su perfil de permisos. Solo se puede estar conectado con esa cuenta <b>en un dispositivo a la vez</b>.</p>
+        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Primero créale su cuenta en <b>Firebase Authentication → Users → Add user</b> (correo + contraseña). Después pega aquí ese mismo UID y correo, y ponle un código de acceso al panel (se lo dices tú por fuera, y se lo va a pedir cada vez que entre): el panel le da acceso real a Firestore automáticamente, sin que tengas que tocar <code>firestore.rules</code>. Solo se puede estar conectado con esa cuenta <b>en un dispositivo a la vez</b>.</p>
         <div class="admin-add-grid" style="grid-template-columns:1fr 1fr;">
           <input type="text" id="nuevoUsuarioNombre" class="admin-input" placeholder="UID de Firebase Auth" autocomplete="off">
           <input type="email" id="nuevoUsuarioClave" class="admin-input" placeholder="Correo de esa cuenta" autocomplete="off">
+        </div>
+        <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:10px;">
+          <input type="text" id="nuevoUsuarioCodigoPanel" class="admin-input" placeholder="Código de acceso al panel (4 a 6 números)" inputmode="numeric" autocomplete="off">
         </div>
 
         <p class="admin-foto-hint" style="margin:16px 0 8px;"><b>¿Qué puede hacer esta persona en el panel?</b> — marca lo que le vas a dejar tocar:</p>
@@ -353,6 +373,7 @@
         <span class="permiso-texto"><b>Usuarios</b><small>Ver y gestionar otros usuarios del panel</small></span>
       </label>
     </div>
+    <input type="text" id="nuevoCodigoPanelPermisos" placeholder="Nuevo código de acceso (déjalo vacío para no cambiarlo)" inputmode="numeric" autocomplete="off" style="margin-bottom:10px;">
     <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
@@ -713,6 +734,7 @@ async function pintarUsuariosPanel() {
 document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async () => {
   const uid = document.getElementById('nuevoUsuarioNombre').value;
   const correo = document.getElementById('nuevoUsuarioClave').value;
+  const codigoPanel = document.getElementById('nuevoUsuarioCodigoPanel').value;
   const codigo = document.getElementById('codigoDesarrolladorUsuario').value;
   if (!(await verificarCodigoDesarrollador(codigo))) {
     showToast('Código de desarrollador incorrecto.', true);
@@ -722,29 +744,33 @@ document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async 
   document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { permisos[chk.value] = chk.checked; });
   const btn = document.getElementById('btnCrearUsuarioPanel');
   btn.disabled = true;
-  const res = await crearUsuarioAdminPanel(uid, correo, permisos);
+  const res = await crearUsuarioAdminPanel(uid, correo, permisos, codigoPanel);
   btn.disabled = false;
   if (!res.ok) { showToast(res.msg, true); return; }
   document.getElementById('nuevoUsuarioNombre').value = '';
   document.getElementById('nuevoUsuarioClave').value = '';
+  document.getElementById('nuevoUsuarioCodigoPanel').value = '';
   document.getElementById('codigoDesarrolladorUsuario').value = '';
   document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { chk.checked = (chk.value === 'inventario' || chk.value === 'pedidos'); });
-  showToast('Usuario creado ✓');
+  showToast('Usuario creado ✓ — dile a esa persona su código de acceso por fuera del panel.');
   pintarUsuariosPanel();
 });
 
 /* ---------- editar permisos de un usuario existente ---------- */
 const modalPermisos = document.getElementById('modalPermisos');
 let usuarioEditandoPermisos = null;
+let correoEditandoPermisos = '';
 document.getElementById('tablaUsuariosPanelBody').addEventListener('click', (e) => {
   const btnEditar = e.target.closest('.btn-editar-permisos');
   if (!btnEditar) return;
   usuarioEditandoPermisos = btnEditar.dataset.usuario;
+  correoEditandoPermisos = btnEditar.dataset.correo || '';
   const permisosActualesUsuario = JSON.parse(btnEditar.dataset.permisos || '{}');
   document.getElementById('modalPermisosTitulo').textContent = 'Permisos de "' + (btnEditar.dataset.correo || usuarioEditandoPermisos) + '"';
   document.querySelectorAll('.chk-permiso-editar').forEach(chk => {
     chk.checked = !!permisosActualesUsuario[chk.value];
   });
+  document.getElementById('nuevoCodigoPanelPermisos').value = '';
   document.getElementById('codigoDesarrolladorPermisos').value = '';
   modalPermisos.classList.add('open');
 });
@@ -755,14 +781,19 @@ document.getElementById('btnGuardarPermisos').addEventListener('click', async ()
     showToast('Código de desarrollador incorrecto.', true);
     return;
   }
+  const nuevoCodigoPanel = document.getElementById('nuevoCodigoPanelPermisos').value.trim();
   const permisos = {};
   document.querySelectorAll('.chk-permiso-editar').forEach(chk => { permisos[chk.value] = chk.checked; });
   const btn = document.getElementById('btnGuardarPermisos');
   btn.disabled = true;
   const res = await actualizarPermisosUsuarioAdminPanel(usuarioEditandoPermisos, permisos);
+  if (res.ok && nuevoCodigoPanel) {
+    const resCodigo = await cambiarCodigoPanelUsuario(usuarioEditandoPermisos, correoEditandoPermisos, nuevoCodigoPanel);
+    if (!resCodigo.ok) { btn.disabled = false; showToast(resCodigo.msg, true); return; }
+  }
   btn.disabled = false;
   if (!res.ok) { showToast(res.msg, true); return; }
-  showToast('Permisos actualizados ✓');
+  showToast(nuevoCodigoPanel ? 'Permisos y código actualizados ✓' : 'Permisos actualizados ✓');
   modalPermisos.classList.remove('open');
   pintarUsuariosPanel();
   // si el usuario editado es quien tiene la sesión abierta ahora
@@ -801,9 +832,9 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
     );
     if (codigo === null) return;
     if (!(await verificarCodigoDesarrollador(codigo))) { showToast('Código de desarrollador incorrecto.', true); return; }
-    if (!confirm(`¿Eliminar a "${etiqueta}"? No se puede deshacer. (Esto no borra su cuenta de Firebase Authentication, solo su perfil/permisos del panel — si quieres quitarle el acceso del todo, borra también su UID de la lista isAdmin() en firestore.rules.)`)) return;
+    if (!confirm(`¿Eliminar a "${etiqueta}"? No se puede deshacer. Esto le quita el acceso real a Firestore y borra su perfil/permisos del panel, pero NO borra su cuenta de Firebase Authentication (eso, si quieres, se hace aparte desde la consola de Firebase).`)) return;
     btnEliminar.disabled = true;
-    const res = await eliminarUsuarioAdminPanel(usuario);
+    const res = await eliminarUsuarioAdminPanel(usuario, btnEliminar.dataset.correo);
     btnEliminar.disabled = false;
     if (!res.ok) { showToast(res.msg, true); return; }
     showToast('Usuario eliminado');
@@ -1159,19 +1190,43 @@ document.getElementById('formAdminLogin').addEventListener('submit', async (e) =
   e.preventDefault();
   const usuario = document.getElementById('adminUsuario').value.trim();
   const clave = document.getElementById('adminClave').value;
+  const codigoPanel = document.getElementById('adminCodigoPanel').value.trim();
   const msg = document.getElementById('adminAuthMsg');
   const btn = e.target.querySelector('button[type="submit"]');
   msg.innerHTML = '';
   btn.disabled = true;
   btn.textContent = 'Entrando...';
-  const res = await loginAdmin(usuario, clave);
+  const res = await loginAdmin(usuario, clave, codigoPanel);
   btn.disabled = false;
   btn.textContent = 'Entrar';
   if (res.ok) {
+    if (res.sinCodigoAsignado) {
+      showToast('Entraste sin código de acceso asignado. Ponte uno desde "Usuarios" cuanto antes.', true);
+    }
     entrarAlPanel();
   } else {
     msg.innerHTML = `<div class="auth-error">${res.msg}</div>`;
   }
+});
+
+/* ---------- "olvidé mi código de acceso" ---------- */
+const modalRecuperarCodigoPanel = document.getElementById('modalRecuperarCodigoPanel');
+document.getElementById('linkOlvideCodigoPanel').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('correoRecuperarCodigoPanel').value = document.getElementById('adminUsuario').value.trim();
+  modalRecuperarCodigoPanel.classList.add('open');
+});
+document.getElementById('btnCerrarModalRecuperarCodigoPanel').addEventListener('click', () => {
+  modalRecuperarCodigoPanel.classList.remove('open');
+});
+document.getElementById('btnEnviarRecuperarCodigoPanel').addEventListener('click', async () => {
+  const correo = document.getElementById('correoRecuperarCodigoPanel').value.trim();
+  const btn = document.getElementById('btnEnviarRecuperarCodigoPanel');
+  btn.disabled = true;
+  const res = await recuperarCodigoPanelPorCorreo(correo);
+  btn.disabled = false;
+  showToast(res.msg, !res.ok);
+  if (res.ok) modalRecuperarCodigoPanel.classList.remove('open');
 });
 
 document.getElementById('btnSalirAdmin').addEventListener('click', async () => {

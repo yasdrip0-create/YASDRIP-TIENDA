@@ -1,4 +1,30 @@
 =========================================================
+ ✅ HECHO (2026-08-30) — crear usuarios nuevos ya no toca
+ firestore.rules a mano
+=========================================================
+El "paso 3" de más abajo (pegar el UID de cada persona nueva
+directo en isAdmin() de firestore.rules y volver a publicar)
+YA NO ES NECESARIO para gente nueva. Se agregó un documento en
+Firestore (admin_config/admins) que guarda esa lista, y que el
+propio panel actualiza solo cuando creas, desactivas, reactivas
+o eliminas a alguien desde la pestaña "Usuarios".
+
+TE FALTA A TI, una sola vez, para que quede activo:
+1) Copia el contenido actual de firestore.rules (raíz del
+   proyecto) y pégalo en Firestore Database -> pestaña "Reglas"
+   -> Publicar (reemplaza lo que haya ahí).
+Con eso publicado UNA vez, de ahí en adelante nunca más hace
+falta volver a esta pantalla para dar de alta a alguien nuevo:
+basta con crearle su cuenta en Authentication -> Users, y crear
+su perfil desde la pestaña "Usuarios" del panel (UID + correo).
+
+El UID '8CBfiOxDeda0MmtTmSlXYIkfbx82' se queda escrito directo
+en firestore.rules como "admin de respaldo" — siempre tiene
+acceso, incluso si el documento admin_config/admins se borra o
+se daña por accidente.
+=========================================================
+
+=========================================================
  ✅ HECHO (2026-08-30) — el panel ya usa Firebase Auth real
 =========================================================
 El paso 4 de esta guía (cambiar el login del panel) ya se hizo:
@@ -18,11 +44,11 @@ TE FALTA A TI, para que quede publicado de verdad:
    sola como "superAdmin" (acceso total + pestaña Usuarios) la
    primera vez que entre.
 3) Para dar acceso a alguien más del equipo: créale su cuenta en
-   Authentication -> Users, agrega su UID a isAdmin() en
-   firestore.rules, publica de nuevo, y luego crea su perfil desde
-   la pestaña "Usuarios" del panel (ahí pides su UID y correo, ya
-   no una contraseña — la contraseña la puso esa persona en su
-   propia cuenta de Firebase).
+   Authentication -> Users, y luego crea su perfil desde la pestaña
+   "Usuarios" del panel (ahí pides su UID y correo, ya no una
+   contraseña — la contraseña la puso esa persona en su propia
+   cuenta de Firebase). El panel se encarga solo de autorizarla en
+   Firestore, ver el bloque "HECHO" de arriba.
 
 El archivo FIRESTORE_REGLAS.txt de abajo quedó desactualizado (era
 la guía de la versión con reglas abiertas). El archivo que manda

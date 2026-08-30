@@ -5,22 +5,30 @@ service cloud.firestore {
     /* ============================================================
        ADMINS
        ------------------------------------------------------------
-       Reemplaza estos UIDs por los UID reales de las cuentas de
-       Firebase Auth de tu equipo (Authentication -> Users -> copia
-       el "User UID" de cada persona, DESPUÉS de crear sus cuentas
-       ahí — ver GUIA_MIGRAR_ADMIN_A_AUTH.txt).
-       Mientras esta lista esté vacía o con valores de ejemplo,
-       NADIE podrá escribir en productos/admin_usuarios/config,
-       ni siquiera tú desde el panel — créala primero.
+       El UID de abajo es el "admin de respaldo": SIEMPRE tiene
+       acceso, pase lo que pase, aunque el documento admin_config/
+       admins se borre o se dañe por error. Es tu llave de repuesto,
+       no la borres.
+
+       Todos los demás administradores (los que crees desde la
+       pestaña "Usuarios" del panel) NO se agregan aquí a mano: el
+       panel los agrega solo al documento admin_config/admins, en
+       Firestore. Esa es la parte que antes había que hacer a mano
+       en este archivo cada vez que entraba alguien nuevo al equipo.
     ============================================================ */
     function isAdmin() {
-      return request.auth != null &&
+      return request.auth != null && (
         request.auth.uid in [
           '8CBfiOxDeda0MmtTmSlXYIkfbx82'
-          // Agrega aquí el UID de cada persona nueva del equipo,
-          // una línea por UID, separadas por coma. Sácalos de
-          // Firebase Authentication -> Users -> "User UID".
-        ];
+          // Este es tu admin de respaldo. No lo borres. No hace
+          // falta agregar a nadie más aquí: el panel se encarga.
+        ]
+        ||
+        (
+          exists(/databases/$(database)/documents/admin_config/admins) &&
+          request.auth.uid in get(/databases/$(database)/documents/admin_config/admins).data.uids
+        )
+      );
     }
 
     // Cada cliente puede crear y leer SOLO su propio perfil
@@ -87,6 +95,27 @@ service cloud.firestore {
     }
     match /admin_sesiones/{usuarioId} {
       allow read, write: if isAdmin();
+    }
+
+    // Lista de UIDs admin que mantiene el propio panel (ver isAdmin()
+    // arriba). Solo un admin puede leerla o escribirla — nunca queda
+    // pública. get()/exists() dentro de isAdmin() NO pasan por esta
+    // regla (Firestore los evalúa directo), así que no hay ciclo.
+    match /admin_config/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Código de acceso al panel de cada persona del equipo, guardado
+    // por CORREO (no por UID) para poder recuperarlo sabiendo solo el
+    // correo. "get" (leer UNO, sabiendo ya el correo exacto) queda
+    // abierto — lo necesita la pantalla de "olvidé mi código". "list"
+    // (verlos todos) queda cerrado, así nadie puede sacar la lista
+    // completa de correos+códigos del equipo de un solo golpe. Solo
+    // un admin puede crear o cambiar un código.
+    match /panel_codigos/{correoId} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isAdmin();
     }
   }
 }
