@@ -1454,7 +1454,7 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 /* la foto completa, siempre entera, centrada encima del fondo borroso */
 .auth-visual-sharp{
   position:absolute;inset:0;z-index:0;
-  background:url('../img/portada.jpeg') center/contain no-repeat;
+  background:url('../img/portada.webp') center/contain no-repeat;
 }
 .auth-visual::after{
   content:"";position:absolute;inset:0;z-index:1;pointer-events:none;

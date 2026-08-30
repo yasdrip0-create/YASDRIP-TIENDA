@@ -241,9 +241,12 @@ nada, después de un poco más de un minuto sin avisos.
 
 Crea un usuario nuevo por cada persona del equipo desde la pestaña
 "👥 Usuarios" adentro del panel (no hace falta tocar Firestore a
-mano). El primer usuario, "admin" con contraseña "yasdrip2026", se
-crea solo la primera vez que alguien entra al panel — cámbialo (o
-crea el tuyo propio y desactiva ese) apenas entres la primera vez.
+mano). El PRIMER usuario/contraseña que escribas en la pantalla de
+login, la primera vez que entres al panel recién publicado (cuando
+todavía no existe ningún usuario en Firestore), se convierte
+automáticamente en tu primer admin. Ya no hay usuario/contraseña
+fijo de fábrica — elige tú mismo cuál va a ser desde el primer
+login, y no lo compartas por fuera de tu equipo.
 
 =========================================================
  ACTUALIZACIÓN — eliminar pedidos + permisos por usuario

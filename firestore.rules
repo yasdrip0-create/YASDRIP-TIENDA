@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ============================================================
+       ADMINS
+       ------------------------------------------------------------
+       Reemplaza estos UIDs por los UID reales de las cuentas de
+       Firebase Auth de tu equipo (Authentication -> Users -> copia
+       el "User UID" de cada persona, DESPUÉS de crear sus cuentas
+       ahí — ver GUIA_MIGRAR_ADMIN_A_AUTH.txt).
+       Mientras esta lista esté vacía o con valores de ejemplo,
+       NADIE podrá escribir en productos/admin_usuarios/config,
+       ni siquiera tú desde el panel — créala primero.
+    ============================================================ */
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.uid in [
+          'REEMPLAZA_CON_UID_1',
+          'REEMPLAZA_CON_UID_2'
+        ];
+    }
+
+    // Cada cliente puede crear y leer SOLO su propio perfil
+    match /usuarios/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Pedidos:
+    // - "get" (leer UNO, sabiendo su ID) queda abierto: lo necesita
+    //   seguimiento.html para que un cliente vea SU pedido con el
+    //   link/código que le diste.
+    // - "list" (listar TODOS los pedidos) queda cerrado a cualquiera
+    //   que no sea admin — esto es lo que antes permitía a cualquier
+    //   visitante sacar la lista completa de clientes (nombre,
+    //   teléfono, dirección). Con esto ya no se puede.
+    // - crear un pedido nuevo sigue abierto (checkout sin cuenta).
+    // - actualizar/borrar (cambiar estado, eliminar) solo admin.
+    match /pedidos/{pedidoId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // Catálogo: lectura pública (es tu vitrina), escritura solo admin.
+    match /productos/{productoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Config del "drop": lectura pública, escritura solo admin.
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Recuperación de contraseña por teléfono.
+    match /telefonos/{telefono} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    // Usuarios y sesiones del panel: SOLO admin puede leer o escribir.
+    // (Antes estaban abiertos a cualquiera: cualquiera podía leer los
+    // hashes de contraseña de tu equipo o crearse un usuario admin
+    // propio saltándose el login por completo.)
+    match /admin_usuarios/{usuarioId} {
+      allow read, write: if isAdmin();
+    }
+    match /admin_sesiones/{usuarioId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

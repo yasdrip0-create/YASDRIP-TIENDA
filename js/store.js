@@ -1092,24 +1092,29 @@ function _generarSesionId() {
   return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 
-/** Crea el usuario "admin" (contraseña por defecto yasdrip2026) la
-    primera vez que se usa el panel, SOLO si todavía no hay ningún
-    usuario guardado en Firestore. Así el panel funciona apenas lo
-    subes, sin que tengas que crear nada a mano antes. Cámbiale la
-    contraseña (o crea tu propio usuario y borra este) desde la
-    pestaña "Usuarios" apenas entres la primera vez. */
-async function inicializarAdminPorDefecto() {
+/** ANTES: creaba un usuario "admin" con una contraseña fija
+    ("yasdrip2026") escrita en este mismo archivo — como este archivo
+    lo descarga cualquiera que visite el sitio, esa contraseña era
+    pública desde el primer día, para cualquiera que supiera mirar el
+    código fuente. AHORA: si todavía no existe NINGÚN usuario del
+    panel en Firestore, el PRIMER usuario/contraseña que alguien
+    escriba en la pantalla de login se convierte en el primer admin
+    (con todos los permisos). Así nadie más que tú sabe cuál va a ser
+    tu usuario y contraseña, porque nunca quedan escritos en el
+    código. Úsalo la primera vez que entres al panel recién publicado
+    y crea tu usuario ahí mismo. */
+async function _crearPrimerAdminSiNoExiste(usuario, clave) {
   try {
     const snap = await fbDb.collection('admin_usuarios').limit(1).get();
     if (!snap.empty) return;
-    await fbDb.collection('admin_usuarios').doc('admin').set({
-      claveHash: await _sha256Hex('yasdrip2026'),
+    await fbDb.collection('admin_usuarios').doc(usuario).set({
+      claveHash: await _sha256Hex(clave),
       activo: true,
       creado: new Date().toISOString(),
       permisos: permisosTodosActivos(),
     });
   } catch (e) {
-    console.error('No se pudo crear el usuario admin por defecto:', e);
+    console.error('No se pudo crear el primer usuario admin:', e);
   }
 }
 
@@ -1120,7 +1125,7 @@ async function loginAdmin(usuarioInput, clave) {
   const usuario = String(usuarioInput || '').trim().toLowerCase();
   if (!usuario || !clave) return { ok: false, msg: 'Escribe usuario y contraseña.' };
 
-  await inicializarAdminPorDefecto();
+  await _crearPrimerAdminSiNoExiste(usuario, clave);
 
   let doc;
   try {
