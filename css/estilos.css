@@ -1995,6 +1995,26 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 .admin-modal input:focus{outline:none;border-color:var(--adm-lime);box-shadow:0 0 0 3px rgba(215,255,61,0.15);}
 
+/* Modal "Editar permisos": todo el fondo en blanco con letras oscuras
+   para que se lea bien (título, casillas, íconos y descripciones de
+   cada permiso), no solo el campo de la contraseña. */
+#modalPermisos .admin-modal{
+  background:#ffffff;
+  color:#111111;
+}
+#modalPermisos .admin-modal h3{color:#111111;}
+#modalPermisos .admin-permiso-item{
+  background:#f5f5f5;
+  border-color:#dcdcdc;
+}
+#modalPermisos .admin-permiso-item:has(input:checked){
+  background:rgba(163,209,20,0.15);
+  border-color:#a3d114;
+}
+#modalPermisos .permiso-icono{background:#e8e8e8;}
+#modalPermisos .permiso-texto b{color:#111111;}
+#modalPermisos .permiso-texto small{color:#4a4a4a;}
+
 /* Campos de "código de desarrollador" y el de la pestaña de acceso
    a Usuarios: fondo blanco con texto oscuro (en vez del tema oscuro
    del resto del panel), para que se lean mejor al escribir. Cubre
@@ -2004,14 +2024,16 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 #codigoDesarrolladorUsuario,
 #codigoDesarrolladorPermisos,
 #codigoDesarrolladorClave,
-#claveAccesoUsuarios{
+#claveAccesoUsuarios,
+#claveBorrarPedido{
   background:#ffffff;
   color:#111111;
 }
 #codigoDesarrolladorUsuario::placeholder,
 #codigoDesarrolladorPermisos::placeholder,
 #codigoDesarrolladorClave::placeholder,
-#claveAccesoUsuarios::placeholder{
+#claveAccesoUsuarios::placeholder,
+#claveBorrarPedido::placeholder{
   color:#6b6b6b;
 }
 
