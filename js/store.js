@@ -37,6 +37,7 @@ const LS_KEYS = {
   admin: "yasdrip_admin",
   sesionAdmin: "yasdrip_sesion_admin",
   favoritos: "yasdrip_favoritos",
+  clubCorreo: "yasdrip_club_correo_guardado",
 };
 
 function _leer(key) {
@@ -715,6 +716,17 @@ function suscribirVoltageClub(email) {
     lista.push(email);
     _guardar(LS_KEYS.suscriptores, lista);
   }
+}
+
+/* Guarda el correo del cliente en ESTE navegador (clave aparte,
+   nada que ver con el login del panel de administración) para que,
+   la próxima vez que entre a la tienda, el campo "tu@correo.com" ya
+   venga lleno y no tenga que volver a escribirlo. */
+function guardarCorreoClub(email) {
+  try { localStorage.setItem(LS_KEYS.clubCorreo, email); } catch (e) { /* no pasa nada si falla */ }
+}
+function correoClubGuardado() {
+  try { return localStorage.getItem(LS_KEYS.clubCorreo) || ''; } catch (e) { return ''; }
 }
 
 /* ---------- USUARIOS (login / registro) ----------

@@ -193,6 +193,10 @@ if (destacado) {
 }
 
 /* suscripción al Voltage Club (antes iba a la tabla 'suscriptores') */
+// Si el cliente ya había dejado su correo antes en este navegador,
+// se lo dejamos puesto de una vez para que no tenga que escribirlo otra vez.
+document.getElementById('clubEmail').value = correoClubGuardado();
+
 document.getElementById('clubForm').addEventListener('submit', function (e) {
   e.preventDefault();
   const email = document.getElementById('clubEmail').value.trim();
@@ -200,8 +204,8 @@ document.getElementById('clubForm').addEventListener('submit', function (e) {
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (emailValido) {
     suscribirVoltageClub(email);
+    guardarCorreoClub(email);
     msgEl.textContent = `Listo, ${email} ya está en el Voltage Club.`;
-    this.reset();
   } else {
     msgEl.textContent = 'Ingresa un correo válido.';
   }

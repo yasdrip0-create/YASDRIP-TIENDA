@@ -2010,6 +2010,20 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 #modalCodigoDev .admin-modal h3{color:#111111;}
 #modalAccesoUsuarios .admin-foto-hint,
 #modalCodigoDev .admin-foto-hint{color:#5a5a5a;}
+#modalPermisos .admin-btn-ghost,
+#modalAccesoUsuarios .admin-btn-ghost,
+#modalCodigoDev .admin-btn-ghost{
+  background:#eeeeee;
+  color:#111111;
+  border-color:#cccccc;
+}
+#modalPermisos .admin-btn-ghost:hover,
+#modalAccesoUsuarios .admin-btn-ghost:hover,
+#modalCodigoDev .admin-btn-ghost:hover{
+  background:#111111;
+  color:#ffffff;
+  border-color:#111111;
+}
 #modalPermisos .admin-permiso-item{
   background:#f5f5f5;
   border-color:#dcdcdc;
