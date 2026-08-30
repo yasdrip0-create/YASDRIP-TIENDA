@@ -449,6 +449,17 @@
 </div>
 
 <!-- ======================= MODAL BORRAR PEDIDO ======================= -->
+<div class="admin-modal-overlay" id="modalVerFoto">
+  <div class="admin-modal">
+    <h3>Foto del producto</h3>
+    <div class="ver-foto-img-wrap"><img id="verFotoImg" src="" alt="Foto del producto"></div>
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnVerFotoCambiar">📷 Cambiar esta foto</button>
+      <button class="admin-btn admin-btn-ghost" id="btnVerFotoCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="admin-modal-overlay" id="modalBorrarPedido">
   <div class="admin-modal">
     <h3>Eliminar pedido</h3>
@@ -493,6 +504,89 @@ function showToast(texto, esError = false) {
   toast.classList.add('show');
   clearTimeout(window._t);
   window._t = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+/* ============================================================
+   MENÚ "VER FOTO / CAMBIAR FOTO"
+   Antes, hacer clic en cualquier foto ya puesta abría directo el
+   explorador de archivos — fácil de tocar sin querer y reemplazar
+   una foto buena por accidente. Ahora, si el picker ya tiene foto,
+   el clic abre un menú chiquito con "Ver foto en grande" y "Cambiar
+   foto"; si todavía no tiene foto, el clic abre el explorador
+   directo como siempre (no hay nada que ver ni que perder).
+   ============================================================ */
+let _fotoMenuAbierto = null;
+let _fotoMenuInputCambiar = null;
+
+function cerrarMenuFoto() {
+  if (_fotoMenuAbierto) { _fotoMenuAbierto.remove(); _fotoMenuAbierto = null; }
+  document.removeEventListener('click', _cerrarMenuFotoSiAfuera, true);
+}
+function _cerrarMenuFotoSiAfuera(e) {
+  if (_fotoMenuAbierto && !_fotoMenuAbierto.contains(e.target)) cerrarMenuFoto();
+}
+
+function abrirMenuFoto(anchorEl, input, imgSrc) {
+  cerrarMenuFoto();
+  const menu = document.createElement('div');
+  menu.className = 'foto-menu';
+  menu.innerHTML = `
+    <button type="button" data-accion="ver">👁 Ver foto en grande</button>
+    <button type="button" data-accion="cambiar">📷 Cambiar foto</button>
+  `;
+  document.body.appendChild(menu);
+
+  // posicionarlo pegado al picker, sin salirse de la pantalla
+  const r = anchorEl.getBoundingClientRect();
+  const menuAncho = menu.offsetWidth || 168;
+  let left = Math.min(r.left, window.innerWidth - menuAncho - 12);
+  let top = r.bottom + 6;
+  if (top + menu.offsetHeight > window.innerHeight - 10) top = r.top - menu.offsetHeight - 6;
+  menu.style.left = `${Math.max(8, left)}px`;
+  menu.style.top = `${Math.max(8, top)}px`;
+
+  menu.querySelector('[data-accion="ver"]').addEventListener('click', () => {
+    cerrarMenuFoto();
+    abrirModalVerFoto(imgSrc, input);
+  });
+  menu.querySelector('[data-accion="cambiar"]').addEventListener('click', () => {
+    cerrarMenuFoto();
+    input.click();
+  });
+
+  _fotoMenuAbierto = menu;
+  // en el próximo tick, para que el click que abrió el menú no lo cierre de una vez
+  setTimeout(() => document.addEventListener('click', _cerrarMenuFotoSiAfuera, true), 0);
+}
+
+const modalVerFoto = document.getElementById('modalVerFoto');
+const verFotoImg = document.getElementById('verFotoImg');
+function abrirModalVerFoto(src, input) {
+  verFotoImg.src = src;
+  _fotoMenuInputCambiar = input || null;
+  modalVerFoto.classList.add('open');
+}
+document.getElementById('btnVerFotoCerrar').addEventListener('click', () => modalVerFoto.classList.remove('open'));
+modalVerFoto.addEventListener('click', (e) => { if (e.target === modalVerFoto) modalVerFoto.classList.remove('open'); });
+document.getElementById('btnVerFotoCambiar').addEventListener('click', () => {
+  modalVerFoto.classList.remove('open');
+  if (_fotoMenuInputCambiar) _fotoMenuInputCambiar.click();
+});
+
+/** Engancha el menú Ver/Cambiar a un <label> picker de foto. Si el label
+    todavía no tiene una <img> adentro (no hay foto puesta), no hace nada
+    especial y el clic abre el explorador de archivos como siempre. */
+function engancharMenuFoto(label) {
+  label.addEventListener('click', (e) => {
+    const img = label.querySelector('img');
+    // sin foto puesta todavía: no hay nada que ver ni que perder,
+    // se deja el comportamiento normal (abre el explorador de una vez)
+    if (!img || !img.getAttribute('src') || img.style.display === 'none') return;
+    e.preventDefault();
+    e.stopPropagation();
+    const input = label.querySelector('input[type="file"]');
+    abrirMenuFoto(label, input, img.src);
+  });
 }
 
 let permisosActuales = permisosTodosActivos();
@@ -1786,6 +1880,10 @@ function pintarTabla(productosPagina, sinResultados, hayFiltro) {
     });
   });
 
+  /* ---- si la foto ya está puesta, el clic abre "Ver / Cambiar" en vez
+     de saltar directo al explorador de archivos (ver más arriba) ---- */
+  tbody.querySelectorAll('.admin-foto-cell, .admin-color-foto').forEach(engancharMenuFoto);
+
   /* ---- botón "Colores (N)": expande/colapsa las fotos por color, para que la tabla no se vea saturada ---- */
   tbody.querySelectorAll('.btn-toggle-fotos-color').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1984,11 +2082,14 @@ inputFotoNuevo.addEventListener('change', async () => {
     fotoNuevaDataUrl = await comprimirImagen(file, 700, 0.75);
     previewFotoNuevo.src = fotoNuevaDataUrl;
     previewFotoNuevo.style.display = 'block';
-    textoFotoNuevo.textContent = '✓ Foto lista — clic para cambiarla';
+    textoFotoNuevo.textContent = '✓ Foto lista — clic para verla o cambiarla';
   } catch (err) {
     showToast('No se pudo usar esa imagen.', true);
   }
 });
+// una vez que ya hay una foto puesta, el clic abre "Ver / Cambiar" en vez
+// de saltar directo al explorador (así no se reemplaza sin querer)
+engancharMenuFoto(document.getElementById('nProdFotoLabel'));
 
 document.getElementById('btnGuardarNuevo').addEventListener('click', () => {
   const nombre = document.getElementById('nProdNombre').value.trim();
