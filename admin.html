@@ -357,6 +357,19 @@
   </div>
 </div>
 
+<!-- ======================= MODAL CÓDIGO DE DESARROLLADOR (activar/desactivar/eliminar) ======================= -->
+<div class="admin-modal-overlay" id="modalCodigoDev">
+  <div class="admin-modal">
+    <h3 id="modalCodigoDevTitulo">Código de desarrollador</h3>
+    <p class="admin-foto-hint" id="modalCodigoDevTexto" style="margin-bottom:12px;"></p>
+    <input type="password" id="inputCodigoDev" placeholder="Código de desarrollador" autocomplete="off">
+    <div class="admin-add-actions">
+      <button class="admin-btn admin-btn-primary" id="btnConfirmarCodigoDev">Aceptar</button>
+      <button class="admin-btn admin-btn-ghost" id="btnCancelarCodigoDev">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ======================= MODAL HISTORIAL DE PEDIDO ======================= -->
 <div class="admin-modal-overlay" id="modalHistorialPedido">
   <div class="admin-modal admin-modal-wide">
@@ -702,7 +715,10 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
     const usuario = btnToggle.dataset.usuario;
     const etiqueta = btnToggle.dataset.correo || usuario;
     const activoActual = btnToggle.dataset.activo === 'true';
-    const codigo = prompt('Código de desarrollador para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + etiqueta + '":');
+    const codigo = await pedirCodigoDev(
+      activoActual ? 'Desactivar usuario' : 'Activar usuario',
+      `Código de desarrollador para ${activoActual ? 'desactivar' : 'activar'} a "${etiqueta}":`
+    );
     if (codigo === null) return;
     if (!(await verificarCodigoDesarrollador(codigo))) { showToast('Código de desarrollador incorrecto.', true); return; }
     btnToggle.disabled = true;
@@ -714,7 +730,10 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
   } else if (btnEliminar) {
     const usuario = btnEliminar.dataset.usuario;
     const etiqueta = btnEliminar.dataset.correo || usuario;
-    const codigo = prompt('Código de desarrollador para ELIMINAR a "' + etiqueta + '" (no se puede deshacer):');
+    const codigo = await pedirCodigoDev(
+      'Eliminar usuario',
+      `Código de desarrollador para ELIMINAR a "${etiqueta}" (no se puede deshacer):`
+    );
     if (codigo === null) return;
     if (!(await verificarCodigoDesarrollador(codigo))) { showToast('Código de desarrollador incorrecto.', true); return; }
     if (!confirm(`¿Eliminar a "${etiqueta}"? No se puede deshacer. (Esto no borra su cuenta de Firebase Authentication, solo su perfil/permisos del panel — si quieres quitarle el acceso del todo, borra también su UID de la lista isAdmin() en firestore.rules.)`)) return;
@@ -1094,6 +1113,42 @@ document.getElementById('btnSalirAdmin').addEventListener('click', async () => {
   await cerrarSesionAdmin();
   window.location.href = 'admin.html';
 });
+
+/* ---------- Modal bonito para pedir "código de desarrollador",
+   en vez del cuadro feo del navegador (prompt). Se usa con
+   await pedirCodigoDev('Título', 'Mensaje...') y devuelve el texto
+   escrito, o null si canceló. ---------- */
+function pedirCodigoDev(titulo, mensaje) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('modalCodigoDev');
+    const input = document.getElementById('inputCodigoDev');
+    document.getElementById('modalCodigoDevTitulo').textContent = titulo;
+    document.getElementById('modalCodigoDevTexto').textContent = mensaje;
+    input.value = '';
+    overlay.classList.add('open');
+    setTimeout(() => input.focus(), 50);
+
+    const btnOk = document.getElementById('btnConfirmarCodigoDev');
+    const btnCancel = document.getElementById('btnCancelarCodigoDev');
+
+    function cerrar(valor) {
+      overlay.classList.remove('open');
+      btnOk.removeEventListener('click', onOk);
+      btnCancel.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+      resolve(valor);
+    }
+    function onOk() { cerrar(input.value); }
+    function onCancel() { cerrar(null); }
+    function onKey(e) {
+      if (e.key === 'Enter') { e.preventDefault(); onOk(); }
+      if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+    }
+    btnOk.addEventListener('click', onOk);
+    btnCancel.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+  });
+}
 
 /* ---------- Cierre automático de sesión al salir de la pestaña ----------
    Si el usuario cambia de pestaña, minimiza la ventana o se va a otra
