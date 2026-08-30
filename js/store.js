@@ -709,13 +709,40 @@ function comprimirImagen(file, maxAncho = 900, calidad = 0.72) {
   });
 }
 
-/* ---------- SUSCRIPTORES (Voltage Club) ---------- */
-function suscribirVoltageClub(email) {
+/* ---------- SUSCRIPTORES (Voltage Club) ----------
+   Colección propia en Firestore ("voltage_club"), separada por
+   completo de admin_usuarios/admin_sesiones (las cuentas del
+   equipo). Cualquiera puede dejar su correo, pero solo el admin
+   puede leer la lista (ver reglas de Firestore). También se guarda
+   una copia en este navegador como respaldo, por si no hay
+   internet en ese momento. */
+async function suscribirVoltageClub(email) {
+  const correo = email.trim().toLowerCase();
+
   const lista = _leer(LS_KEYS.suscriptores);
-  if (!lista.includes(email)) {
-    lista.push(email);
+  if (!lista.includes(correo)) {
+    lista.push(correo);
     _guardar(LS_KEYS.suscriptores, lista);
   }
+
+  try {
+    await fbDb.collection('voltage_club').doc(correo).set({
+      correo,
+      fecha: Date.now(),
+    }, { merge: true });
+    return { ok: true };
+  } catch (e) {
+    // sin internet: ya quedó guardado localmente, se puede reintentar después
+    return { ok: false, msg: 'Se guardó en este dispositivo, pero no se pudo enviar a la nube (revisa tu internet).' };
+  }
+}
+
+/* Trae la lista completa de correos del Voltage Club desde
+   Firestore (solo funciona si quien llama es admin, por las
+   reglas). Se usa en el panel. */
+async function obtenerSuscriptoresVoltageClub() {
+  const snap = await fbDb.collection('voltage_club').orderBy('fecha', 'desc').get();
+  return snap.docs.map(d => d.data());
 }
 
 /* Guarda el correo del cliente en ESTE navegador (clave aparte,

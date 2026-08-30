@@ -197,15 +197,17 @@ if (destacado) {
 // se lo dejamos puesto de una vez para que no tenga que escribirlo otra vez.
 document.getElementById('clubEmail').value = correoClubGuardado();
 
-document.getElementById('clubForm').addEventListener('submit', function (e) {
+document.getElementById('clubForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const email = document.getElementById('clubEmail').value.trim();
   const msgEl = document.getElementById('clubMsg');
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (emailValido) {
-    suscribirVoltageClub(email);
     guardarCorreoClub(email);
-    msgEl.textContent = `Listo, ${email} ya está en el Voltage Club.`;
+    const res = await suscribirVoltageClub(email);
+    msgEl.textContent = res.ok
+      ? `Listo, ${email} ya está en el Voltage Club.`
+      : res.msg;
   } else {
     msgEl.textContent = 'Ingresa un correo válido.';
   }

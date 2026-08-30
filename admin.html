@@ -102,6 +102,23 @@
           </table>
         </div>
       </div>
+      <div class="admin-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+          <h3 style="margin-bottom:0;">⚡ Voltage Club <span id="voltageClubTotal" style="color:var(--adm-text-dim);font-weight:400;font-size:13px;"></span></h3>
+          <div style="display:flex;gap:8px;">
+            <button class="admin-btn admin-btn-ghost" id="btnCopiarVoltageClub">Copiar correos</button>
+            <button class="admin-btn admin-btn-ghost" id="btnDescargarVoltageClub">Descargar CSV</button>
+          </div>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Correo</th><th>Se registró</th></tr></thead>
+            <tbody id="voltageClubTablaBody">
+              <tr><td colspan="2" style="text-align:center;padding:20px;color:var(--adm-text-dim);">Cargando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <div id="tabInventario" style="display:none;">
@@ -440,7 +457,55 @@ async function entrarAlPanel() {
   aplicarPermisosUI();
   await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar la tabla
   pintarTodo();
+  pintarVoltageClub();
 }
+
+/* ---------- pestaña Resumen: correos del Voltage Club ---------- */
+let _correosVoltageClub = [];
+
+async function pintarVoltageClub() {
+  const tbody = document.getElementById('voltageClubTablaBody');
+  const totalEl = document.getElementById('voltageClubTotal');
+  try {
+    _correosVoltageClub = await obtenerSuscriptoresVoltageClub();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--adm-text-dim);">No se pudo cargar (revisa tu conexión o permisos).</td></tr>`;
+    return;
+  }
+  totalEl.textContent = `(${_correosVoltageClub.length})`;
+  if (!_correosVoltageClub.length) {
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--adm-text-dim);">Todavía no hay correos registrados.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _correosVoltageClub.map(s => `
+    <tr>
+      <td>${s.correo}</td>
+      <td>${s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('btnCopiarVoltageClub').addEventListener('click', () => {
+  if (!_correosVoltageClub.length) { showToast('No hay correos todavía.', true); return; }
+  const texto = _correosVoltageClub.map(s => s.correo).join(', ');
+  navigator.clipboard.writeText(texto)
+    .then(() => showToast('Correos copiados al portapapeles'))
+    .catch(() => showToast('No se pudo copiar', true));
+});
+
+document.getElementById('btnDescargarVoltageClub').addEventListener('click', () => {
+  if (!_correosVoltageClub.length) { showToast('No hay correos todavía.', true); return; }
+  const filas = ['correo,fecha'].concat(
+    _correosVoltageClub.map(s => `${s.correo},${s.fecha ? new Date(s.fecha).toISOString() : ''}`)
+  );
+  const blob = new Blob([filas.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'voltage-club.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
 /** Muestra u oculta pestañas según lo que este usuario puede tocar.
     Si no tiene ni un permiso, se le avisa en vez de dejarlo ver un

@@ -66,6 +66,18 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Correos del "Voltage Club" (formulario de la portada). Colección
+    // aparte, sin relación con admin_usuarios/admin_sesiones: cualquier
+    // visitante puede DEJAR su correo (create), pero nadie puede leer
+    // la lista completa salvo el admin — así no se puede robar ni
+    // scrapear la lista de correos de tus clientes, y tampoco se mezcla
+    // con las cuentas del panel.
+    match /voltage_club/{correoId} {
+      allow create: if true;
+      allow read, list: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
     // Usuarios y sesiones del panel: SOLO admin puede leer o escribir.
     // (Antes estaban abiertos a cualquiera: cualquiera podía leer los
     // hashes de contraseña de tu equipo o crearse un usuario admin
