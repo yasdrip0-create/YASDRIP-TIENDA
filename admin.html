@@ -1095,6 +1095,41 @@ document.getElementById('btnSalirAdmin').addEventListener('click', async () => {
   window.location.href = 'admin.html';
 });
 
+/* ---------- Cierre automático de sesión al salir de la pestaña ----------
+   Si el usuario cambia de pestaña, minimiza la ventana o se va a otra
+   app (la pestaña del panel queda oculta) y pasan 2 minutos sin volver,
+   la sesión se cierra sola por seguridad. Si vuelve antes de los 2
+   minutos, el conteo se cancela y no pasa nada. */
+const MS_CIERRE_AUTOMATICO = 2 * 60 * 1000; // 2 minutos
+let _timerCierreAutomatico = null;
+
+function _cancelarCierreAutomatico() {
+  if (_timerCierreAutomatico) {
+    clearTimeout(_timerCierreAutomatico);
+    _timerCierreAutomatico = null;
+  }
+}
+
+async function _ejecutarCierreAutomatico() {
+  // Solo cierra si en verdad hay una sesión abierta ahora mismo.
+  if (!sesionAdminActiva()) return;
+  await cerrarSesionAdmin();
+  window.location.href = 'admin.html';
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Se fue de la pestaña: arranca el conteo de 2 minutos.
+    if (sesionAdminActiva()) {
+      _cancelarCierreAutomatico();
+      _timerCierreAutomatico = setTimeout(_ejecutarCierreAutomatico, MS_CIERRE_AUTOMATICO);
+    }
+  } else {
+    // Volvió a la pestaña antes de que se cumplieran los 2 minutos.
+    _cancelarCierreAutomatico();
+  }
+});
+
 /* ---------- pestaña Resumen: estadísticas, gráfica y top productos ---------- */
 async function pintarResumen() {
   const contResumen = document.getElementById('resumenStats');
