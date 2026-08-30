@@ -745,6 +745,34 @@ async function obtenerSuscriptoresVoltageClub() {
   return snap.docs.map(d => d.data());
 }
 
+/* ---------- Aviso automático de drop nuevo al Voltage Club ----------
+   Antes había que copiar la lista de correos y mandarles el mensaje
+   tú mismo por fuera (WhatsApp, correo, etc.). Ahora, desde el botón
+   "📢 Avisar drop nuevo" en la pestaña Resumen del panel, se junta la
+   lista actual de suscriptores y se manda a tu Apps Script, que es
+   quien de verdad envía el correo (con la misma cuenta de Gmail que
+   ya usas para todo lo demás — ver GUIA_AVISO_DROP_VOLTAGE_CLUB.txt).
+   Cada suscriptor va por copia oculta (bcc): nadie ve la lista de
+   correos de los demás. */
+async function avisarDropVoltageClub(asuntoInput, mensajeInput) {
+  const asunto = String(asuntoInput || '').trim();
+  const mensaje = String(mensajeInput || '').trim();
+  if (!asunto) return { ok: false, msg: 'Escribe un asunto para el correo.' };
+  if (!mensaje) return { ok: false, msg: 'Escribe el mensaje del drop.' };
+
+  let suscriptores;
+  try {
+    suscriptores = await obtenerSuscriptoresVoltageClub();
+  } catch (e) {
+    return { ok: false, msg: 'No se pudo leer la lista del Voltage Club (revisa tu internet).' };
+  }
+  const correos = suscriptores.map(s => s.correo).filter(Boolean);
+  if (!correos.length) return { ok: false, msg: 'Todavía no hay nadie en el Voltage Club.' };
+
+  enviarAviso({ tipo: 'aviso_drop_nuevo', correos, asunto, mensaje });
+  return { ok: true, cantidad: correos.length };
+}
+
 /* Guarda el correo del cliente en ESTE navegador (clave aparte,
    nada que ver con el login del panel de administración) para que,
    la próxima vez que entre a la tienda, el campo "tu@correo.com" ya
