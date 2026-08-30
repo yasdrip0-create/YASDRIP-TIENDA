@@ -1995,6 +1995,26 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 .admin-modal input:focus{outline:none;border-color:var(--adm-lime);box-shadow:0 0 0 3px rgba(215,255,61,0.15);}
 
+/* Campos de "código de desarrollador" y el de la pestaña de acceso
+   a Usuarios: fondo blanco con texto oscuro (en vez del tema oscuro
+   del resto del panel), para que se lean mejor al escribir. Cubre
+   tanto el que está suelto en la tarjeta "Crear usuario" como los
+   que están dentro de los modales (editar permisos, cambiar
+   contraseña, acceso a Usuarios). */
+#codigoDesarrolladorUsuario,
+#codigoDesarrolladorPermisos,
+#codigoDesarrolladorClave,
+#claveAccesoUsuarios{
+  background:#ffffff;
+  color:#111111;
+}
+#codigoDesarrolladorUsuario::placeholder,
+#codigoDesarrolladorPermisos::placeholder,
+#codigoDesarrolladorClave::placeholder,
+#claveAccesoUsuarios::placeholder{
+  color:#6b6b6b;
+}
+
 @media (max-width:640px){
   .admin-topbar{padding:14px 16px;flex-direction:column;gap:12px;align-items:flex-start;}
   .admin-main{padding:24px 14px 60px;}
