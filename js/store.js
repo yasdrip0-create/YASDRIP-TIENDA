@@ -561,8 +561,13 @@ async function crearPedido(datosCliente) {
     const ref = await fbDb.collection('pedidos').add(pedido);
     descontarStockCarrito(carrito);
     limpiarCarrito();
-    enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido, id: ref.id } });
-    return { ...pedido, id: ref.id };
+    // código corto y fácil de leer para el asunto/cuerpo del correo de
+    // confirmación (el número "Pedido #7" del panel admin necesita ver
+    // TODOS los pedidos para calcularse, así que aquí usamos algo que
+    // sí se puede armar al instante, con lo que ya tenemos a mano).
+    const codigoPedido = ref.id.slice(-6).toUpperCase();
+    enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido, id: ref.id, codigo_pedido: codigoPedido } });
+    return { ...pedido, id: ref.id, codigo_pedido: codigoPedido };
   } catch (e) {
     console.error('Error guardando el pedido en Firestore:', e);
     enviarAviso({ tipo: 'problema', titulo: 'No se pudo guardar un pedido', detalle: String(e && e.message || e) });

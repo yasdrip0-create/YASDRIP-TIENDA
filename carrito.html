@@ -59,6 +59,7 @@
       <div class="exito-sub">Ya casi vuela para tu casa 🚀</div>
       <div class="gracias-nombre" id="gracias-nombre"></div>
       <div class="exito-pedido" id="exito-pedido"></div>
+      <div class="exito-correo" id="exito-correo"></div>
       <a href="productos.html" class="btn-exito-volver">Seguir comprando</a>
     </div>
 
@@ -628,7 +629,7 @@ function pintarCarrito() {
       setTimeout(async () => {
         const pedido = await crearPedido({ nombre, email, telefono, metodoPago, tarjetaFinal, envio });
         if (pedido) {
-          mostrarExito(nombre, pedido.id);
+          mostrarExito(nombre, pedido.codigo_pedido);
           document.getElementById('cartCount').textContent = 0;
         } else {
           mostrarError('No se pudo procesar tu pedido, intenta de nuevo.');
@@ -679,6 +680,7 @@ function mostrarExito(nombreCliente, pedidoId) {
     ex.style.display = 'flex';
     document.getElementById('gracias-nombre').textContent = '✨ ¡Muchas gracias, ' + nombreCliente + '! ✨';
     document.getElementById('exito-pedido').textContent = pedidoId ? `PEDIDO #${pedidoId}` : 'PEDIDO REGISTRADO';
+    document.getElementById('exito-correo').textContent = 'Te mandamos la confirmación con el detalle a tu correo ✉️';
     document.querySelectorAll('.stepper-step').forEach(s => { s.classList.add('is-done'); s.classList.remove('is-active'); s.querySelector('.stepper-circle').textContent = '✓'; });
     document.querySelectorAll('.stepper-line').forEach(l => l.classList.add('is-done'));
     lanzarConfeti();

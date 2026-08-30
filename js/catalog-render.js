@@ -40,13 +40,16 @@ function construirTarjetaHtml(p, i = 0) {
     </button>`;
   /* primer color con stock disponible (si todos están agotados, cae en el primero) */
   const colorInicial = p.colores.find(c => !colorAgotado(p, c)) || p.colores[0];
-  const swatchesHtml = p.colores.map((c) => {
+  const swatchesHtml = p.colores.map((c, ci) => {
     const agotadoColor = colorAgotado(p, c);
-    return `<div class="swatch ${c === colorInicial ? 'active' : ''} ${agotadoColor ? 'swatch-agotado' : ''}" style="background:${c}" data-color="${c}" title="${agotadoColor ? 'Agotado en este color' : ''}"></div>`;
+    const activo = c === colorInicial;
+    const etiqueta = `Color ${ci + 1} de ${p.colores.length}${agotadoColor ? ' — agotado en este color' : ''}`;
+    return `<div class="swatch ${activo ? 'active' : ''} ${agotadoColor ? 'swatch-agotado' : ''}" style="background:${c}" data-color="${c}" title="${agotadoColor ? 'Agotado en este color' : ''}" role="button" tabindex="0" aria-pressed="${activo}" aria-label="${etiqueta}"></div>`;
   }).join('');
   const sizesHtml = p.tallas.map(sz => {
     const agotadaSz = tallaAgotada(p, sz);
-    return `<div class="size-chip ${agotadaSz ? 'size-chip-agotado' : ''}" data-size="${sz}" title="${agotadaSz ? 'Agotada' : ''}">${sz}</div>`;
+    const etiqueta = `Talla ${sz}${agotadaSz ? ' — agotada' : ''}`;
+    return `<div class="size-chip ${agotadaSz ? 'size-chip-agotado' : ''}" data-size="${sz}" title="${agotadaSz ? 'Agotada' : ''}" role="button" tabindex="0" aria-pressed="false" aria-label="${etiqueta}">${sz}</div>`;
   }).join('');
   /* foto a mostrar de entrada: la del primer color con stock, si no la foto general, si no el dibujo */
   const fotoInicial = (p.fotos && p.fotos[colorInicial]) || p.foto || null;
@@ -144,6 +147,19 @@ function activarInteraccionGrid(gridEl, opciones = {}) {
     }
     refrescarAvisoStock();
 
+    /* accesibilidad por teclado: los círculos de color y las tallas son
+       <div role="button"> (para que se vean como antes), así que no
+       reciben clic con Enter/Espacio por defecto como un <button> de
+       verdad — se lo agregamos a mano acá. */
+    card.querySelectorAll('.swatch, .size-chip').forEach(el => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          el.click();
+        }
+      });
+    });
+
     /* en celular no existe el "hover" del mouse, así que un toque sobre
        la foto alterna entre la vista de adelante y la de espaldas */
     const mediaEl = card.querySelector('[data-media]');
@@ -156,8 +172,9 @@ function activarInteraccionGrid(gridEl, opciones = {}) {
 
     card.querySelectorAll('.swatch').forEach(sw => {
       sw.addEventListener('click', () => {
-        card.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+        card.querySelectorAll('.swatch').forEach(s => { s.classList.remove('active'); s.setAttribute('aria-pressed', 'false'); });
         sw.classList.add('active');
+        sw.setAttribute('aria-pressed', 'true');
         const colorElegido = sw.dataset.color;
         seleccion[id].color = colorElegido;
         card.querySelectorAll('[data-icon] svg path[fill]').forEach(path => {
@@ -194,8 +211,9 @@ function activarInteraccionGrid(gridEl, opciones = {}) {
           mostrarToast(`Talla ${chip.dataset.size} agotada por ahora.`, true);
           return;
         }
-        card.querySelectorAll('.size-chip').forEach(c => c.classList.remove('active'));
+        card.querySelectorAll('.size-chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-pressed', 'false'); });
         chip.classList.add('active');
+        chip.setAttribute('aria-pressed', 'true');
         seleccion[id].talla = chip.dataset.size;
 
         const priceEl = card.querySelector('[data-price-num]');

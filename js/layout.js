@@ -337,6 +337,16 @@ function renderFooter() {
             <li><a href="https://facebook.com/yasdrip" target="_blank" rel="noopener">📘 Facebook: YAS DRIP</a></li>
           </ul>
         </div>
+
+        <div class="footer-col">
+          <h4>LEGAL</h4>
+          <ul>
+            <li><a href="legal.html#cambios-devoluciones">Cambios y devoluciones</a></li>
+            <li><a href="legal.html#garantia">Garantía</a></li>
+            <li><a href="legal.html#terminos">Términos y condiciones</a></li>
+            <li><a href="legal.html#datos-personales">Tratamiento de datos</a></li>
+          </ul>
+        </div>
       </div>
       <div class="footer-bottom">
         <p>© 2026 YAS DRIP — Todos los derechos reservados. <span class="hand">hecho en Medellín ⚡</span></p>
