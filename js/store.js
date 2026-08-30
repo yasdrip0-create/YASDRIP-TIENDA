@@ -982,6 +982,37 @@ async function _sha256Hex(texto) {
   return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Compara una contraseña ingresada contra la guardada de un usuario
+    del panel (campo "claveHash", con el mismo SHA-256 que ya se usa
+    arriba para el código de desarrollador). También sabe leer cuentas
+    VIEJAS que todavía tengan el campo "clave" en texto plano (de
+    antes de este cambio): si coincide, la migra sola a "claveHash" en
+    segundo plano y borra el texto plano, sin que nadie tenga que
+    tocar Firestore a mano. */
+async function _claveUsuarioCoincide(usuarioId, datos, claveIngresada) {
+  if (!datos || !claveIngresada) return false;
+  if (datos.claveHash) {
+    try {
+      return (await _sha256Hex(claveIngresada)) === datos.claveHash;
+    } catch (e) {
+      return false;
+    }
+  }
+  if (datos.clave !== undefined) {
+    const coincide = datos.clave === claveIngresada;
+    if (coincide) {
+      _sha256Hex(claveIngresada).then(hash => {
+        fbDb.collection('admin_usuarios').doc(usuarioId).update({
+          claveHash: hash,
+          clave: firebase.firestore.FieldValue.delete(),
+        }).catch(e => console.error('No se pudo migrar la contraseña a hash:', e));
+      });
+    }
+    return coincide;
+  }
+  return false;
+}
+
 async function verificarCodigoDesarrollador(codigo) {
   if (!codigo) return false;
   try {
@@ -1067,7 +1098,7 @@ async function inicializarAdminPorDefecto() {
     const snap = await fbDb.collection('admin_usuarios').limit(1).get();
     if (!snap.empty) return;
     await fbDb.collection('admin_usuarios').doc('admin').set({
-      clave: 'yasdrip2026',
+      claveHash: await _sha256Hex('yasdrip2026'),
       activo: true,
       creado: new Date().toISOString(),
       permisos: permisosTodosActivos(),
@@ -1094,7 +1125,7 @@ async function loginAdmin(usuarioInput, clave) {
   }
   if (!doc.exists) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
   const datos = doc.data();
-  if (datos.clave !== clave) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
+  if (!(await _claveUsuarioCoincide(usuario, datos, clave))) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
   if (datos.activo === false) return { ok: false, msg: 'Este usuario fue desactivado. Habla con quien administra la tienda.' };
 
   // ¿ya hay una sesión viva con este usuario en otro lado?
@@ -1209,8 +1240,13 @@ async function cambiarClaveAdmin(actual, nueva) {
   if (!nueva || nueva.length < 4) return { ok: false, msg: 'La nueva contraseña debe tener al menos 4 caracteres.' };
   try {
     const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
-    if (!doc.exists || doc.data().clave !== actual) return { ok: false, msg: 'La contraseña actual no es correcta.' };
-    await fbDb.collection('admin_usuarios').doc(usuario).update({ clave: nueva });
+    if (!doc.exists || !(await _claveUsuarioCoincide(usuario, doc.data(), actual))) {
+      return { ok: false, msg: 'La contraseña actual no es correcta.' };
+    }
+    await fbDb.collection('admin_usuarios').doc(usuario).update({
+      claveHash: await _sha256Hex(nueva),
+      clave: firebase.firestore.FieldValue.delete(),
+    });
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
@@ -1243,7 +1279,8 @@ async function verificarClaveAdminActual(clave) {
   if (!usuario) return false;
   try {
     const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
-    return !!(doc.exists && doc.data().clave === clave);
+    if (!doc.exists) return false;
+    return await _claveUsuarioCoincide(usuario, doc.data(), clave);
   } catch (e) {
     return false;
   }
@@ -1284,7 +1321,7 @@ async function crearUsuarioAdminPanel(usuarioInput, clave, permisos) {
     const existe = await fbDb.collection('admin_usuarios').doc(usuario).get();
     if (existe.exists) return { ok: false, msg: 'Ese usuario ya existe.' };
     await fbDb.collection('admin_usuarios').doc(usuario).set({
-      clave, activo: true, creado: new Date().toISOString(),
+      claveHash: await _sha256Hex(clave), activo: true, creado: new Date().toISOString(),
       permisos: permisos || permisosNingunoActivo(),
     });
     return { ok: true };

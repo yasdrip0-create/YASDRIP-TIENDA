@@ -54,6 +54,9 @@ renderHeader('productos');
 renderFooter();
 
 (async function () {
+const gridEl = document.getElementById('productGrid');
+gridEl.innerHTML = construirSkeletonHtml(6); // mientras carga, para no dejar la grilla en blanco
+
 await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
 
 const params = new URLSearchParams(window.location.search);
@@ -80,8 +83,6 @@ categorias.forEach(cat => {
   filtrosHtml += `<button class="filter-btn ${categoriaActual === cat ? 'active' : ''}" data-cat="${cat}">${cat}</button>`;
 });
 filtersCatsEl.innerHTML = filtrosHtml;
-
-const gridEl = document.getElementById('productGrid');
 
 /* ---- pinta el grid entero según categoriaActual + ordenActual ---- */
 function pintarGrid() {

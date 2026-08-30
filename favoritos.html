@@ -41,9 +41,10 @@ renderHeader('favoritos');
 renderFooter();
 
 (async function () {
-await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
-
 const gridEl = document.getElementById('productGrid');
+gridEl.innerHTML = construirSkeletonHtml(3); // mientras carga, para no dejar la grilla en blanco
+
+await cargarCatalogo(); // trae el catálogo de Firestore antes de pintar nada
 
 function pintarFavoritos() {
   const favoritos = productosFavoritos();

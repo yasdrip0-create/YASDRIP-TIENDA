@@ -136,7 +136,7 @@ function actualizarCountdown() {
         const fotoFrente = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
         const fotoAtras = p.fotosTrasera && p.fotosTrasera[p.colores[0]];
         const visual = fotoFrente
-          ? `<img src="${fotoFrente}" class="drop-live-img drop-live-img-frente" alt="${p.nombre}">${fotoAtras ? `<img src="${fotoAtras}" class="drop-live-img drop-live-img-atras" alt="${p.nombre} de espaldas">` : ''}`
+          ? `<img src="${fotoFrente}" class="drop-live-img drop-live-img-frente" alt="${p.nombre}" loading="lazy">${fotoAtras ? `<img src="${fotoAtras}" class="drop-live-img drop-live-img-atras" alt="${p.nombre} de espaldas" loading="lazy">` : ''}`
           : iconoProducto(p.icono, p.colores[0]);
         return `
           <a class="drop-live-item" href="productos.html#${p.id}">

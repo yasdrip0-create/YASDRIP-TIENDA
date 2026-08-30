@@ -389,3 +389,37 @@ panel no usa una cuenta real de Firebase Auth; la protección real
 (que solo alguien logueado en el panel vea el selector de estado)
 pasa del lado del panel, no del servidor. Riesgo bajo y aceptable
 para una tienda pequeña.
+
+=========================================================
+ ACTUALIZACIÓN — contraseñas del panel ya NO se guardan
+ en texto plano
+=========================================================
+
+Antes, el documento de cada usuario en "admin_usuarios" guardaba su
+contraseña tal cual la escribiste (campo "clave"), en texto plano.
+Como las reglas de esa colección tienen que quedar con lectura
+abierta (el panel no usa Firebase Auth, ver avisos de arriba),
+cualquiera que supiera abrir la consola del navegador y conociera
+tu proyecto de Firebase podía leer usuario y contraseña de TODO tu
+equipo directo desde Firestore, sin necesitar hackear nada.
+
+Ahora cada usuario guarda su contraseña como huella SHA-256 (campo
+"claveHash"), igual que ya se hacía con el código de desarrollador.
+De esa huella no se puede recuperar la contraseña original. Esto
+NO cierra el hueco de las reglas abiertas (alguien todavía podría
+leer el documento), pero sí evita que lo que lea sea la contraseña
+real de alguien.
+
+No tienes que hacer nada a mano: la primera vez que cada usuario
+entre al panel con su contraseña de siempre, el sistema la migra
+solo (borra el "clave" viejo en texto plano y guarda el
+"claveHash" nuevo). Los usuarios NUEVOS que crees de ahora en
+adelante ya nacen con "claveHash" directamente.
+
+⚠️ Esto sigue siendo un parche, no la solución de fondo. La única
+forma de que Firestore distinga de verdad "alguien del equipo,
+logueado" de "cualquier visitante" es pasar el panel a un login
+real con Firebase Auth + "custom claims" (mismo aviso de siempre
+en este archivo). Mientras tanto, evita compartir el link del
+proyecto de Firebase (el que aparece en js/firebase-config.js) por
+fuera de tu equipo, y no lo publiques en foros ni redes.

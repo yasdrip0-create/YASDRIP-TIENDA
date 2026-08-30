@@ -41,6 +41,26 @@ a{color:inherit;text-decoration:none;}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
 ::selection{background:var(--sage);color:var(--black);}
 
+/* ---- foco de teclado consistente y con la marca (accesibilidad) ----
+   Solo se ve al navegar con Tab (no al hacer clic con el mouse),
+   gracias a :focus-visible. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible{
+  outline:2.5px solid var(--forest);
+  outline-offset:2px;
+  border-radius:4px;
+}
+.swatch:focus-visible,
+.filter-btn:focus-visible,
+.cart-pill:focus-visible,
+.fav-pill:focus-visible,
+.fav-heart:focus-visible,
+.icon-only-btn:focus-visible{
+  outline:2.5px solid var(--forest);
+  outline-offset:3px;
+}
+
 /* ---------- TOPBAR / SUBBAR ---------- */
 .topbar{
   background:var(--black);color:var(--offwhite);
@@ -482,6 +502,23 @@ body.menu-open{overflow:hidden;}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
 @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr);}}
 @media (max-width:600px){.grid{grid-template-columns:1fr;}}
+
+/* ---- esqueleto de tarjetas mientras carga el catálogo desde Firestore ---- */
+.skeleton-card{
+  background:var(--white);border:2px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.skeleton-media{aspect-ratio:1/1;}
+.skeleton-body{padding:20px;display:flex;flex-direction:column;gap:12px;border-top:2px solid var(--line);}
+.skeleton-media,.skeleton-line{
+  background:linear-gradient(100deg, var(--offwhite) 30%, var(--line) 50%, var(--offwhite) 70%);
+  background-size:220% 100%;animation:skeletonSheen 1.4s ease-in-out infinite;border-radius:8px;
+}
+.skeleton-line{height:12px;width:70%;}
+.skeleton-line.short{width:40%;}
+.skeleton-line.price{height:18px;width:50%;margin-top:4px;}
+@keyframes skeletonSheen{0%{background-position:120% 0;}100%{background-position:-20% 0;}}
+@media (prefers-reduced-motion:reduce){.skeleton-media,.skeleton-line{animation:none;}}
 
 /* rompemos la retícula perfecta: cada tarjeta tiene su propia
    micro-inclinación "de mood board" y se endereza al hacer hover */

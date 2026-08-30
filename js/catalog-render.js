@@ -6,6 +6,25 @@
    pintar tarjetas de producto con color/talla/agregar/favorito).
    ============================================================ */
 
+/** Arma tarjetas "esqueleto" (grises, con brillo animado) para mostrar
+    mientras el catálogo todavía se está trayendo de Firestore, en vez
+    de dejar la grilla en blanco. */
+function construirSkeletonHtml(cantidad = 6) {
+  let html = '';
+  for (let i = 0; i < cantidad; i++) {
+    html += `
+      <div class="skeleton-card" aria-hidden="true">
+        <div class="skeleton-media"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line price"></div>
+        </div>
+      </div>`;
+  }
+  return html;
+}
+
 /** Arma el HTML de una sola tarjeta de producto. */
 function construirTarjetaHtml(p, i = 0) {
   const revealDelay = `reveal-d${(i % 6) + 1}`;
@@ -51,9 +70,9 @@ function construirTarjetaHtml(p, i = 0) {
         ${badgeHtml}
         ${favHtml}
         ${fotoInicial
-          ? `<img src="${fotoInicial}" class="card-photo" data-photo alt="${p.nombre}">`
+          ? `<img src="${fotoInicial}" class="card-photo" data-photo alt="${p.nombre}" loading="lazy">`
           : `<div data-icon>${iconoProducto(p.icono, colorInicial)}</div>`}
-        ${fotoTraseraInicial ? `<img src="${fotoTraseraInicial}" class="card-photo card-photo-trasera" data-photo-trasera alt="${p.nombre} de espaldas">` : ''}
+        ${fotoTraseraInicial ? `<img src="${fotoTraseraInicial}" class="card-photo card-photo-trasera" data-photo-trasera alt="${p.nombre} de espaldas" loading="lazy">` : ''}
       </div>
       <div class="card-body">
         <div class="card-cat">${p.categoria}</div>
@@ -159,7 +178,7 @@ function activarInteraccionGrid(gridEl, opciones = {}) {
             imgTraseraEl.src = fotoTraseraDelColor;
           } else {
             card.querySelector('[data-media]').insertAdjacentHTML('beforeend',
-              `<img src="${fotoTraseraDelColor}" class="card-photo card-photo-trasera" data-photo-trasera alt="${producto.nombre} de espaldas">`);
+              `<img src="${fotoTraseraDelColor}" class="card-photo card-photo-trasera" data-photo-trasera alt="${producto.nombre} de espaldas" loading="lazy">`);
           }
         } else if (imgTraseraEl) {
           imgTraseraEl.remove();
