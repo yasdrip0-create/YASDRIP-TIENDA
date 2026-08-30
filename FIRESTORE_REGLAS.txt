@@ -1,4 +1,16 @@
 =========================================================
+ ⚠️ DESACTUALIZADO — ver GUIA_MIGRAR_ADMIN_A_AUTH.txt
+=========================================================
+Este archivo describe las reglas de la ETAPA ANTERIOR (con
+"productos", "admin_usuarios", etc. abiertos a cualquiera, porque
+el panel todavía no usaba Firebase Auth real). Eso ya cambió: usa
+el archivo firestore.rules (raíz del proyecto) como la versión
+correcta para pegar en la consola de Firebase, no lo que dice más
+abajo. Se deja este archivo solo como historial de por qué se
+llegó a las reglas actuales.
+=========================================================
+
+=========================================================
  REGLAS DE SEGURIDAD DE FIRESTORE - YAS DRIP
 =========================================================
 

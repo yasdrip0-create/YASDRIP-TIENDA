@@ -34,11 +34,11 @@
         <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
       </a>
       <h2>Entrar al panel</h2>
-      <p class="auth-sub">Usuario y contraseña del administrador de la tienda.</p>
+      <p class="auth-sub">Correo y contraseña de tu cuenta del equipo.</p>
       <div id="adminAuthMsg"></div>
       <form id="formAdminLogin">
         <div class="auth-field">
-          <input type="text" id="adminUsuario" placeholder="Usuario" autocomplete="username" required>
+          <input type="email" id="adminUsuario" placeholder="Correo" autocomplete="email" required>
         </div>
         <div class="auth-field">
           <input type="password" id="adminClave" placeholder="Contraseña" autocomplete="current-password" required>
@@ -233,11 +233,11 @@
 
     <div id="tabUsuarios" style="display:none;">
       <div class="admin-card admin-add-card">
-        <h3>Crear usuario nuevo para el panel</h3>
-        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Crea un usuario para cada persona que necesite entrar al panel. Cada quien entra con su propio usuario y contraseña, y solo se puede estar conectado con ese usuario <b>en un dispositivo a la vez</b>: si alguien ya está adentro con ese usuario, a otra persona que intente entrar con el mismo le va a salir que la cuenta está en uso.</p>
+        <h3>Dar acceso al panel a alguien nuevo</h3>
+        <p class="admin-foto-hint" style="margin-bottom:12px;">💡 Primero créale su cuenta en <b>Firebase Authentication → Users → Add user</b> (correo + contraseña) y agrega su UID a la lista <code>isAdmin()</code> de <code>firestore.rules</code> (y publica las reglas). Después pega aquí ese mismo UID y correo para crear su perfil de permisos. Solo se puede estar conectado con esa cuenta <b>en un dispositivo a la vez</b>.</p>
         <div class="admin-add-grid" style="grid-template-columns:1fr 1fr;">
-          <input type="text" id="nuevoUsuarioNombre" class="admin-input" placeholder="Usuario (ej: maria, bodega1)" autocomplete="off">
-          <input type="password" id="nuevoUsuarioClave" class="admin-input" placeholder="Contraseña (mín. 4 caracteres)" autocomplete="new-password">
+          <input type="text" id="nuevoUsuarioNombre" class="admin-input" placeholder="UID de Firebase Auth" autocomplete="off">
+          <input type="email" id="nuevoUsuarioClave" class="admin-input" placeholder="Correo de esa cuenta" autocomplete="off">
         </div>
 
         <p class="admin-foto-hint" style="margin:16px 0 8px;"><b>¿Qué puede hacer esta persona en el panel?</b> — marca lo que le vas a dejar tocar:</p>
@@ -421,7 +421,7 @@ async function entrarAlPanel() {
   loginView.style.display = 'none';
   dashView.style.display = 'block';
   const elUsuario = document.getElementById('adminUsuarioActual');
-  if (elUsuario) elUsuario.textContent = 'Conectado como: ' + (usuarioAdminActual() || '');
+  if (elUsuario) elUsuario.textContent = 'Conectado como: ' + (correoAdminActual() || '');
   permisosActuales = await obtenerPermisosUsuarioActual();
   usuariosTabDesbloqueada = false;
   aplicarPermisosUI();
@@ -554,8 +554,8 @@ function mostrarTabUsuarios() {
 tabBtnUsuarios.addEventListener('click', () => {
   if (!permisosActuales.usuarios) return;
   if (usuariosTabDesbloqueada) { mostrarTabUsuarios(); return; }
-  if (usuarioAdminActual() !== 'admin') {
-    showToast('Solo el usuario "admin" puede entrar a esta pestaña.', true);
+  if (!_esSuperAdminActual()) {
+    showToast('Solo la cuenta principal (superAdmin) puede entrar a esta pestaña.', true);
     return;
   }
   document.getElementById('claveAccesoUsuarios').value = '';
@@ -610,12 +610,13 @@ async function pintarUsuariosPanel() {
     const permisosTexto = activosPermisos.length
       ? activosPermisos.map(k => `<span class="admin-permiso-pill">${ETIQUETAS_PERMISOS[k]}</span>`).join(' ')
       : '<span class="admin-foto-hint">Sin permisos</span>';
+    const etiqueta = u.correo || u.usuario;
     return `
       <tr>
         <td data-label="Usuario">
           <div class="usuario-fila">
-            <span class="usuario-avatar" style="background:${colorAvatar(u.usuario)}">${u.usuario.charAt(0).toUpperCase()}</span>
-            <b>${u.usuario}</b>${u.usuario === yo ? ' <span class="admin-foto-hint">(tú)</span>' : ''}
+            <span class="usuario-avatar" style="background:${colorAvatar(etiqueta)}" title="${u.usuario}">${etiqueta.charAt(0).toUpperCase()}</span>
+            <b>${etiqueta}</b>${u.usuario === yo ? ' <span class="admin-foto-hint">(tú)</span>' : ''}${u.superAdmin ? ' <span class="admin-permiso-pill">superAdmin</span>' : ''}
           </div>
         </td>
         <td data-label="Estado"><span class="usuario-estado-pill ${u.activo === false ? 'usuario-estado-inactivo' : 'usuario-estado-activo'}">${u.activo === false ? 'Desactivado' : 'Activo'}</span></td>
@@ -623,17 +624,17 @@ async function pintarUsuariosPanel() {
         <td data-label="Conectado">${u.conectado ? '<span class="usuario-estado-pill usuario-estado-conectado">🟢 Sí</span>' : '<span class="usuario-estado-pill usuario-estado-desconectado">⚪ No</span>'}</td>
         <td data-label="Creado" class="mono">${creado}</td>
         <td data-label="">
-          <button type="button" class="admin-btn admin-btn-ghost btn-editar-permisos" data-usuario="${u.usuario}" data-permisos='${JSON.stringify(permisos)}'>Editar permisos</button>
-          <button type="button" class="admin-btn admin-btn-ghost btn-toggle-usuario" data-usuario="${u.usuario}" data-activo="${u.activo !== false}">${u.activo === false ? 'Activar' : 'Desactivar'}</button>
-          ${u.usuario === yo ? '' : `<button type="button" class="admin-btn admin-btn-ghost btn-eliminar-usuario" data-usuario="${u.usuario}">Eliminar</button>`}
+          <button type="button" class="admin-btn admin-btn-ghost btn-editar-permisos" data-usuario="${u.usuario}" data-correo="${etiqueta}" data-permisos='${JSON.stringify(permisos)}'>Editar permisos</button>
+          <button type="button" class="admin-btn admin-btn-ghost btn-toggle-usuario" data-usuario="${u.usuario}" data-correo="${etiqueta}" data-activo="${u.activo !== false}">${u.activo === false ? 'Activar' : 'Desactivar'}</button>
+          ${u.usuario === yo ? '' : `<button type="button" class="admin-btn admin-btn-ghost btn-eliminar-usuario" data-usuario="${u.usuario}" data-correo="${etiqueta}">Eliminar</button>`}
         </td>
       </tr>`;
   }).join('');
 }
 
 document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async () => {
-  const usuario = document.getElementById('nuevoUsuarioNombre').value;
-  const clave = document.getElementById('nuevoUsuarioClave').value;
+  const uid = document.getElementById('nuevoUsuarioNombre').value;
+  const correo = document.getElementById('nuevoUsuarioClave').value;
   const codigo = document.getElementById('codigoDesarrolladorUsuario').value;
   if (!(await verificarCodigoDesarrollador(codigo))) {
     showToast('Código de desarrollador incorrecto.', true);
@@ -643,7 +644,7 @@ document.getElementById('btnCrearUsuarioPanel').addEventListener('click', async 
   document.querySelectorAll('.chk-permiso-nuevo').forEach(chk => { permisos[chk.value] = chk.checked; });
   const btn = document.getElementById('btnCrearUsuarioPanel');
   btn.disabled = true;
-  const res = await crearUsuarioAdminPanel(usuario, clave, permisos);
+  const res = await crearUsuarioAdminPanel(uid, correo, permisos);
   btn.disabled = false;
   if (!res.ok) { showToast(res.msg, true); return; }
   document.getElementById('nuevoUsuarioNombre').value = '';
@@ -662,7 +663,7 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', (e) 
   if (!btnEditar) return;
   usuarioEditandoPermisos = btnEditar.dataset.usuario;
   const permisosActualesUsuario = JSON.parse(btnEditar.dataset.permisos || '{}');
-  document.getElementById('modalPermisosTitulo').textContent = 'Permisos de "' + usuarioEditandoPermisos + '"';
+  document.getElementById('modalPermisosTitulo').textContent = 'Permisos de "' + (btnEditar.dataset.correo || usuarioEditandoPermisos) + '"';
   document.querySelectorAll('.chk-permiso-editar').forEach(chk => {
     chk.checked = !!permisosActualesUsuario[chk.value];
   });
@@ -699,8 +700,9 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
   const btnEliminar = e.target.closest('.btn-eliminar-usuario');
   if (btnToggle) {
     const usuario = btnToggle.dataset.usuario;
+    const etiqueta = btnToggle.dataset.correo || usuario;
     const activoActual = btnToggle.dataset.activo === 'true';
-    const codigo = prompt('Código de desarrollador para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + usuario + '":');
+    const codigo = prompt('Código de desarrollador para ' + (activoActual ? 'desactivar' : 'activar') + ' a "' + etiqueta + '":');
     if (codigo === null) return;
     if (!(await verificarCodigoDesarrollador(codigo))) { showToast('Código de desarrollador incorrecto.', true); return; }
     btnToggle.disabled = true;
@@ -711,10 +713,11 @@ document.getElementById('tablaUsuariosPanelBody').addEventListener('click', asyn
     pintarUsuariosPanel();
   } else if (btnEliminar) {
     const usuario = btnEliminar.dataset.usuario;
-    const codigo = prompt('Código de desarrollador para ELIMINAR a "' + usuario + '" (no se puede deshacer):');
+    const etiqueta = btnEliminar.dataset.correo || usuario;
+    const codigo = prompt('Código de desarrollador para ELIMINAR a "' + etiqueta + '" (no se puede deshacer):');
     if (codigo === null) return;
     if (!(await verificarCodigoDesarrollador(codigo))) { showToast('Código de desarrollador incorrecto.', true); return; }
-    if (!confirm(`¿Eliminar el usuario "${usuario}"? No se puede deshacer.`)) return;
+    if (!confirm(`¿Eliminar a "${etiqueta}"? No se puede deshacer. (Esto no borra su cuenta de Firebase Authentication, solo su perfil/permisos del panel — si quieres quitarle el acceso del todo, borra también su UID de la lista isAdmin() en firestore.rules.)`)) return;
     btnEliminar.disabled = true;
     const res = await eliminarUsuarioAdminPanel(usuario);
     btnEliminar.disabled = false;

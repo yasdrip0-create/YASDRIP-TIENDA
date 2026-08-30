@@ -1,4 +1,35 @@
 =========================================================
+ ✅ HECHO (2026-08-30) — el panel ya usa Firebase Auth real
+=========================================================
+El paso 4 de esta guía (cambiar el login del panel) ya se hizo:
+admin.html y js/store.js ahora piden correo + contraseña de una
+cuenta real de Firebase Authentication, no el usuario/contraseña
+guardado en Firestore de antes. El primer UID admin
+(8CBfiOxDeda0MmtTmSlXYIkfbx82) ya quedó pegado en la función
+isAdmin() de firestore.rules.
+
+TE FALTA A TI, para que quede publicado de verdad:
+1) En la consola de Firebase, Firestore Database -> pestaña
+   "Reglas" -> borra lo que hay -> pega TODO el contenido actual
+   de firestore.rules (el de la raíz del proyecto) -> Publicar.
+2) La próxima vez que entres al panel, hazlo con el correo y
+   contraseña de la cuenta de Firebase Auth cuyo UID es
+   8CBfiOxDeda0MmtTmSlXYIkfbx82. Esa cuenta va a quedar marcada
+   sola como "superAdmin" (acceso total + pestaña Usuarios) la
+   primera vez que entre.
+3) Para dar acceso a alguien más del equipo: créale su cuenta en
+   Authentication -> Users, agrega su UID a isAdmin() en
+   firestore.rules, publica de nuevo, y luego crea su perfil desde
+   la pestaña "Usuarios" del panel (ahí pides su UID y correo, ya
+   no una contraseña — la contraseña la puso esa persona en su
+   propia cuenta de Firebase).
+
+El archivo FIRESTORE_REGLAS.txt de abajo quedó desactualizado (era
+la guía de la versión con reglas abiertas). El archivo que manda
+ahora es firestore.rules, en la raíz del proyecto.
+=========================================================
+
+=========================================================
  GUÍA — Pasar el panel admin a Firebase Auth real
 =========================================================
 

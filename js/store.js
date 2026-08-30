@@ -912,110 +912,86 @@ function traducirErrorFirebase(e) {
 }
 
 /* ============================================================
-   SESIÓN DE ADMIN (panel del vendedor) — con USUARIOS EN LA NUBE
+   SESIÓN DE ADMIN (panel del vendedor) — con FIREBASE AUTH REAL
    ------------------------------------------------------------
-   Ya NO es un solo usuario/contraseña guardado en el navegador.
-   Ahora cada persona del equipo tiene su propio usuario, guardado
-   en Firestore (colección "admin_usuarios"), así que:
+   Cada persona del equipo entra con una cuenta REAL de Firebase
+   Authentication (correo + contraseña), creada desde la consola
+   de Firebase (Authentication -> Users -> Add user) por quien ya
+   tenga acceso al panel. Eso es lo que permite que las reglas de
+   Firestore (ver firestore.rules, función isAdmin()) puedan
+   distinguir de verdad "alguien del equipo" de "un visitante
+   cualquiera que abre la consola del navegador" — mirando su UID,
+   no un usuario/contraseña guardado en la misma base de datos que
+   se quiere proteger.
 
-   - Nadie se registra solo: tú (o quien ya tenga acceso al panel)
-     creas cada usuario desde la pestaña "Usuarios" del panel.
-   - Funciona igual desde cualquier computador o celular, porque
-     vive en la nube, no en un navegador en particular.
+   Además de la cuenta en Firebase Auth, cada persona tiene un
+   documento en Firestore (colección "admin_usuarios", con ID = su
+   UID) que guarda: su correo (solo para mostrarlo en el panel),
+   si está activo, cuándo se creó y sus permisos (qué pestañas
+   puede tocar). Esto NO reemplaza la lista de UID de
+   firestore.rules: esa lista es la que de verdad decide quién
+   puede leer/escribir en Firestore. El documento en
+   "admin_usuarios" es solo para permisos y para que el panel
+   sepa qué mostrarle a cada quien.
+
+   PARA DAR ACCESO A ALGUIEN NUEVO DEL EQUIPO:
+   1) Créale su cuenta en Firebase Auth (consola -> Authentication
+      -> Users -> Add user) y copia su UID.
+   2) Agrega ese UID a la lista de la función isAdmin() en
+      firestore.rules y publica las reglas.
+   3) Desde la pestaña "Usuarios" de este panel, crea su perfil
+      pegando ese mismo UID y su correo, y marca sus permisos.
+   Si se salta el paso 2, la persona puede iniciar sesión (la
+   contraseña la valida Firebase Auth), pero Firestore le va a
+   rechazar todo lo demás porque su UID no está autorizado ahí.
 
    CANDADO DE "UNA SESIÓN A LA VEZ" POR USUARIO
    ------------------------------------------------------------
-   Cuando alguien entra con un usuario, se guarda un "sesionId" al
-   azar en Firestore (colección "admin_sesiones"). Mientras el
-   panel sigue abierto, cada ADMIN_LATIDO_MS se manda un "aquí
-   sigo" (late) a ese documento. Si otra persona intenta entrar con
-   ESE MISMO usuario mientras el candado sigue "vivo" (hubo un
-   latido hace menos de ADMIN_SESION_VENCE_MS), se le avisa que la
-   cuenta está en uso y no la deja entrar — para que dos personas no
-   se pisen los cambios usando la misma cuenta a la vez.
+   Cuando alguien entra, se guarda un "sesionId" al azar en
+   Firestore (colección "admin_sesiones", ID = su UID). Mientras
+   el panel sigue abierto, cada ADMIN_LATIDO_MS se manda un "aquí
+   sigo" a ese documento. Si otra persona (o la misma, desde otro
+   dispositivo) intenta entrar con ESA MISMA cuenta mientras el
+   candado sigue "vivo", se le avisa que la cuenta está en uso y
+   no la deja entrar.
 
-   Si a alguien se le cierra el navegador de golpe (se le apaga el
-   computador, por ejemplo) y nunca alcanza a "Cerrar sesión", el
-   candado se libera SOLO después de ADMIN_SESION_VENCE_MS sin
-   latidos, para que esa cuenta no quede trabada para siempre.
+   Si a alguien se le cierra el navegador de golpe y nunca alcanza
+   a "Cerrar sesión", el candado se libera SOLO después de
+   ADMIN_SESION_VENCE_MS sin latidos.
 
-   Esto es aparte y no afecta para nada el inicio de sesión de los
-   CLIENTES en login.html (esos usan Firebase Auth, otra cosa). */
+   Esto es aparte y no afecta el inicio de sesión de los CLIENTES
+   en login.html (esos también usan Firebase Auth, pero son
+   cuentas totalmente distintas de las del panel admin). */
 
 const ADMIN_LATIDO_MS = 25000;        // cada cuánto avisa "sigo aquí"
 const ADMIN_SESION_VENCE_MS = 70000;  // sin latidos por más de esto = candado libre
 
 /* Código extra que solo debería conocer el desarrollador (o quien
-   tú le digas). Se pide, además del usuario y contraseña con los
-   que ya se entró al panel, para: crear usuarios nuevos, activar o
-   desactivar usuarios, eliminar usuarios, y cambiar la contraseña.
-   Así, aunque alguien ya esté adentro del panel viendo inventario y
-   pedidos, no puede tocar los usuarios ni las contraseñas sin este
-   código aparte.
+   tú le digas). Se pide, además de estar logueado en el panel,
+   para: crear usuarios nuevos, editar sus permisos, activar/
+   desactivar, eliminar, y cambiar la contraseña propia. Así,
+   aunque alguien ya esté adentro del panel viendo inventario y
+   pedidos, no puede tocar usuarios ni contraseñas sin este código
+   aparte.
    OJO: como este es un sitio estático (sin servidor propio), este
    código queda visible para cualquiera que abra el código fuente
-   de la página, igual que ya pasa con la contraseña del panel. No
-   es una barrera de seguridad real contra alguien que sepa
-   programación (es JavaScript que corre en el navegador de quien
-   sea, así que cualquiera con las herramientas de desarrollador
-   puede llamar a estas funciones directo) — es más bien un candado
-   para que un miembro común del equipo no entre a tocar usuarios/
-   contraseñas por accidente o sin permiso.
+   de la página. No es una barrera de seguridad real contra alguien
+   que sepa programación — es más bien un candado para que un
+   miembro común del equipo no entre a tocar usuarios/contraseñas
+   por accidente o sin permiso.
 
-   Antes este código estaba escrito tal cual ("Admin2026**") en este
-   archivo público, así que cualquiera que abriera "Ver código
-   fuente" en el navegador lo veía a simple vista. Ahora en vez del
-   código en texto plano se guarda su "huella" (hash SHA-256): se
-   compara la huella de lo que el usuario escribe contra esta huella
-   guardada, y de la huella no se puede recuperar el código original.
-   Sigue sin ser una protección de nivel bancario (para eso hace
-   falta mover esta verificación a un servidor/Cloud Function), pero
-   ya nadie puede leer el código mirando el código fuente de la página.
-
-   Para CAMBIAR el código de desarrollador: calcula el SHA-256 del
+   Se guarda como huella SHA-256 (hash), no en texto plano. Para
+   CAMBIAR el código de desarrollador: calcula el SHA-256 del
    código nuevo (por ejemplo, pegándolo en la consola del navegador:
    `crypto.subtle.digest('SHA-256', new TextEncoder().encode('TU_CODIGO_NUEVO')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))`
    ) y pega el resultado abajo, reemplazando CODIGO_DESARROLLADOR_HASH. */
 const CODIGO_DESARROLLADOR_HASH = "95f5e4e4377dd8ede9fee4f9840c9d039a5c5bf953a2db6014c26f11a6070c04";
 
-/** Saca el SHA-256 de un texto y lo devuelve en hexadecimal, para
-    comparar códigos/contraseñas sin guardarlos ni compararlos en
-    texto plano. */
+/** Saca el SHA-256 de un texto y lo devuelve en hexadecimal. */
 async function _sha256Hex(texto) {
   const datos = new TextEncoder().encode(String(texto || ""));
   const buffer = await crypto.subtle.digest('SHA-256', datos);
   return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** Compara una contraseña ingresada contra la guardada de un usuario
-    del panel (campo "claveHash", con el mismo SHA-256 que ya se usa
-    arriba para el código de desarrollador). También sabe leer cuentas
-    VIEJAS que todavía tengan el campo "clave" en texto plano (de
-    antes de este cambio): si coincide, la migra sola a "claveHash" en
-    segundo plano y borra el texto plano, sin que nadie tenga que
-    tocar Firestore a mano. */
-async function _claveUsuarioCoincide(usuarioId, datos, claveIngresada) {
-  if (!datos || !claveIngresada) return false;
-  if (datos.claveHash) {
-    try {
-      return (await _sha256Hex(claveIngresada)) === datos.claveHash;
-    } catch (e) {
-      return false;
-    }
-  }
-  if (datos.clave !== undefined) {
-    const coincide = datos.clave === claveIngresada;
-    if (coincide) {
-      _sha256Hex(claveIngresada).then(hash => {
-        fbDb.collection('admin_usuarios').doc(usuarioId).update({
-          claveHash: hash,
-          clave: firebase.firestore.FieldValue.delete(),
-        }).catch(e => console.error('No se pudo migrar la contraseña a hash:', e));
-      });
-    }
-    return coincide;
-  }
-  return false;
 }
 
 async function verificarCodigoDesarrollador(codigo) {
@@ -1028,17 +1004,18 @@ async function verificarCodigoDesarrollador(codigo) {
 }
 
 /* Contraseña para ENTRAR a la pestaña "Usuarios" (solo para verla).
-   Es una contraseña fija (no la de ningún usuario del panel) y
-   además solo funciona si quien tiene la sesión abierta ahora mismo
-   es el usuario "admin" — a cualquier otro usuario del panel, aunque
+   Es una contraseña fija (no la de ninguna cuenta) y además solo
+   funciona si quien tiene la sesión abierta ahora mismo es
+   "superAdmin" (campo guardado en su documento de
+   "admin_usuarios") — a cualquier otra persona del panel, aunque
    tenga el permiso "usuarios" marcado, este candado no le deja
-   pasar. Igual que arriba, se guarda como huella SHA-256, no en
-   texto plano. Para cambiarla, calcula el hash del texto nuevo (ver
-   instrucciones arriba) y reemplaza CLAVE_ACCESO_USUARIOS_HASH. */
+   pasar. Se guarda como huella SHA-256. Para cambiarla, calcula el
+   hash del texto nuevo (ver instrucciones arriba) y reemplaza
+   CLAVE_ACCESO_USUARIOS_HASH. */
 const CLAVE_ACCESO_USUARIOS_HASH = "95f5e4e4377dd8ede9fee4f9840c9d039a5c5bf953a2db6014c26f11a6070c04";
 
 async function verificarAccesoTabUsuarios(clave) {
-  if (usuarioAdminActual() !== 'admin' || !clave) return false;
+  if (!_esSuperAdminActual() || !clave) return false;
   try {
     return (await _sha256Hex(clave)) === CLAVE_ACCESO_USUARIOS_HASH;
   } catch (e) {
@@ -1047,7 +1024,7 @@ async function verificarAccesoTabUsuarios(clave) {
 }
 
 /* ---------- PERMISOS de cada usuario del panel ----------
-   Cada usuario (aparte de usuario/contraseña) guarda un objeto
+   Cada usuario (aparte de correo/contraseña) guarda un objeto
    "permisos" en Firestore que dice qué pestañas/acciones puede
    tocar dentro del panel:
      inventario      -> ver y editar la pestaña Inventario
@@ -1092,80 +1069,90 @@ function _generarSesionId() {
   return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 }
 
-/** ANTES: creaba un usuario "admin" con una contraseña fija
-    ("yasdrip2026") escrita en este mismo archivo — como este archivo
-    lo descarga cualquiera que visite el sitio, esa contraseña era
-    pública desde el primer día, para cualquiera que supiera mirar el
-    código fuente. AHORA: si todavía no existe NINGÚN usuario del
-    panel en Firestore, el PRIMER usuario/contraseña que alguien
-    escriba en la pantalla de login se convierte en el primer admin
-    (con todos los permisos). Así nadie más que tú sabe cuál va a ser
-    tu usuario y contraseña, porque nunca quedan escritos en el
-    código. Úsalo la primera vez que entres al panel recién publicado
-    y crea tu usuario ahí mismo. */
-async function _crearPrimerAdminSiNoExiste(usuario, clave) {
+/** Intenta iniciar sesión en el panel con una cuenta REAL de
+    Firebase Auth (correo + contraseña). Si la cuenta es válida
+    pero Firestore no la reconoce como admin (su UID no está en
+    isAdmin() de firestore.rules, o no tiene perfil creado en
+    "admin_usuarios" todavía), se le avisa en vez de dejarla
+    pasar. Si es la PRIMERA cuenta que entra y ya está autorizada
+    en las reglas pero nunca se le creó su perfil, se le crea uno
+    con todos los permisos y marcada como superAdmin — para que
+    quien acaba de terminar de configurar Firebase no tenga que
+    crear su propio usuario a mano desde ningún lado. */
+async function loginAdmin(correoInput, clave) {
+  const correo = String(correoInput || '').trim().toLowerCase();
+  if (!correo || !clave) return { ok: false, msg: 'Escribe correo y contraseña.' };
+
+  let cred;
   try {
-    const snap = await fbDb.collection('admin_usuarios').limit(1).get();
-    if (!snap.empty) return;
-    await fbDb.collection('admin_usuarios').doc(usuario).set({
-      claveHash: await _sha256Hex(clave),
-      activo: true,
-      creado: new Date().toISOString(),
-      permisos: permisosTodosActivos(),
-    });
+    cred = await fbAuth.signInWithEmailAndPassword(correo, clave);
   } catch (e) {
-    console.error('No se pudo crear el primer usuario admin:', e);
+    return { ok: false, msg: traducirErrorFirebase(e) };
   }
-}
-
-/** Intenta iniciar sesión en el panel. Revisa usuario/contraseña en
-    Firestore y, si están bien, revisa que esa cuenta no esté siendo
-    usada ya en otro navegador antes de dejar pasar. */
-async function loginAdmin(usuarioInput, clave) {
-  const usuario = String(usuarioInput || '').trim().toLowerCase();
-  if (!usuario || !clave) return { ok: false, msg: 'Escribe usuario y contraseña.' };
-
-  await _crearPrimerAdminSiNoExiste(usuario, clave);
+  const uid = cred.user.uid;
 
   let doc;
   try {
-    doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
+    doc = await fbDb.collection('admin_usuarios').doc(uid).get();
   } catch (e) {
+    try { await fbAuth.signOut(); } catch (_) {}
+    if (e && e.code === 'permission-denied') {
+      return { ok: false, msg: 'Tu cuenta de Firebase es válida, pero todavía no está autorizada en las reglas de Firestore (isAdmin() en firestore.rules). Agrega tu UID ahí y publica las reglas.' };
+    }
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
-  if (!doc.exists) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
-  const datos = doc.data();
-  if (!(await _claveUsuarioCoincide(usuario, datos, clave))) return { ok: false, msg: 'Usuario o contraseña incorrectos.' };
-  if (datos.activo === false) return { ok: false, msg: 'Este usuario fue desactivado. Habla con quien administra la tienda.' };
 
-  // ¿ya hay una sesión viva con este usuario en otro lado?
+  let datos;
+  if (!doc.exists) {
+    // Cuenta autorizada en las reglas pero sin perfil todavía: se
+    // crea automáticamente con acceso total, para no dejar a nadie
+    // sin poder entrar después de publicar las reglas por primera vez.
+    datos = { correo, activo: true, creado: new Date().toISOString(), permisos: permisosTodosActivos(), superAdmin: true };
+    try {
+      await fbDb.collection('admin_usuarios').doc(uid).set(datos);
+    } catch (e) {
+      try { await fbAuth.signOut(); } catch (_) {}
+      return { ok: false, msg: 'No hay conexión a internet.' };
+    }
+  } else {
+    datos = doc.data();
+    if (datos.activo === false) {
+      try { await fbAuth.signOut(); } catch (_) {}
+      return { ok: false, msg: 'Este usuario fue desactivado. Habla con quien administra la tienda.' };
+    }
+  }
+
+  // ¿ya hay una sesión viva con esta cuenta en otro lado?
   try {
-    const sesionDoc = await fbDb.collection('admin_sesiones').doc(usuario).get();
+    const sesionDoc = await fbDb.collection('admin_sesiones').doc(uid).get();
     if (sesionDoc.exists) {
       const s = sesionDoc.data();
       const vive = s.ultimoLatido && (Date.now() - s.ultimoLatido) < ADMIN_SESION_VENCE_MS;
       if (vive) {
-        return { ok: false, msg: 'Esta cuenta ya está siendo usada ahora mismo en otro dispositivo o pestaña. Pide que te creen tu propio usuario, o espera a que la otra persona cierre sesión.' };
+        try { await fbAuth.signOut(); } catch (_) {}
+        return { ok: false, msg: 'Esta cuenta ya está siendo usada ahora mismo en otro dispositivo o pestaña. Pide que te creen tu propia cuenta, o espera a que la otra persona cierre sesión.' };
       }
     }
   } catch (e) {
+    try { await fbAuth.signOut(); } catch (_) {}
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
 
   const sesionId = _generarSesionId();
   try {
-    await fbDb.collection('admin_sesiones').doc(usuario).set({
+    await fbDb.collection('admin_sesiones').doc(uid).set({
       sesionId,
       ultimoLatido: Date.now(),
       dispositivo: (navigator.userAgent || '').slice(0, 120),
       desde: new Date().toISOString(),
     });
   } catch (e) {
+    try { await fbAuth.signOut(); } catch (_) {}
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
 
-  _guardar(LS_KEYS.sesionAdmin, { usuario, sesionId, fecha: Date.now() });
-  _iniciarLatidoAdmin(usuario, sesionId);
+  _guardar(LS_KEYS.sesionAdmin, { uid, correo: datos.correo || correo, superAdmin: !!datos.superAdmin, sesionId, fecha: Date.now() });
+  _iniciarLatidoAdmin(uid, sesionId);
   return { ok: true };
 }
 
@@ -1180,24 +1167,62 @@ function sesionAdminActiva() {
   }
 }
 
+/** UID de quien tiene la sesión del panel abierta ahora mismo (o
+    null). Se usa como identificador interno; para mostrar en
+    pantalla usa correoAdminActual(). */
 function usuarioAdminActual() {
   try {
-    return JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.usuario || null;
+    return JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.uid || null;
   } catch (e) {
     return null;
   }
 }
 
+/** Correo de quien tiene la sesión del panel abierta ahora mismo
+    (para mostrarlo en pantalla, ej. "Conectado como: ..."). */
+function correoAdminActual() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.correo || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+/** true si quien tiene la sesión abierta ahora mismo quedó
+    marcado como superAdmin (solo esa persona puede entrar a la
+    pestaña "Usuarios", igual que antes pasaba con el usuario fijo
+    "admin"). */
+function _esSuperAdminActual() {
+  try {
+    return !!JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin))?.superAdmin;
+  } catch (e) {
+    return false;
+  }
+}
+
 /** Confirma contra Firestore que el "sesionId" guardado en este
     navegador sigue siendo el dueño del candado (que nadie más lo
-    tomó) y reactiva el latido. Se usa al abrir admin.html. Si la
-    sesión ya no es válida, la borra localmente y devuelve false. */
+    tomó) y reactiva el latido. Se usa al abrir admin.html. También
+    exige que siga habiendo una sesión real de Firebase Auth
+    (fbAuth.currentUser); si Firebase cerró la sesión sola (por
+    ejemplo, token vencido), no deja pasar solo con lo que quedó
+    guardado en este navegador. */
 async function verificarSesionAdmin() {
   let local;
   try { local = JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin) || 'null'); } catch (e) { local = null; }
-  if (!local || !local.sesionId) return false;
+  if (!local || !local.sesionId || !local.uid) return false;
+
+  // Espera un instante a que Firebase confirme si hay sesión de Auth.
+  const user = await new Promise((resolve) => {
+    const unsub = fbAuth.onAuthStateChanged((u) => { unsub(); resolve(u); });
+  });
+  if (!user || user.uid !== local.uid) {
+    localStorage.removeItem(LS_KEYS.sesionAdmin);
+    return false;
+  }
+
   try {
-    const sesionDoc = await fbDb.collection('admin_sesiones').doc(local.usuario).get();
+    const sesionDoc = await fbDb.collection('admin_sesiones').doc(local.uid).get();
     if (!sesionDoc.exists || sesionDoc.data().sesionId !== local.sesionId) {
       localStorage.removeItem(LS_KEYS.sesionAdmin);
       return false;
@@ -1207,15 +1232,15 @@ async function verificarSesionAdmin() {
     // guardado localmente, para no botar a alguien solo por un
     // corte de wifi pasajero.
   }
-  _iniciarLatidoAdmin(local.usuario, local.sesionId);
+  _iniciarLatidoAdmin(local.uid, local.sesionId);
   return true;
 }
 
-function _iniciarLatidoAdmin(usuario, sesionId) {
+function _iniciarLatidoAdmin(uid, sesionId) {
   _detenerLatidoAdmin();
   _adminHeartbeatTimer = setInterval(async () => {
     try {
-      await fbDb.collection('admin_sesiones').doc(usuario).set(
+      await fbDb.collection('admin_sesiones').doc(uid).set(
         { sesionId, ultimoLatido: Date.now() }, { merge: true }
       );
     } catch (e) { /* sin internet: se intenta de nuevo en el próximo latido */ }
@@ -1226,40 +1251,39 @@ function _detenerLatidoAdmin() {
   _adminHeartbeatTimer = null;
 }
 
-/** Cierra sesión y libera el candado, para que ese usuario pueda
-    volver a entrar (desde este navegador o desde otro). */
+/** Cierra sesión (Firebase Auth + candado de Firestore), para que
+    esa cuenta pueda volver a entrar desde este u otro navegador. */
 async function cerrarSesionAdmin() {
   let local;
   try { local = JSON.parse(localStorage.getItem(LS_KEYS.sesionAdmin) || 'null'); } catch (e) { local = null; }
   _detenerLatidoAdmin();
   localStorage.removeItem(LS_KEYS.sesionAdmin);
-  if (local && local.usuario) {
+  if (local && local.uid) {
     try {
-      const sesionDoc = await fbDb.collection('admin_sesiones').doc(local.usuario).get();
+      const sesionDoc = await fbDb.collection('admin_sesiones').doc(local.uid).get();
       if (sesionDoc.exists && sesionDoc.data().sesionId === local.sesionId) {
-        await fbDb.collection('admin_sesiones').doc(local.usuario).delete();
+        await fbDb.collection('admin_sesiones').doc(local.uid).delete();
       }
     } catch (e) { /* no pasa nada si falla: el candado igual se libera solo al vencerse */ }
   }
+  try { await fbAuth.signOut(); } catch (e) { /* no pasa nada */ }
 }
 
-/** Cambia la contraseña del usuario que tiene la sesión abierta ahora mismo. */
+/** Cambia la contraseña de la cuenta de Firebase Auth que tiene la
+    sesión abierta ahora mismo. Como Firebase exige haber iniciado
+    sesión "recientemente" para cambios sensibles como este, primero
+    se vuelve a confirmar la contraseña actual (reautenticación). */
 async function cambiarClaveAdmin(actual, nueva) {
-  const usuario = usuarioAdminActual();
-  if (!usuario) return { ok: false, msg: 'Tu sesión ya no es válida, vuelve a entrar.' };
-  if (!nueva || nueva.length < 4) return { ok: false, msg: 'La nueva contraseña debe tener al menos 4 caracteres.' };
+  const user = fbAuth.currentUser;
+  if (!user) return { ok: false, msg: 'Tu sesión ya no es válida, vuelve a entrar.' };
+  if (!nueva || nueva.length < 6) return { ok: false, msg: 'La nueva contraseña debe tener al menos 6 caracteres.' };
   try {
-    const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
-    if (!doc.exists || !(await _claveUsuarioCoincide(usuario, doc.data(), actual))) {
-      return { ok: false, msg: 'La contraseña actual no es correcta.' };
-    }
-    await fbDb.collection('admin_usuarios').doc(usuario).update({
-      claveHash: await _sha256Hex(nueva),
-      clave: firebase.firestore.FieldValue.delete(),
-    });
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, actual);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(nueva);
     return { ok: true };
   } catch (e) {
-    return { ok: false, msg: 'No hay conexión a internet.' };
+    return { ok: false, msg: traducirErrorFirebase(e) };
   }
 }
 
@@ -1269,39 +1293,38 @@ async function cambiarClaveAdmin(actual, nueva) {
     (no se le puede pedir a Firestore, así que mejor no dejarlo
     varado sin poder ver nada). */
 async function obtenerPermisosUsuarioActual() {
-  const usuario = usuarioAdminActual();
-  if (!usuario) return permisosTodosActivos();
+  const uid = usuarioAdminActual();
+  if (!uid) return permisosTodosActivos();
   try {
-    const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
+    const doc = await fbDb.collection('admin_usuarios').doc(uid).get();
     return normalizarPermisos(doc.exists ? doc.data() : null);
   } catch (e) {
     return permisosTodosActivos();
   }
 }
 
-/** Confirma que "clave" es la contraseña ACTUAL del usuario que
-    tiene la sesión abierta ahora mismo (no el código de
-    desarrollador). Se usa para acciones sensibles y puntuales,
-    como borrar un pedido, sin tener que abrir el modal completo
-    de cambiar contraseña. */
+/** Confirma que "clave" es la contraseña ACTUAL de la cuenta de
+    Firebase Auth con la sesión abierta ahora mismo (no el código de
+    desarrollador). Se usa para acciones sensibles y puntuales, como
+    borrar un pedido. */
 async function verificarClaveAdminActual(clave) {
-  const usuario = usuarioAdminActual();
-  if (!usuario) return false;
+  const user = fbAuth.currentUser;
+  if (!user || !clave) return false;
   try {
-    const doc = await fbDb.collection('admin_usuarios').doc(usuario).get();
-    if (!doc.exists) return false;
-    return await _claveUsuarioCoincide(usuario, doc.data(), clave);
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, clave);
+    await user.reauthenticateWithCredential(cred);
+    return true;
   } catch (e) {
     return false;
   }
 }
 
 /* ---------- GESTIÓN DE USUARIOS DEL PANEL (pestaña "Usuarios") ----------
-   Cada usuario nuevo lo crea alguien que YA tiene acceso al panel
-   (por eso no hace falta un "superadmin" aparte: para llegar a
-   crear usuarios primero hay que haber entrado con uno válido).
-   Se puede desactivar a alguien (sin borrar nada, por si vuelve) o
-   eliminarlo del todo. */
+   Un usuario nuevo lo crea alguien que YA tiene acceso al panel,
+   pegando el UID y correo que sacó de Firebase Authentication ->
+   Users (ver el aviso al principio de este archivo). Este perfil
+   solo guarda permisos/estado; el acceso real a Firestore lo sigue
+   dando exclusivamente la lista isAdmin() de firestore.rules. */
 async function obtenerUsuariosAdminPanel() {
   try {
     const [usuariosSnap, sesionesSnap] = await Promise.all([
@@ -1321,48 +1344,52 @@ async function obtenerUsuariosAdminPanel() {
   }
 }
 
-async function crearUsuarioAdminPanel(usuarioInput, clave, permisos) {
-  const usuario = String(usuarioInput || '').trim().toLowerCase().replace(/\s+/g, '');
-  if (!/^[a-z0-9._-]{3,24}$/.test(usuario)) {
-    return { ok: false, msg: 'El usuario debe tener entre 3 y 24 letras/números (sin espacios ni tildes).' };
+async function crearUsuarioAdminPanel(uidInput, correoInput, permisos) {
+  const uid = String(uidInput || '').trim();
+  const correo = String(correoInput || '').trim().toLowerCase();
+  if (!/^[A-Za-z0-9]{15,40}$/.test(uid)) {
+    return { ok: false, msg: 'Ese UID no parece válido. Cópialo tal cual desde Firebase Authentication → Users (columna "User UID").' };
   }
-  if (!clave || clave.length < 4) return { ok: false, msg: 'La contraseña debe tener al menos 4 caracteres.' };
+  if (!correo || !correo.includes('@')) return { ok: false, msg: 'Escribe el correo con el que esa persona inició su cuenta de Firebase.' };
   try {
-    const existe = await fbDb.collection('admin_usuarios').doc(usuario).get();
-    if (existe.exists) return { ok: false, msg: 'Ese usuario ya existe.' };
-    await fbDb.collection('admin_usuarios').doc(usuario).set({
-      claveHash: await _sha256Hex(clave), activo: true, creado: new Date().toISOString(),
+    const existe = await fbDb.collection('admin_usuarios').doc(uid).get();
+    if (existe.exists) return { ok: false, msg: 'Ya existe un perfil del panel con ese UID.' };
+    await fbDb.collection('admin_usuarios').doc(uid).set({
+      correo, activo: true, creado: new Date().toISOString(),
       permisos: permisos || permisosNingunoActivo(),
     });
     return { ok: true };
   } catch (e) {
+    if (e && e.code === 'permission-denied') {
+      return { ok: false, msg: 'Firestore rechazó esto. Revisa que tu propio UID esté en la lista isAdmin() de firestore.rules, publicada.' };
+    }
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
 }
 
 /** Cambia las casillas de qué puede hacer un usuario en el panel. */
-async function actualizarPermisosUsuarioAdminPanel(usuario, permisos) {
+async function actualizarPermisosUsuarioAdminPanel(uid, permisos) {
   try {
-    await fbDb.collection('admin_usuarios').doc(usuario).update({ permisos });
+    await fbDb.collection('admin_usuarios').doc(uid).update({ permisos });
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
 }
 
-async function cambiarEstadoUsuarioAdminPanel(usuario, activo) {
+async function cambiarEstadoUsuarioAdminPanel(uid, activo) {
   try {
-    await fbDb.collection('admin_usuarios').doc(usuario).update({ activo });
+    await fbDb.collection('admin_usuarios').doc(uid).update({ activo });
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };
   }
 }
 
-async function eliminarUsuarioAdminPanel(usuario) {
+async function eliminarUsuarioAdminPanel(uid) {
   try {
-    await fbDb.collection('admin_usuarios').doc(usuario).delete();
-    await fbDb.collection('admin_sesiones').doc(usuario).delete().catch(() => {});
+    await fbDb.collection('admin_usuarios').doc(uid).delete();
+    await fbDb.collection('admin_sesiones').doc(uid).delete().catch(() => {});
     return { ok: true };
   } catch (e) {
     return { ok: false, msg: 'No hay conexión a internet.' };

@@ -16,8 +16,10 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null &&
         request.auth.uid in [
-          'REEMPLAZA_CON_UID_1',
-          'REEMPLAZA_CON_UID_2'
+          '8CBfiOxDeda0MmtTmSlXYIkfbx82'
+          // Agrega aquí el UID de cada persona nueva del equipo,
+          // una línea por UID, separadas por coma. Sácalos de
+          // Firebase Authentication -> Users -> "User UID".
         ];
     }
 
