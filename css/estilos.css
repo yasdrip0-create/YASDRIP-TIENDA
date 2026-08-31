@@ -2211,6 +2211,8 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .otp-screen{ display:none; }
 .otp-screen.active{ display:block; }
 .auth-card.otp-mode form#formRegistro,
+.auth-card.otp-mode form#formLogin,
+.auth-card.otp-mode .auth-forgot,
 .auth-card.otp-mode .auth-divider,
 .auth-card.otp-mode .auth-signup{ display:none; }
 
