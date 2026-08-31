@@ -1671,7 +1671,13 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
    ahí metido. Todo queda dentro de .admin-page para no afectar el
    login (que sigue usando el look claro del resto de la tienda).
 ============================================================ */
-.admin-page{
+/* ---- estas mismas variables también quedan disponibles de forma
+   global (no solo dentro de .admin-page): hay un par de modales
+   (recuperar código / recuperar contraseña del panel) que se
+   muestran en la pantalla de LOGIN, antes de entrar al panel — ahí
+   "por fuera" de .admin-page estas variables no existían y el
+   modal se veía transparente, con el texto casi invisible. ---- */
+:root{
   --adm-bg:#0d0d13;
   --adm-bg-2:#131320;
   --adm-surface:#181826;
@@ -1688,6 +1694,8 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   --adm-amber:#ffb545;
   --adm-red:#ff5c72;
   --adm-green:#3ddc97;
+}
+.admin-page{
   min-height:100vh;
   background:
     radial-gradient(900px 500px at 8% -10%, rgba(139,92,246,0.20), transparent 60%),
@@ -2108,6 +2116,54 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 }
 #modalPermisos .permiso-icono{background:#e8e8e8;}
 #modalPermisos .permiso-texto b{color:#111111;}
+
+/* Modales de "olvidé mi código" / "olvidé mi contraseña": se abren
+   desde la pantalla de LOGIN (antes de entrar al panel), así que en
+   vez del gris oscuro estándar del panel les damos su propia
+   identidad morada — es la misma familia de color que ya usa el
+   panel (--adm-violet) para acentos, aquí llevada al frente. */
+#modalRecuperarCodigoPanel .admin-modal,
+#modalRecuperarClavePanel .admin-modal{
+  background:
+    radial-gradient(120% 140% at 15% -10%, rgba(255,255,255,0.16), transparent 55%),
+    linear-gradient(160deg, #7c3aed 0%, #5b21b6 55%, #3b1a78 100%);
+  border:1px solid rgba(255,255,255,0.18);
+  box-shadow:0 24px 60px rgba(91,33,182,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+#modalRecuperarCodigoPanel .admin-modal h3,
+#modalRecuperarClavePanel .admin-modal h3{
+  color:#ffffff;
+  font-weight:600;
+}
+#modalRecuperarCodigoPanel .admin-foto-hint,
+#modalRecuperarClavePanel .admin-foto-hint{
+  color:rgba(255,255,255,0.72);
+}
+#modalRecuperarCodigoPanel .admin-modal input,
+#modalRecuperarClavePanel .admin-modal input{
+  background:rgba(0,0,0,0.22);
+  border:1px solid rgba(255,255,255,0.28);
+  color:#ffffff;
+}
+#modalRecuperarCodigoPanel .admin-modal input::placeholder,
+#modalRecuperarClavePanel .admin-modal input::placeholder{
+  color:rgba(255,255,255,0.5);
+}
+#modalRecuperarCodigoPanel .admin-modal input:focus,
+#modalRecuperarClavePanel .admin-modal input:focus{
+  outline:none;border-color:#d7ff3d;box-shadow:0 0 0 3px rgba(215,255,61,0.25);
+}
+#modalRecuperarCodigoPanel .admin-btn-ghost,
+#modalRecuperarClavePanel .admin-btn-ghost{
+  background:rgba(255,255,255,0.1);
+  color:#ffffff;
+  border-color:rgba(255,255,255,0.35);
+}
+#modalRecuperarCodigoPanel .admin-btn-ghost:hover,
+#modalRecuperarClavePanel .admin-btn-ghost:hover{
+  background:rgba(255,255,255,0.22);
+  border-color:#ffffff;
+}
 #modalPermisos .permiso-texto small{color:#4a4a4a;}
 
 /* Campo "Contraseña de acceso" de la pestaña Usuarios: fondo blanco
