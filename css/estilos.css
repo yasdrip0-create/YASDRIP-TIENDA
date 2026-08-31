@@ -1607,6 +1607,11 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .auth-brand .logo-mark{color:var(--forest);font-size:20px;}
 .auth-brand em{font-style:italic;color:var(--forest);}
 .auth-card h2{font-family:'Fraunces',serif;font-weight:500;font-size:29px;text-align:center;margin-bottom:8px;}
+.auth-card h2 em{
+  font-style:italic;color:var(--forest);
+  text-decoration:underline;text-decoration-color:var(--acento);
+  text-decoration-thickness:3px;text-underline-offset:3px;
+}
 .auth-sub{color:var(--gray);text-align:center;font-size:14px;line-height:1.5;margin-bottom:30px;}
 .auth-error{
   background:#fbe9e6;color:var(--red);font-family:'Space Mono',monospace;
@@ -1635,7 +1640,16 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .auth-field input:focus,.auth-field select:focus{outline:none;border-color:var(--forest);background:var(--white);}
 .auth-field-row{display:flex;gap:10px;}
 .auth-field-row .auth-field{flex:1;}
-.auth-submit{width:100%;border:none;cursor:pointer;text-align:center;margin-top:8px;}
+.auth-submit{
+  width:100%;border:none;cursor:pointer;text-align:center;margin-top:8px;
+  font-family:'Space Mono',monospace;font-size:15px;font-weight:800;
+  letter-spacing:0.05em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.auth-submit-arrow{
+  display:inline-block;transition:transform .2s cubic-bezier(.3,1.4,.5,1);
+}
+.auth-submit:hover .auth-submit-arrow{transform:translateX(4px);}
 .auth-forgot{display:block;text-align:center;margin-top:18px;font-size:13px;color:var(--gray);}
 .auth-forgot:hover{color:var(--forest);}
 .auth-divider{
