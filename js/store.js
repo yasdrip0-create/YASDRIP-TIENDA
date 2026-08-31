@@ -1,3 +1,36 @@
+/* ================================================================
+   ÍNDICE RÁPIDO DE ESTE ARCHIVO (store.js)
+   ------------------------------------------------------------------
+   Es un archivo largo porque hace de "backend" del sitio (todo lo
+   que normalmente viviría en PHP/MySQL vive acá, hablando con
+   Firebase). Guía rápida de en qué línea (aprox.) está cada cosa,
+   para no tener que scrollear a ciegas. Los números se van a correr
+   un poco cada vez que se edite algo arriba, es solo para orientarse.
+
+     · Avisos por correo/Telegram (Apps Script) ......... línea ~12
+     · Catálogo de productos (leer/pintar) .............. línea ~56
+     · Precio por talla y con descuento ................. línea ~130
+     · Stock por color ................................... línea ~154
+     · Stock por talla .................................... línea ~222
+     · Admin: editar producto (precio, stock, etc.) ...... línea ~288
+     · Carrito de compras .................................. línea ~433
+     · Favoritos / lista de deseos ......................... línea ~482
+     · Orden del catálogo (destacados, nuevo, etc.) ........ línea ~510
+     · Pedidos: crear, descontar stock, consultar .......... línea ~529
+     · Solicitudes de servicio (cambios/garantías) ......... línea ~664
+     · Suscriptores Voltage Club ............................ línea ~712
+     · Aviso de drop nuevo a suscriptores ................... línea ~748
+     · Usuarios (login / registro de clientes) .............. línea ~787
+     · Recuperar contraseña ................................... línea ~879
+     · Config del "próximo drop" (cuenta regresiva) .......... línea ~397
+     · Sesión de admin (Firebase Auth real) ................... línea ~983
+     · Permisos de cada usuario del panel ....................... línea ~1164
+     · Gestión de usuarios del panel (pestaña "Usuarios") ....... línea ~1507
+     · Candado de "una sesión a la vez" por usuario .............. línea ~1016
+     · Código de desarrollador (con bloqueo por intentos) ......... línea ~1073
+     · Menú "Ver/Cambiar foto" del panel: está en js/admin.js, no acá
+   ================================================================ */
+
 /* ============================================================
    ALMACENAMIENTO LOCAL (localStorage)
    Reemplaza $_SESSION['carrito'] y las tablas MySQL: pedidos,
@@ -552,7 +585,7 @@ async function crearPedido(datosCliente) {
     envio_edificio: envio.edificio || '',
     envio_referencia: envio.referencia || '',
     costo_envio: costoEnvioPedido,
-    items: carrito.map(i => ({ nombre: i.nombre, talla: i.talla, color: i.color, precio: i.precio })),
+    items: carrito.map(i => ({ id: String(i.id), nombre: i.nombre, talla: i.talla, color: i.color, precio: i.precio })),
     detalle: carrito.map(i => `${i.nombre} (${i.talla})`).join(" | "),
     subtotal: subtotal,
     total: subtotal + costoEnvioPedido,
@@ -1070,13 +1103,75 @@ async function _sha256Hex(texto) {
   return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Verifica el código de desarrollador CONTANDO los intentos fallidos
+    en Firestore (en el documento admin_usuarios del admin que tiene la
+    sesión abierta), y bloqueando esa cuenta 15 minutos después de
+    varios intentos seguidos con el código mal — el mismo mecanismo que
+    ya protege el código de acceso al panel (ver CODIGO_PANEL_MAX_INTENTOS
+    más abajo). Así, aunque el hash quede visible en el código fuente
+    (inevitable en un sitio estático, ver nota arriba), nadie puede
+    sentarse a probarlo mil veces seguidas: al quinto intento fallido
+    queda bloqueado un rato.
+    Muestra su propio toast con el resultado (intentos que quedan, o
+    el aviso de bloqueo), así que quien la llama NO debe mostrar otro
+    toast de "código incorrecto" aparte. */
 async function verificarCodigoDesarrollador(codigo) {
-  if (!codigo) return false;
+  const uid = fbAuth.currentUser && fbAuth.currentUser.uid;
+  if (!uid) { showToast('Tu sesión no es válida. Vuelve a entrar al panel.', true); return false; }
+  if (!codigo) { showToast('Escribe el código de desarrollador.', true); return false; }
+
+  let datos = {};
   try {
-    return (await _sha256Hex(codigo)) === CODIGO_DESARROLLADOR_HASH;
+    const doc = await fbDb.collection('admin_usuarios').doc(uid).get();
+    datos = doc.exists ? doc.data() : {};
   } catch (e) {
-    return false; // navegador muy viejo sin crypto.subtle, o algo falló: nunca dejar pasar por error
+    // sin internet no hay forma de contar intentos en la nube: se
+    // deja pasar solo si el código es correcto, igual que antes.
+    try {
+      const ok = (await _sha256Hex(codigo)) === CODIGO_DESARROLLADOR_HASH;
+      if (!ok) showToast('Código de desarrollador incorrecto.', true);
+      return ok;
+    } catch (e2) { return false; }
   }
+
+  const ahora = Date.now();
+  if (datos.devBloqueadoHasta && Number(datos.devBloqueadoHasta) > ahora) {
+    const minutosFaltan = Math.ceil((Number(datos.devBloqueadoHasta) - ahora) / 60000);
+    showToast(`Demasiados intentos con el código de desarrollador. Espera ${minutosFaltan} minuto${minutosFaltan === 1 ? '' : 's'}.`, true);
+    return false;
+  }
+
+  let correcto = false;
+  try { correcto = (await _sha256Hex(codigo)) === CODIGO_DESARROLLADOR_HASH; }
+  catch (e) { correcto = false; }
+
+  if (correcto) {
+    if (datos.devIntentosFallidos || datos.devBloqueadoHasta) {
+      try {
+        await fbDb.collection('admin_usuarios').doc(uid).update({
+          devIntentosFallidos: 0,
+          devBloqueadoHasta: firebase.firestore.FieldValue.delete(),
+        });
+      } catch (_) {}
+    }
+    return true;
+  }
+
+  const intentos = (Number(datos.devIntentosFallidos) || 0) + 1;
+  const cambios = { devIntentosFallidos: intentos };
+  let bloqueado = false;
+  if (intentos >= CODIGO_PANEL_MAX_INTENTOS) {
+    cambios.devIntentosFallidos = 0;
+    cambios.devBloqueadoHasta = ahora + CODIGO_PANEL_BLOQUEO_MS;
+    bloqueado = true;
+  }
+  try { await fbDb.collection('admin_usuarios').doc(uid).update(cambios); } catch (_) {}
+  if (bloqueado) {
+    showToast('Código de desarrollador incorrecto. Por seguridad, queda bloqueado 15 minutos.', true);
+  } else {
+    showToast(`Código de desarrollador incorrecto (te quedan ${CODIGO_PANEL_MAX_INTENTOS - intentos} intento${CODIGO_PANEL_MAX_INTENTOS - intentos === 1 ? '' : 's'}).`, true);
+  }
+  return false;
 }
 
 /* Contraseña para ENTRAR a la pestaña "Usuarios" (solo para verla).

@@ -37,6 +37,61 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId;
     }
 
+    /* ============================================================
+       VALIDACIÓN DE PEDIDOS: el precio de cada prenda se recalcula
+       aquí mismo comparando contra el precio REAL guardado en
+       "productos" (talla + % de descuento), en vez de confiar en el
+       precio que manda el navegador. Antes, cualquiera con las
+       herramientas de desarrollador podía cambiar el precio del
+       carrito antes de pagar y el pedido se guardaba con ese precio
+       falso — con esto ya no se puede: si el precio no coincide con
+       el catálogo real, Firestore rechaza el pedido entero.
+
+       Por límites del lenguaje de reglas de Firestore (no se pueden
+       hacer "for" ni recorrer listas de tamaño libre), esto se
+       revisa hasta 8 prendas por pedido — de sobra para una compra
+       normal. Un carrito de más de 8 prendas distintas se rechaza y
+       toca dividirlo en dos pedidos. */
+    function precioEsperadoItem(producto, talla) {
+      let tieneTalla = talla != null && ('preciosTalla' in producto) && (talla in producto.preciosTalla);
+      let base = tieneTalla ? producto.preciosTalla[talla] : producto.precio;
+      let descuento = ('descuento' in producto) ? producto.descuento : 0;
+      return descuento > 0 ? math.round(base * (1 - descuento / 100)) : base;
+    }
+    function itemPrecioOk(item) {
+      let producto = get(/databases/$(database)/documents/productos/$(item.id)).data;
+      return item.precio == precioEsperadoItem(producto, item.talla);
+    }
+    function itemOkEnIndice(items, i) {
+      return i >= items.size() || itemPrecioOk(items[i]);
+    }
+    function todosLosItemsOk(items) {
+      return itemOkEnIndice(items, 0) && itemOkEnIndice(items, 1) && itemOkEnIndice(items, 2) && itemOkEnIndice(items, 3)
+          && itemOkEnIndice(items, 4) && itemOkEnIndice(items, 5) && itemOkEnIndice(items, 6) && itemOkEnIndice(items, 7);
+    }
+    function precioEnIndice(items, i) {
+      return i < items.size() ? items[i].precio : 0;
+    }
+    function sumaPrecios(items) {
+      return precioEnIndice(items, 0) + precioEnIndice(items, 1) + precioEnIndice(items, 2) + precioEnIndice(items, 3)
+           + precioEnIndice(items, 4) + precioEnIndice(items, 5) + precioEnIndice(items, 6) + precioEnIndice(items, 7);
+    }
+    /* Además de los precios, se exige que los datos básicos del
+       cliente tengan pinta de datos reales (texto no vacío, no
+       gigante) — así un bot no puede llenar el panel de pedidos
+       basura con campos de miles de caracteres. */
+    function pedidoValido() {
+      let d = request.resource.data;
+      return d.items is list && d.items.size() >= 1 && d.items.size() <= 8
+        && todosLosItemsOk(d.items)
+        && d.subtotal is number && d.subtotal == sumaPrecios(d.items)
+        && d.costo_envio is number && d.costo_envio >= 0
+        && d.total is number && d.total == d.subtotal + d.costo_envio
+        && d.nombre_cliente is string && d.nombre_cliente.size() >= 1 && d.nombre_cliente.size() <= 120
+        && d.email_cliente is string && d.email_cliente.matches('.*@.*') && d.email_cliente.size() <= 160
+        && d.detalle is string && d.detalle.size() <= 2000;
+    }
+
     // Pedidos:
     // - "get" (leer UNO, sabiendo su ID) queda abierto: lo necesita
     //   seguimiento.html para que un cliente vea SU pedido con el
@@ -45,12 +100,14 @@ service cloud.firestore {
     //   que no sea admin — esto es lo que antes permitía a cualquier
     //   visitante sacar la lista completa de clientes (nombre,
     //   teléfono, dirección). Con esto ya no se puede.
-    // - crear un pedido nuevo sigue abierto (checkout sin cuenta).
+    // - crear un pedido nuevo sigue abierto (checkout sin cuenta),
+    //   pero ahora se valida que el precio de cada prenda y el total
+    //   coincidan con el catálogo real (ver pedidoValido() arriba).
     // - actualizar/borrar (cambiar estado, eliminar) solo admin.
     match /pedidos/{pedidoId} {
       allow get: if true;
       allow list: if isAdmin();
-      allow create: if true;
+      allow create: if pedidoValido();
       allow update, delete: if isAdmin();
     }
 
@@ -81,9 +138,15 @@ service cloud.firestore {
     // scrapear la lista de correos de tus clientes, y tampoco se mezcla
     // con las cuentas del panel.
     match /voltage_club/{correoId} {
-      allow create: if true;
+      // "create" cuando es la primera vez que ese correo se suscribe;
+      // "update" cuando ya existía y vuelve a llenar el formulario
+      // (el sitio guarda con merge:true, así que Firestore lo trata
+      // como update, no como create, la segunda vez).
+      allow create, update: if request.resource.data.correo is string
+        && request.resource.data.correo.matches('.*@.*')
+        && request.resource.data.correo.size() <= 160;
       allow read, list: if isAdmin();
-      allow update, delete: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // Usuarios y sesiones del panel: SOLO admin puede leer o escribir.
