@@ -31,7 +31,7 @@ así:
       "envio_referencia": "Portería azul",
       "costo_envio": 8000,
       "items": [
-        { "nombre": "Buso Volt", "talla": "M", "color": "#151512", "precio": 189900 }
+        { "nombre": "Buso Volt", "talla": "M", "color": "#151512", "precio": 189900, "foto": "https://.../buso-volt.jpg" }
       ],
       "detalle": "Buso Volt (M) | Camiseta Bolt (L)",
       "subtotal": 269800,
@@ -43,10 +43,12 @@ así:
 Lo único nuevo respecto a lo que ya recibías es
 "codigo_pedido" — un código corto (últimos 6 caracteres del id
 de Firestore, en mayúsculas) pensado para que se vea bien en
-el asunto y el cuerpo del correo, en vez del id largo. Todo lo
-demás (nombre, correo, dirección, items, total) ya te estaba
-llegando desde antes — así que si ya tienes el aviso a Sheets/
-Telegram funcionando, esto se conecta al mismo lugar.
+el asunto y el cuerpo del correo — y "foto" dentro de cada item,
+con la URL de la imagen exacta que el cliente compró (mismo
+color que eligió), lista para usarse en un correo con fotos.
+Todo lo demás (nombre, correo, dirección, items, total) ya te
+estaba llegando desde antes — así que si ya tienes el aviso a
+Sheets/Telegram funcionando, esto se conecta al mismo lugar.
 
 ------------------------------------------------------------
 QUÉ AGREGAR A TU APPS SCRIPT
@@ -71,26 +73,43 @@ QUÉ AGREGAR A TU APPS SCRIPT
    (fuera de doPost, al mismo nivel que las demás funciones):
 
      /** Manda el correo de confirmación al CLIENTE (no a ti) con
-         el resumen de su compra. Usa MailApp, que envía desde tu
-         cuenta de Gmail — no necesita configurar nada aparte. */
+         el resumen de su compra, en HTML, con foto de cada producto
+         y un mensaje bien claro de que el pago sí se confirmó. Usa
+         MailApp, que envía desde tu cuenta de Gmail — no necesita
+         configurar nada aparte. */
      function enviarCorreoConfirmacion(pedido) {
        if (!pedido || !pedido.email_cliente) return; // sin correo, no hay a quién mandarle
 
        const codigo = pedido.codigo_pedido || pedido.id;
        const items = pedido.items || [];
 
-       const filasItems = items.map(function (it) {
+       // Fila de texto plano (por si el cliente de correo no soporta HTML)
+       const filasItemsTexto = items.map(function (it) {
          return it.nombre + ' — talla ' + it.talla +
            ' — $' + Number(it.precio).toLocaleString('es-CO');
        }).join('\n');
 
+       // Fila en HTML, con foto de cada producto
+       const filasItemsHtml = items.map(function (it) {
+         const foto = it.foto
+           ? '<img src="' + it.foto + '" width="64" height="64" style="border-radius:10px;object-fit:cover;border:1px solid #ddd;" alt="' + it.nombre + '">'
+           : '';
+         return '<tr>' +
+           '<td style="padding:8px 0;">' + foto + '</td>' +
+           '<td style="padding:8px 0 8px 12px;font-family:Arial,sans-serif;font-size:14px;color:#151512;">' +
+             '<strong>' + it.nombre + '</strong><br>' +
+             '<span style="color:#666;">Talla ' + it.talla + ' — $' + Number(it.precio).toLocaleString('es-CO') + '</span>' +
+           '</td>' +
+         '</tr>';
+       }).join('');
+
        const direccion = [pedido.envio_direccion, pedido.envio_edificio, pedido.envio_barrio, pedido.envio_municipio]
          .filter(Boolean).join(', ');
 
-       const cuerpo =
+       const cuerpoTexto =
          '¡Hola ' + (pedido.nombre_cliente || '') + '! ⚡\n\n' +
-         'Ya recibimos tu pedido #' + codigo + ' en YAS DRIP. Aquí el resumen:\n\n' +
-         filasItems + '\n\n' +
+         '✅ Tu pago se confirmó correctamente. Ya recibimos tu pedido #' + codigo + ' en YAS DRIP.\n\n' +
+         filasItemsTexto + '\n\n' +
          'Subtotal: $' + Number(pedido.subtotal || 0).toLocaleString('es-CO') + '\n' +
          'Envío: $' + Number(pedido.costo_envio || 0).toLocaleString('es-CO') + '\n' +
          'Total: $' + Number(pedido.total || 0).toLocaleString('es-CO') + '\n\n' +
@@ -99,10 +118,34 @@ QUÉ AGREGAR A TU APPS SCRIPT
          '¿Dudas sobre tu pedido? Escríbenos por WhatsApp: https://wa.me/573239523623\n\n' +
          'Gracias por tu compra ⚡\n— YAS DRIP';
 
+       const cuerpoHtml =
+         '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">' +
+           '<div style="background:#b4e614;color:#151512;padding:16px 20px;border-radius:14px 14px 0 0;text-align:center;">' +
+             '<div style="font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">✅ Pago confirmado</div>' +
+           '</div>' +
+           '<div style="border:1px solid #eee;border-top:none;border-radius:0 0 14px 14px;padding:20px;">' +
+             '<p style="font-size:15px;color:#151512;">¡Hola <strong>' + (pedido.nombre_cliente || '') + '</strong>! ⚡</p>' +
+             '<p style="font-size:14px;color:#333;">Tu pago se realizó <strong>correctamente</strong> y ya recibimos tu pedido ' +
+             '<strong>#' + codigo + '</strong> en YAS DRIP. Esto fue lo que compraste:</p>' +
+             '<table style="width:100%;border-collapse:collapse;margin:14px 0;">' + filasItemsHtml + '</table>' +
+             '<table style="width:100%;font-size:14px;color:#151512;border-top:1px solid #eee;padding-top:10px;">' +
+               '<tr><td>Subtotal</td><td style="text-align:right;">$' + Number(pedido.subtotal || 0).toLocaleString('es-CO') + '</td></tr>' +
+               '<tr><td>Envío</td><td style="text-align:right;">$' + Number(pedido.costo_envio || 0).toLocaleString('es-CO') + '</td></tr>' +
+               '<tr><td style="font-weight:700;padding-top:6px;">Total</td><td style="text-align:right;font-weight:700;padding-top:6px;">$' + Number(pedido.total || 0).toLocaleString('es-CO') + '</td></tr>' +
+             '</table>' +
+             '<p style="font-size:13px;color:#666;margin-top:14px;">📍 Dirección de entrega: ' + direccion + '<br>' +
+             '💳 Método de pago: ' + (pedido.metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Contraentrega') + '</p>' +
+             '<p style="font-size:13px;color:#666;">¿Dudas sobre tu pedido? Escríbenos por WhatsApp: ' +
+             '<a href="https://wa.me/573239523623">https://wa.me/573239523623</a></p>' +
+             '<p style="font-size:14px;color:#151512;margin-top:16px;">Gracias por tu compra ⚡<br>— YAS DRIP</p>' +
+           '</div>' +
+         '</div>';
+
        MailApp.sendEmail({
          to: pedido.email_cliente,
-         subject: 'YAS DRIP — Confirmación de tu pedido #' + codigo,
-         body: cuerpo,
+         subject: 'YAS DRIP — ✅ Pago confirmado, pedido #' + codigo,
+         body: cuerpoTexto,       // se usa si el cliente de correo no soporta HTML
+         htmlBody: cuerpoHtml,    // versión con fotos y colores de la marca
          name: 'YAS DRIP', // nombre que ve el cliente como remitente
        });
      }

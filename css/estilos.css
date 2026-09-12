@@ -1069,6 +1069,34 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
 .campo-fila{display:flex;gap:10px;}
 .campo-fila input{flex:1;min-width:0;}
 
+/* ---- validación de campos del checkout (borde rojo + mensaje) ---- */
+.pagar-box input.campo-error,
+.pagar-box select.campo-error,
+.pagar-box textarea.campo-error{
+  border-color:var(--red,#c0392b) !important;background:#fdf4f3;
+}
+.pagar-box input.campo-error:focus,
+.pagar-box select.campo-error:focus,
+.pagar-box textarea.campo-error:focus{box-shadow:0 0 0 4px rgba(192,57,43,0.15);}
+.campo-error-msg{
+  display:none;color:var(--red,#c0392b);font-family:'Work Sans',sans-serif;
+  font-size:12.5px;font-weight:600;margin:-6px 0 12px;line-height:1.3;
+}
+.campo-error-msg.mostrar{display:block;}
+
+/* ---- botón de pagar deshabilitado mientras se procesa (evita doble clic) ---- */
+.btn-pagar:disabled,
+.btn-continuar:disabled{
+  opacity:0.65;cursor:not-allowed;animation:none;pointer-events:none;
+}
+
+/* ---- aviso de sin conexión a internet ---- */
+.aviso-offline{
+  display:none;align-items:center;gap:8px;background:#fff4e0;border:1.5px solid #e8c98a;
+  color:#8a5a00;border-radius:14px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;
+}
+.aviso-offline.mostrar{display:flex;}
+
 /* ---- buscador de municipio (autocompletar) ---- */
 .municipio-autocomplete{position:relative;margin-bottom:12px;}
 .municipio-input{margin-bottom:0 !important;}
@@ -1279,6 +1307,17 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   background:var(--acento);border:2px solid var(--black);border-radius:999px;padding:8px 18px;font-weight:700;
   animation:fadeUp .5s .45s both;
 }
+.exito-items{
+  width:100%;max-width:320px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+  animation:fadeUp .5s .48s both;
+}
+.exito-item{
+  display:flex;align-items:center;gap:10px;background:var(--bg,#f7f7f2);border:1.5px solid var(--line);
+  border-radius:14px;padding:8px 10px;text-align:left;
+}
+.exito-item img{width:40px;height:40px;object-fit:cover;border-radius:10px;border:1.5px solid var(--line);flex-shrink:0;}
+.exito-item-nombre{font-size:12.5px;font-weight:700;color:var(--black);line-height:1.2;}
+.exito-item-meta{font-size:11px;color:var(--gray);margin-top:2px;}
 .exito-correo{
   font-size:12.5px;color:var(--gray);animation:fadeUp .5s .5s both;
 }

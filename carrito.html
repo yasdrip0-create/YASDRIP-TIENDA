@@ -67,9 +67,10 @@
     <div class="estado-exito" id="estado-exito">
       <div class="check-circle">✅</div>
       <div class="exito-titulo">¡Pago exitoso! ⚡</div>
-      <div class="exito-sub">Ya casi vuela para tu casa 🚀</div>
+      <div class="exito-sub">Tu pago se realizó correctamente — ya casi vuela para tu casa 🚀</div>
       <div class="gracias-nombre" id="gracias-nombre"></div>
       <div class="exito-pedido" id="exito-pedido"></div>
+      <div class="exito-items" id="exito-items"></div>
       <div class="exito-correo" id="exito-correo"></div>
       <a href="productos.html" class="btn-exito-volver">Seguir comprando</a>
     </div>
@@ -174,6 +175,8 @@ function pintarCarrito() {
           </div>
           <form id="form-pago" novalidate>
 
+            <div class="aviso-offline" id="avisoOffline">📡 Sin conexión a internet — reconéctate para poder continuar.</div>
+
             <div class="checkout-step open" data-step="1">
               <div class="step-header">
                 <div class="step-header-left">
@@ -184,8 +187,11 @@ function pintarCarrito() {
               </div>
               <div class="step-body">
                 <input type="text"  name="nombre_cliente" id="nombreCliente" placeholder="Nombre completo"    required>
+                <div class="campo-error-msg" id="errNombreCliente"></div>
                 <input type="email" name="email_cliente"  id="emailCliente"  placeholder="Correo electrónico" required>
+                <div class="campo-error-msg" id="errEmailCliente"></div>
                 <input type="tel"   name="telefono_cliente" id="telefonoCliente" placeholder="Teléfono / WhatsApp" required>
+                <div class="campo-error-msg" id="errTelefonoCliente"></div>
                 <button type="button" class="btn-continuar" data-next="2">Siguiente</button>
               </div>
             </div>
@@ -207,11 +213,13 @@ function pintarCarrito() {
                   <option value="" disabled selected>Selecciona municipio / zona</option>
                   ${zonasEnvio().map(z => `<option value="${z.id}" data-costo="${z.costo}">${z.nombre} — $${z.costo.toLocaleString('es-CO')}</option>`).join('')}
                 </select>
+                <div class="campo-error-msg" id="errMunicipioEnvio"></div>
                 <div class="campo-fila">
                   <input type="text" id="barrioCliente" placeholder="Barrio">
                   <input type="text" id="veredaCliente" placeholder="Vereda (opcional)">
                 </div>
                 <input type="text" id="direccionCliente" placeholder="Calle / Carrera / Número" required>
+                <div class="campo-error-msg" id="errDireccionCliente"></div>
                 <input type="text" id="edificioCliente" placeholder="Edificio, apto, casa, torre (opcional)">
                 <textarea id="referenciaCliente" placeholder="Indicaciones adicionales (opcional): color de la casa, cerca de..." rows="2"></textarea>
 
@@ -499,13 +507,8 @@ function pintarCarrito() {
   if (btnContinuar1) {
     btnContinuar1.addEventListener('click', () => {
       const step = btnContinuar1.closest('.checkout-step');
+      if (!validarPaso1()) return;
       const nombre = document.getElementById('nombreCliente').value.trim();
-      const email = document.getElementById('emailCliente').value.trim();
-      const telefono = document.getElementById('telefonoCliente').value.trim();
-      if (!nombre || !email || !telefono) {
-        showToastCarrito('Completa tus datos de contacto antes de continuar.');
-        return;
-      }
       step.classList.add('done');
       step.querySelector('.step-summary').textContent = nombre;
       activarPaso(2);
@@ -516,16 +519,8 @@ function pintarCarrito() {
   if (btnContinuar2) {
     btnContinuar2.addEventListener('click', () => {
       const step = btnContinuar2.closest('.checkout-step');
+      if (!validarPaso2()) return;
       const sel = document.getElementById('municipioEnvio');
-      const direccion = document.getElementById('direccionCliente').value.trim();
-      if (!sel.value) {
-        showToastCarrito('Elige el municipio o zona a donde enviamos tu pedido.');
-        return;
-      }
-      if (!direccion) {
-        showToastCarrito('Escribe la dirección de entrega (calle / carrera / número).');
-        return;
-      }
       step.classList.add('done');
       step.querySelector('.step-summary').textContent = sel.selectedOptions[0].textContent.split(' — ')[0];
       activarPaso(3);
@@ -536,7 +531,11 @@ function pintarCarrito() {
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); e.target.closest('.checkout-step').querySelector('.btn-continuar').click(); }
     });
+    // Quita el borde rojo apenas el cliente empieza a corregir el campo.
+    inp.addEventListener('input', () => inp.classList.remove('campo-error'));
   });
+  const selMunicipioErr = document.getElementById('municipioEnvio');
+  if (selMunicipioErr) selMunicipioErr.addEventListener('change', () => selMunicipioErr.classList.remove('campo-error'));
 
   /* ---- selector de método de pago ---- */
   let metodoPago = null;
@@ -590,9 +589,13 @@ function pintarCarrito() {
   }
 
   const formPago = document.getElementById('form-pago');
+  let enviandoPedido = false; // evita que un doble clic / doble Enter mande el pedido dos veces
   if (formPago) {
+    const btnPagar = formPago.querySelector('.btn-pagar');
     formPago.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (enviandoPedido) return; // ya se está procesando un envío, ignora clics extra
+
       const nombre = document.getElementById('nombreCliente').value.trim();
       const email  = document.getElementById('emailCliente').value.trim();
       const telefono = document.getElementById('telefonoCliente').value.trim();
@@ -604,18 +607,11 @@ function pintarCarrito() {
       const edificio = document.getElementById('edificioCliente').value.trim();
       const referencia = document.getElementById('referenciaCliente').value.trim();
 
-      if (!nombre || !email || !telefono) {
-        showToastCarrito('Completa tus datos de contacto antes de pagar.');
-        return;
-      }
-      if (!municipio) {
-        showToastCarrito('Elige el municipio o zona a donde enviamos tu pedido.');
-        return;
-      }
-      if (!direccion) {
-        showToastCarrito('Escribe la dirección de entrega (calle / carrera / número).');
-        return;
-      }
+      // Revalida los pasos 1 y 2 por si el cliente saltó ahí con el mapa
+      // de pasos de arriba sin pasar por los botones "Siguiente".
+      if (!validarPaso1()) { activarPaso(1); return; }
+      if (!validarPaso2()) { activarPaso(2); return; }
+
       if (!metodoPago) {
         showToastCarrito('Elige un método de pago.');
         return;
@@ -630,25 +626,134 @@ function pintarCarrito() {
         tarjetaFinal = numLimpio.slice(-4);
       }
 
+      // Antes de intentar cobrar, confirma que hay internet — si no,
+      // avisamos de una vez en vez de dejar al cliente mirando el
+      // overlay de "comprobando pago" sin que nada pase.
+      if (!navigator.onLine) {
+        actualizarAvisoOffline();
+        showToastCarrito('No tienes conexión a internet. Conéctate e intenta de nuevo.');
+        return;
+      }
+
       const envio = {
         municipio: municipioOpt ? municipioOpt.textContent.split(' — ')[0] : municipio,
         costo: envioActual,
         barrio, vereda, direccion, edificio, referencia,
       };
 
+      enviandoPedido = true;
+      if (btnPagar) { btnPagar.disabled = true; btnPagar.textContent = 'Procesando...'; }
       mostrarOverlay();
+
       setTimeout(async () => {
-        const pedido = await crearPedido({ nombre, email, telefono, metodoPago, tarjetaFinal, envio });
-        if (pedido) {
-          mostrarExito(nombre, pedido.codigo_pedido);
+        try {
+          const pedido = await crearPedido({ nombre, email, telefono, metodoPago, tarjetaFinal, envio });
+          mostrarExito(nombre, pedido.codigo_pedido, pedido.items);
           document.getElementById('cartCount').textContent = 0;
-        } else {
-          mostrarError('No se pudo procesar tu pedido, intenta de nuevo.');
+          // No reactivamos el botón: el pedido ya quedó hecho y el
+          // carrito se va a vaciar / redibujar.
+        } catch (err) {
+          console.error('Error al confirmar el pedido:', err);
+          enviandoPedido = false;
+          if (btnPagar) { btnPagar.disabled = false; btnPagar.textContent = 'Confirmar pedido ⚡'; }
+
+          if (!navigator.onLine) {
+            mostrarError('Se perdió la conexión a internet justo al pagar. No te preocupes, no se cobró nada — conéctate e intenta de nuevo.');
+          } else if (err && err.code === 'SIN_STOCK') {
+            mostrarError(err.message || 'Uno de los productos de tu carrito ya se agotó. Vuelve al carrito y ajusta la cantidad.');
+          } else if (err && err.code === 'SIN_PRODUCTO') {
+            mostrarError('Uno de los productos de tu carrito ya no está disponible. Vuelve al carrito y quítalo.');
+          } else {
+            mostrarError('No se pudo procesar tu pedido por un problema de conexión con el servidor. Intenta de nuevo en un momento.');
+          }
         }
       }, 1600);
     });
   }
 }
+
+/* ---------- validación real de campos del checkout ---------- */
+
+/** Correo con forma válida: algo@algo.algo (sin espacios). */
+function emailValido(valor) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(valor);
+}
+/** Teléfono colombiano razonable: 7 a 10 dígitos, dejando de lado
+    espacios, guiones y el +57 si lo escriben. */
+function telefonoValido(valor) {
+  const soloDigitos = valor.replace(/\D/g, '').replace(/^57/, '');
+  return soloDigitos.length >= 7 && soloDigitos.length <= 10;
+}
+
+/** Pinta un input en rojo y muestra su mensaje de error debajo.
+    idInput = id del <input>/<select>, idError = id del div de mensaje. */
+function marcarErrorCampo(idInput, idError, mensaje) {
+  const input = document.getElementById(idInput);
+  const err = document.getElementById(idError);
+  if (input) input.classList.add('campo-error');
+  if (err) { err.textContent = mensaje; err.classList.add('mostrar'); }
+}
+function limpiarErrorCampo(idInput, idError) {
+  const input = document.getElementById(idInput);
+  const err = document.getElementById(idError);
+  if (input) input.classList.remove('campo-error');
+  if (err) { err.textContent = ''; err.classList.remove('mostrar'); }
+}
+function limpiarTodosLosErrores() {
+  ['nombreCliente','emailCliente','telefonoCliente','direccionCliente'].forEach(id => {
+    limpiarErrorCampo(id, 'err' + id.charAt(0).toUpperCase() + id.slice(1));
+  });
+  limpiarErrorCampo('municipioEnvio', 'errMunicipioEnvio');
+}
+
+/** Revisa nombre/correo/teléfono. Devuelve true si todo está bien;
+    si algo falla, marca el campo en rojo y devuelve false. */
+function validarPaso1() {
+  let ok = true;
+  const nombre = document.getElementById('nombreCliente').value.trim();
+  const email = document.getElementById('emailCliente').value.trim();
+  const telefono = document.getElementById('telefonoCliente').value.trim();
+
+  if (!nombre) { marcarErrorCampo('nombreCliente','errNombreCliente','Escribe tu nombre completo.'); ok = false; }
+  else limpiarErrorCampo('nombreCliente','errNombreCliente');
+
+  if (!email) { marcarErrorCampo('emailCliente','errEmailCliente','Escribe tu correo electrónico.'); ok = false; }
+  else if (!emailValido(email)) { marcarErrorCampo('emailCliente','errEmailCliente','Ese correo no se ve válido — revisa que tenga "@" y un dominio (ej: nombre@correo.com).'); ok = false; }
+  else limpiarErrorCampo('emailCliente','errEmailCliente');
+
+  if (!telefono) { marcarErrorCampo('telefonoCliente','errTelefonoCliente','Escribe tu teléfono o WhatsApp.'); ok = false; }
+  else if (!telefonoValido(telefono)) { marcarErrorCampo('telefonoCliente','errTelefonoCliente','Ese número no se ve válido — debe tener entre 7 y 10 dígitos.'); ok = false; }
+  else limpiarErrorCampo('telefonoCliente','errTelefonoCliente');
+
+  if (!ok) showToastCarrito('Revisa los datos marcados en rojo.');
+  return ok;
+}
+
+/** Revisa municipio y dirección. Misma idea que validarPaso1. */
+function validarPaso2() {
+  let ok = true;
+  const sel = document.getElementById('municipioEnvio');
+  const direccion = document.getElementById('direccionCliente').value.trim();
+
+  if (!sel.value) { marcarErrorCampo('municipioEnvio','errMunicipioEnvio','Elige el municipio o zona a donde enviamos tu pedido.'); ok = false; }
+  else limpiarErrorCampo('municipioEnvio','errMunicipioEnvio');
+
+  if (!direccion) { marcarErrorCampo('direccionCliente','errDireccionCliente','Escribe la dirección de entrega.'); ok = false; }
+  else if (direccion.length < 5) { marcarErrorCampo('direccionCliente','errDireccionCliente','Esa dirección se ve incompleta — agrega calle/carrera y número.'); ok = false; }
+  else limpiarErrorCampo('direccionCliente','errDireccionCliente');
+
+  if (!ok) showToastCarrito('Revisa los datos marcados en rojo.');
+  return ok;
+}
+
+/* ---------- aviso de sin conexión a internet ---------- */
+function actualizarAvisoOffline() {
+  const aviso = document.getElementById('avisoOffline');
+  if (!aviso) return;
+  aviso.classList.toggle('mostrar', !navigator.onLine);
+}
+window.addEventListener('online', actualizarAvisoOffline);
+window.addEventListener('offline', actualizarAvisoOffline);
 
 function showToastCarrito(texto) {
   const toast = document.getElementById('toast');
@@ -681,7 +786,7 @@ function cerrarOverlay() {
   document.getElementById('estado-error').style.display = 'none';
 }
 
-function mostrarExito(nombreCliente, pedidoId) {
+function mostrarExito(nombreCliente, pedidoId, items) {
   clearInterval(document.getElementById('pago-overlay')._iv);
   const ver = document.getElementById('estado-verificando');
   ver.style.transition = 'opacity 0.4s'; ver.style.opacity = '0';
@@ -691,7 +796,20 @@ function mostrarExito(nombreCliente, pedidoId) {
     ex.style.display = 'flex';
     document.getElementById('gracias-nombre').textContent = '✨ ¡Muchas gracias, ' + nombreCliente + '! ✨';
     document.getElementById('exito-pedido').textContent = pedidoId ? `PEDIDO #${pedidoId}` : 'PEDIDO REGISTRADO';
-    document.getElementById('exito-correo').textContent = 'Te mandamos la confirmación con el detalle a tu correo ✉️';
+    document.getElementById('exito-correo').textContent = 'Te mandamos la confirmación con el detalle y las fotos a tu correo ✉️';
+    // Muestra qué se compró (con foto) para que quede clarísimo que
+    // el pago sí se aplicó al pedido correcto.
+    const wrapItems = document.getElementById('exito-items');
+    if (wrapItems) {
+      wrapItems.innerHTML = (items || []).map(it => `
+        <div class="exito-item">
+          ${it.foto ? `<img src="${it.foto}" alt="${it.nombre}" loading="lazy">` : ''}
+          <div class="exito-item-info">
+            <div class="exito-item-nombre">${it.nombre}</div>
+            <div class="exito-item-meta">Talla ${it.talla || '—'} · $${Number(it.precio || 0).toLocaleString('es-CO')}</div>
+          </div>
+        </div>`).join('');
+    }
     document.querySelectorAll('.stepper-step').forEach(s => { s.classList.add('is-done'); s.classList.remove('is-active'); s.querySelector('.stepper-circle').textContent = '✓'; });
     document.querySelectorAll('.stepper-line').forEach(l => l.classList.add('is-done'));
     lanzarConfeti();

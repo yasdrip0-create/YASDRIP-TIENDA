@@ -59,10 +59,31 @@ jobs:
           ARCHIVO_ESTADO=".github/uptime-last-status.json"
           mkdir -p .github
 
+          # 0) Si todavía no configuraste los 3 secrets, no intentes nada:
+          #    termina en verde (sin marcar el workflow como fallido) y
+          #    solo deja un aviso en el log, para no llenarte el correo
+          #    de "Run failed" cada 5 minutos mientras no los configures.
+          if [ -z "$UPTIMEROBOT_API_KEY" ] || [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Faltan uno o más secrets (UPTIMEROBOT_API_KEY / TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID)."
+            echo "Este workflow queda en pausa hasta que los agregues en Settings -> Secrets and variables -> Actions."
+            exit 0
+          fi
+
           # 1) Trae el estado actual de todos los monitores
           RESPUESTA=$(curl -s -X POST "https://api.uptimerobot.com/v2/getMonitors" \
             -d "api_key=${UPTIMEROBOT_API_KEY}" \
             -d "format=json")
+
+          # 1.1) Si UptimeRobot respondió con un error (api_key inválida,
+          #      cuenta sin monitores creados, límite de la API, etc.),
+          #      no hay nada que comparar todavía: avisa en el log y
+          #      termina en verde en vez de romper el workflow.
+          STAT=$(echo "$RESPUESTA" | jq -r '.stat // empty')
+          if [ "$STAT" != "ok" ]; then
+            echo "UptimeRobot no devolvió un estado válido (revisa la API key o si ya creaste monitores)."
+            echo "$RESPUESTA"
+            exit 0
+          fi
 
           # 2) Deja solo id, nombre y estado (2=activo, 9=caído, 8=parece caído)
           ACTUAL=$(echo "$RESPUESTA" | jq -c '[.monitors[] | {id, friendly_name, status}] | sort_by(.id)')

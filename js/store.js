@@ -564,6 +564,30 @@ function ordenarProductos(lista, orden) {
    Firestore (colección "pedidos"), así que tú los ves todos desde
    cualquier computador entrando al panel admin, sin importar
    desde qué celular compró cada cliente. */
+/** Agrupa el carrito por variante exacta (mismo id + color + talla)
+    y cuenta cuántas unidades se necesitan de cada una — es lo que
+    hay que verificar contra el stock real en la nube antes de
+    cobrar, no solo el stock que ya teníamos en caché local. */
+function _agruparNecesidadesStock(carrito) {
+  const necesidades = {};
+  carrito.forEach(item => {
+    const key = `${item.id}|${item.color || ''}|${item.talla || ''}`;
+    if (!necesidades[key]) necesidades[key] = { id: item.id, color: item.color, talla: item.talla, nombre: item.nombre, cantidad: 0 };
+    necesidades[key].cantidad++;
+  });
+  return necesidades;
+}
+
+/** Crea el pedido y descuenta el stock en una sola transacción de
+    Firestore: primero LEE el stock real más reciente de cada
+    producto involucrado, confirma que alcanza para lo que hay en
+    el carrito, y solo si alcanza, descuenta y guarda el pedido —
+    todo o nada. Así, si dos personas compran la última unidad casi
+    al mismo tiempo, a la segunda se le avisa "ya no queda" en vez
+    de dejar el stock en negativo.
+    Lanza un Error con .code = 'SIN_STOCK' o 'SIN_PRODUCTO' cuando
+    algo del carrito ya no está disponible, para que la pantalla de
+    pago pueda mostrar un mensaje claro en vez de uno genérico. */
 async function crearPedido(datosCliente) {
   const carrito = getCarrito();
   if (!carrito.length) return null;
@@ -585,28 +609,107 @@ async function crearPedido(datosCliente) {
     envio_edificio: envio.edificio || '',
     envio_referencia: envio.referencia || '',
     costo_envio: costoEnvioPedido,
-    items: carrito.map(i => ({ id: String(i.id), nombre: i.nombre, talla: i.talla, color: i.color, precio: i.precio })),
+    items: carrito.map(i => ({ id: String(i.id), nombre: i.nombre, talla: i.talla, color: i.color, precio: i.precio, foto: i.foto || null })),
     detalle: carrito.map(i => `${i.nombre} (${i.talla})`).join(" | "),
     subtotal: subtotal,
     total: subtotal + costoEnvioPedido,
     fecha: new Date().toISOString(),
   };
+
+  const necesidades = _agruparNecesidadesStock(carrito);
+  const idsUnicos = [...new Set(Object.values(necesidades).map(n => String(n.id)))];
+  const pedidoRef = fbDb.collection('pedidos').doc();
+
   try {
-    const ref = await fbDb.collection('pedidos').add(pedido);
-    descontarStockCarrito(carrito);
-    limpiarCarrito();
-    // código corto y fácil de leer para el asunto/cuerpo del correo de
-    // confirmación (el número "Pedido #7" del panel admin necesita ver
-    // TODOS los pedidos para calcularse, así que aquí usamos algo que
-    // sí se puede armar al instante, con lo que ya tenemos a mano).
-    const codigoPedido = ref.id.slice(-6).toUpperCase();
-    enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido, id: ref.id, codigo_pedido: codigoPedido } });
-    return { ...pedido, id: ref.id, codigo_pedido: codigoPedido };
+    await fbDb.runTransaction(async (tx) => {
+      // 1) Lee el estado MÁS RECIENTE de cada producto (dentro de la
+      //    transacción, así Firestore detecta si alguien más lo
+      //    cambió al mismo tiempo y reintenta solo).
+      const productosPorId = {};
+      for (const id of idsUnicos) {
+        const snap = await tx.get(fbDb.collection('productos').doc(id));
+        productosPorId[id] = snap.exists ? snap.data() : null;
+      }
+
+      // 2) Verifica que alcance el stock de CADA variante pedida.
+      Object.values(necesidades).forEach(n => {
+        const data = productosPorId[String(n.id)];
+        if (!data) {
+          throw Object.assign(new Error(`"${n.nombre || 'Un producto'}" ya no está disponible.`), { code: 'SIN_PRODUCTO' });
+        }
+        let disponible;
+        if (data.stockColores && Object.prototype.hasOwnProperty.call(data.stockColores, n.color)) {
+          disponible = Math.max(0, Number(data.stockColores[n.color]) || 0);
+        } else if (data.stockTallas && Object.prototype.hasOwnProperty.call(data.stockTallas, n.talla)) {
+          disponible = Math.max(0, Number(data.stockTallas[n.talla]) || 0);
+        } else {
+          disponible = Math.max(0, Number(data.stock) || 0);
+        }
+        if (disponible < n.cantidad) {
+          const cual = data.nombre || n.nombre || 'un producto';
+          throw Object.assign(
+            new Error(disponible <= 0
+              ? `"${cual}" se agotó justo ahora. Vuelve al carrito y quítalo o cambia de color/talla.`
+              : `Solo quedan ${disponible} unidades de "${cual}" y tu carrito pide ${n.cantidad}. Ajusta la cantidad en el carrito.`),
+            { code: 'SIN_STOCK' }
+          );
+        }
+      });
+
+      // 3) Ya validado: descuenta stock y crea el pedido, todo en la
+      //    misma transacción (o se guardan las dos cosas, o ninguna).
+      Object.values(necesidades).forEach(n => {
+        const data = productosPorId[String(n.id)];
+        const ref = fbDb.collection('productos').doc(String(n.id));
+        const cambios = {};
+        if (data.stockColores && Object.prototype.hasOwnProperty.call(data.stockColores, n.color)) {
+          cambios[`stockColores.${n.color}`] = firebase.firestore.FieldValue.increment(-n.cantidad);
+        }
+        if (data.stockTallas && Object.prototype.hasOwnProperty.call(data.stockTallas, n.talla)) {
+          cambios[`stockTallas.${n.talla}`] = firebase.firestore.FieldValue.increment(-n.cantidad);
+        }
+        cambios.stock = firebase.firestore.FieldValue.increment(-n.cantidad);
+        tx.update(ref, cambios);
+      });
+
+      tx.set(pedidoRef, pedido);
+    });
   } catch (e) {
     console.error('Error guardando el pedido en Firestore:', e);
-    enviarAviso({ tipo: 'problema', titulo: 'No se pudo guardar un pedido', detalle: String(e && e.message || e) });
-    return null;
+    if (!e || !e.code) {
+      // Error real de conexión/Firebase (no de stock): avisa al admin
+      // igual que antes, pero deja que quien llamó decida el mensaje
+      // para el cliente (sin internet, error genérico, etc).
+      enviarAviso({ tipo: 'problema', titulo: 'No se pudo guardar un pedido', detalle: String(e && e.message || e) });
+    }
+    throw e;
   }
+
+  // Refresca el stock en la caché local (en la nube ya quedó
+  // descontado dentro de la transacción de arriba) para que la
+  // vitrina no siga mostrando unidades que ya se vendieron.
+  Object.values(necesidades).forEach(n => {
+    const p = _catalogoCache.find(x => x.id == n.id);
+    if (!p) return;
+    if (p.stockColores && Object.prototype.hasOwnProperty.call(p.stockColores, n.color)) {
+      p.stockColores[n.color] = Math.max(0, Number(p.stockColores[n.color]) - n.cantidad);
+    }
+    if (p.stockTallas && Object.prototype.hasOwnProperty.call(p.stockTallas, n.talla)) {
+      p.stockTallas[n.talla] = Math.max(0, Number(p.stockTallas[n.talla]) - n.cantidad);
+    }
+    p.stock = (p.stockColores && Object.keys(p.stockColores).length) || (p.stockTallas && Object.keys(p.stockTallas).length)
+      ? stockTotalProducto(p)
+      : Math.max(0, Number(p.stock) - n.cantidad);
+  });
+
+  limpiarCarrito();
+  // código corto y fácil de leer para el asunto/cuerpo del correo de
+  // confirmación (el número "Pedido #7" del panel admin necesita ver
+  // TODOS los pedidos para calcularse, así que aquí usamos algo que
+  // sí se puede armar al instante, con lo que ya tenemos a mano).
+  const codigoPedido = pedidoRef.id.slice(-6).toUpperCase();
+  enviarAviso({ tipo: 'pedido_nuevo', pedido: { ...pedido, id: pedidoRef.id, codigo_pedido: codigoPedido } });
+  return { ...pedido, id: pedidoRef.id, codigo_pedido: codigoPedido };
 }
 
 /** Estados posibles de un pedido, en el orden en que avanzan.
