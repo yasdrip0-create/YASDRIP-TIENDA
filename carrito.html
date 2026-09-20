@@ -176,6 +176,17 @@ function svgCamion() {
 function svgBolsa() {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>';
 }
+/* iconos de los métodos de pago (mismo trazo que los de arriba, para que
+   los tres se vean consistentes y sin emojis) */
+function svgIconoTarjeta() {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.3" y="5.3" width="19.4" height="13.4" rx="2.6"/><path d="M2.3 9.6h19.4"/><path d="M6 14.4h4.2"/></svg>';
+}
+function svgIconoNequi() {
+  /* Sin el logo oficial de Nequi disponible en el proyecto, usamos un
+     icono genérico de celular con "pago confirmado" — mismo estilo que
+     los otros dos, para no mezclar iconografías. */
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.6" y="2.3" width="10.8" height="19.4" rx="2.4"/><path d="M10 19h4"/><path d="M9.2 12.1l1.9 1.9 3.7-4"/></svg>';
+}
 
 /* Agrupa items idénticos (mismo id + color + talla) en uno solo con cantidad */
 function agruparCarrito(carrito) {
@@ -242,24 +253,19 @@ function pintarCarrito() {
   const subtotalInicial = totalCarritoValor();
   const html = `
     <div class="checkout-stepper" id="checkoutStepper">
-      <div class="stepper-step is-done" data-stepper="1">
-        <div class="stepper-circle">✓</div>
-        <div class="stepper-label">Carrito</div>
+      <div class="stepper-step is-active" data-stepper="1">
+        <div class="stepper-circle">1</div>
+        <div class="stepper-label">Tus datos</div>
       </div>
       <div class="stepper-line" data-line="1"></div>
-      <div class="stepper-step is-active" data-stepper="2">
+      <div class="stepper-step" data-stepper="2">
         <div class="stepper-circle">2</div>
-        <div class="stepper-label">Tus datos</div>
+        <div class="stepper-label">Dirección</div>
       </div>
       <div class="stepper-line" data-line="2"></div>
       <div class="stepper-step" data-stepper="3">
         <div class="stepper-circle">3</div>
-        <div class="stepper-label">Envío</div>
-      </div>
-      <div class="stepper-line" data-line="3"></div>
-      <div class="stepper-step" data-stepper="4">
-        <div class="stepper-circle">4</div>
-        <div class="stepper-label">Pago ⚡</div>
+        <div class="stepper-label">Pago</div>
       </div>
     </div>
     <div class="carrito-layout">
@@ -350,10 +356,31 @@ function pintarCarrito() {
                 <span class="step-summary"></span>
               </div>
               <div class="step-body">
-                <div class="metodo-pago-chips">
-                  <button type="button" class="metodo-chip" data-metodo="tarjeta"><span class="metodo-chip-icono">💳</span>Tarjeta</button>
-                  <button type="button" class="metodo-chip" data-metodo="contraentrega"><span class="metodo-chip-icono">📦</span>Contraentrega</button>
-                  <button type="button" class="metodo-chip" data-metodo="nequi"><span class="metodo-chip-icono">📲</span>Nequi</button>
+                <div class="metodo-pago-grid">
+                  <button type="button" class="metodo-card" data-metodo="tarjeta">
+                    <span class="metodo-card-top">
+                      <span class="metodo-card-icono">${svgIconoTarjeta()}</span>
+                      <span class="metodo-radio" aria-hidden="true"></span>
+                    </span>
+                    <span class="metodo-card-nombre">Tarjeta</span>
+                    <span class="metodo-card-sub">Visa · Mastercard · Débito</span>
+                  </button>
+                  <button type="button" class="metodo-card" data-metodo="contraentrega">
+                    <span class="metodo-card-top">
+                      <span class="metodo-card-icono">${svgCamion()}</span>
+                      <span class="metodo-radio" aria-hidden="true"></span>
+                    </span>
+                    <span class="metodo-card-nombre">Pago contraentrega</span>
+                    <span class="metodo-card-sub">Paga cuando recibas tu pedido</span>
+                  </button>
+                  <button type="button" class="metodo-card" data-metodo="nequi">
+                    <span class="metodo-card-top">
+                      <span class="metodo-card-icono">${svgIconoNequi()}</span>
+                      <span class="metodo-radio" aria-hidden="true"></span>
+                    </span>
+                    <span class="metodo-card-nombre">Nequi</span>
+                    <span class="metodo-card-sub">Pago rápido y seguro</span>
+                  </button>
                 </div>
 
                 <div class="campos-tarjeta" id="camposTarjeta">
@@ -417,7 +444,11 @@ function pintarCarrito() {
                   <p class="tarjeta-nota">Cuando confirmes el pedido, revisamos la transferencia y lo alistamos para enviar. (Pago simulado — demo sin pasarela ni banco real todavía.)</p>
                 </div>
 
-                <button type="submit" class="btn-pagar">Confirmar pedido ⚡</button>
+                <!-- Único botón de acción del paso 3: vive en el resumen de la
+                     derecha ("Finalizar compra"). Este queda oculto visualmente
+                     pero sigue siendo el submit del formulario, para que
+                     Enter dentro de los campos de tarjeta también confirme. -->
+                <button type="submit" class="btn-pagar btn-pagar-oculto" tabindex="-1" aria-hidden="true">Confirmar pedido</button>
               </div>
             </div>
 
@@ -438,9 +469,12 @@ function pintarCarrito() {
             <span>Total</span>
             <span class="total-valor" id="totalValor">${fmtDinero(subtotalInicial)}</span>
           </div>
-          <button type="button" class="btn-finalizar" id="btnFinalizar">${svgCandado()}<span>Finalizar compra</span></button>
-          <button type="button" class="btn-paypal" id="btnPaypal"><span class="pp-mark" aria-hidden="true">P</span><span>Pagar con PayPal</span><span class="pp-soon">Pronto</span></button>
-          <p class="summary-seguro">${svgCandado()}<span>Pago 100% seguro</span></p>
+          <div class="resumen-acciones" id="resumenAcciones">
+            <button type="button" class="btn-finalizar" id="btnFinalizar">${svgCandado()}<span>Finalizar compra</span></button>
+            <p class="finalizar-hint" id="finalizarHint"></p>
+            <button type="button" class="btn-paypal" id="btnPaypal"><span class="pp-mark" aria-hidden="true">P</span><span>Pagar con PayPal</span><span class="pp-soon">Pronto</span></button>
+            <p class="summary-seguro">${svgCandado()}<span>Pago 100% seguro</span></p>
+          </div>
         </div>
       </aside>
     </div>`;
@@ -692,7 +726,11 @@ function pintarCarrito() {
       s.classList.toggle('open', Number(s.dataset.step) === n);
       refrescarNum(s);
     });
-    activarStepper(n + 1);
+    activarStepper(n);
+    // El CTA "Finalizar compra" solo se muestra al llegar al paso de pago;
+    // en los pasos 1 y 2 el resumen solo enseña subtotal / envío / total.
+    const acciones = document.getElementById('resumenAcciones');
+    if (acciones) acciones.classList.toggle('visible', n === 3);
   }
 
   /* ---- stepper de arriba (Carrito → Tus datos → Envío → Pago) ---- */
@@ -751,7 +789,7 @@ function pintarCarrito() {
 
   /* ---- selector de método de pago ---- */
   let metodoPago = null;
-  const chips = wrap.querySelectorAll('.metodo-chip');
+  const chips = wrap.querySelectorAll('.metodo-card');
   const camposTarjeta = document.getElementById('camposTarjeta');
   const camposNequi = document.getElementById('camposNequi');
   chips.forEach(chip => {
@@ -766,8 +804,30 @@ function pintarCarrito() {
         const totalTxt = document.getElementById('totalValor');
         document.getElementById('nequiValorTxt').textContent = totalTxt ? totalTxt.textContent : '$0';
       }
+      actualizarEstadoFinalizar();
     });
   });
+
+  /* ---- "Finalizar compra": habilitado solo cuando los 3 pasos están
+     completos (datos + dirección + método de pago). Si falta algo, se ve
+     apagado y el texto de abajo dice qué falta — pero se puede seguir
+     tocando: lleva directo al paso que falta, igual que antes. ---- */
+  function actualizarEstadoFinalizar() {
+    const btn = document.getElementById('btnFinalizar');
+    const hint = document.getElementById('finalizarHint');
+    if (!btn) return;
+    const faltan = [];
+    if (!paso1Completo()) faltan.push('tus datos');
+    if (!paso2Completo()) faltan.push('tu dirección');
+    if (!metodoPago) faltan.push('el método de pago');
+    const listo = faltan.length === 0;
+    btn.classList.toggle('is-incompleto', !listo);
+    btn.setAttribute('aria-disabled', String(!listo));
+    if (hint) hint.textContent = listo ? '' : 'Falta: ' + faltan.join(', ') + '.';
+  }
+  wrap.addEventListener('input', actualizarEstadoFinalizar);
+  wrap.addEventListener('change', actualizarEstadoFinalizar);
+  actualizarEstadoFinalizar(); // estado inicial del botón, ya con "metodoPago" declarado
 
   /* ---- botón "Copiar" de los datos de Nequi ---- */
   wrap.querySelectorAll('.nequi-copiar').forEach(btn => {
@@ -878,6 +938,8 @@ function pintarCarrito() {
 
       enviandoPedido = true;
       if (btnPagar) { btnPagar.disabled = true; btnPagar.textContent = 'Procesando...'; }
+      const btnFinalizarProc = document.getElementById('btnFinalizar');
+      if (btnFinalizarProc) btnFinalizarProc.disabled = true;
       mostrarOverlay(metodoPago);
 
       setTimeout(async () => {
@@ -892,7 +954,8 @@ function pintarCarrito() {
         } catch (err) {
           console.error('Error al confirmar el pedido:', err);
           enviandoPedido = false;
-          if (btnPagar) { btnPagar.disabled = false; btnPagar.textContent = 'Confirmar pedido ⚡'; }
+          if (btnPagar) { btnPagar.disabled = false; btnPagar.textContent = 'Confirmar pedido'; }
+          if (btnFinalizarProc) btnFinalizarProc.disabled = false;
 
           if (!navigator.onLine) {
             mostrarError('Se perdió la conexión a internet justo al pagar. No te preocupes, no se cobró nada — conéctate e intenta de nuevo.');
@@ -951,6 +1014,20 @@ function emailValido(valor) {
 function telefonoValido(valor) {
   const soloDigitos = valor.replace(/\D/g, '').replace(/^57/, '');
   return soloDigitos.length >= 7 && soloDigitos.length <= 10;
+}
+
+/** Igual que validarPaso1/2, pero sin pintar nada en rojo — solo dicen si el
+    paso ya quedó completo. Las usa el botón "Finalizar compra" del resumen. */
+function paso1Completo() {
+  const nombre = (document.getElementById('nombreCliente')?.value || '').trim();
+  const email = (document.getElementById('emailCliente')?.value || '').trim();
+  const telefono = (document.getElementById('telefonoCliente')?.value || '').trim();
+  return !!nombre && emailValido(email) && telefonoValido(telefono);
+}
+function paso2Completo() {
+  const municipio = document.getElementById('municipioEnvio')?.value || '';
+  const direccion = (document.getElementById('direccionCliente')?.value || '').trim();
+  return !!municipio && direccion.length >= 5;
 }
 
 /** Pinta un input en rojo y muestra su mensaje de error debajo.
