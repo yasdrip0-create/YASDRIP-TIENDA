@@ -43,7 +43,7 @@
    ============================================================ */
 
 /* URL de tu Google Apps Script (Parte 5 de la guía). Termina en /exec */
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTBXm-I37O2XS2OiqqgkmrgEDpoImsR3-2HUWFoK9SOzQbHRXhpNBoR6_vbOmGRkT6/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMfTjtnA3lEOn-z2WNitsLk0q3XD-51KBdK6heWKZRBHwD5ho6BKWOg3saVjzcKxkz/exec";
 
 /** Avisa a Google Apps Script (Sheet + Telegram) de un pedido nuevo o de
     un problema. Nunca bloquea la compra: si falla el envío del aviso
