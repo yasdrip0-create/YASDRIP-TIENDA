@@ -98,6 +98,46 @@ function zonasEnvio() {
   return ZONAS_ENVIO;
 }
 
+/* ============================================================
+   MUNICIPIOS DE ANTIOQUIA (los 125) -> zona de envío
+   Sirve para el buscador "ciudad o municipio" del carrito: el
+   cliente escribe su municipio y el sistema ya sabe qué zona
+   (y qué costo de envío) le corresponde.
+   Para cambiar el costo de un municipio, muévelo de lista:
+   cada lista apunta a una zona de ZONAS_ENVIO de arriba.
+   ============================================================ */
+const _MUNICIPIOS_METRO   = ["Bello", "Itagüí", "Envigado", "Sabaneta", "La Estrella", "Copacabana"];
+const _MUNICIPIOS_ORIENTE = ["Rionegro", "Marinilla", "La Ceja", "El Retiro"];
+const _MUNICIPIOS_ANTIOQUIA = [
+  "Abejorral", "Abriaquí", "Alejandría", "Amagá", "Amalfi", "Andes", "Angelópolis", "Angostura", "Anorí", "Anzá",
+  "Apartadó", "Arboletes", "Argelia", "Armenia", "Barbosa", "Bello", "Belmira", "Betania", "Betulia", "Briceño",
+  "Buriticá", "Cáceres", "Caicedo", "Caldas", "Campamento", "Cañasgordas", "Caracolí", "Caramanta", "Carepa",
+  "Carolina del Príncipe", "Caucasia", "Chigorodó", "Cisneros", "Ciudad Bolívar", "Cocorná", "Concepción",
+  "Concordia", "Copacabana", "Dabeiba", "Donmatías", "Ebéjico", "El Bagre", "El Carmen de Viboral", "El Peñol",
+  "El Retiro", "El Santuario", "Entrerríos", "Envigado", "Fredonia", "Frontino", "Giraldo", "Girardota",
+  "Gómez Plata", "Granada", "Guadalupe", "Guarne", "Guatapé", "Heliconia", "Hispania", "Itagüí", "Ituango",
+  "Jardín", "Jericó", "La Ceja", "La Estrella", "La Pintada", "La Unión", "Liborina", "Maceo", "Marinilla",
+  "Medellín", "Montebello", "Murindó", "Mutatá", "Nariño", "Nechí", "Necoclí", "Olaya", "Peque", "Pueblorrico",
+  "Puerto Berrío", "Puerto Nare", "Puerto Triunfo", "Remedios", "Rionegro", "Sabanalarga", "Sabaneta", "Salgar",
+  "San Andrés de Cuerquia", "San Carlos", "San Francisco", "San Jerónimo", "San José de la Montaña",
+  "San Juan de Urabá", "San Luis", "San Pedro de los Milagros", "San Pedro de Urabá", "San Rafael", "San Roque",
+  "San Vicente Ferrer", "Santa Bárbara", "Santa Fe de Antioquia", "Santa Rosa de Osos", "Santo Domingo",
+  "Segovia", "Sonsón", "Sopetrán", "Támesis", "Tarazá", "Tarso", "Titiribí", "Toledo", "Turbo", "Uramita",
+  "Urrao", "Valdivia", "Valparaíso", "Vegachí", "Venecia", "Vigía del Fuerte", "Yalí", "Yarumal", "Yolombó",
+  "Yondó", "Zaragoza",
+];
+
+/** Devuelve los municipios de Antioquia como [{ nombre, zona, costo }] */
+function municipiosAntioquia() {
+  return _MUNICIPIOS_ANTIOQUIA.map(nombre => {
+    let zona = "otro_antioquia";
+    if (nombre === "Medellín") zona = "medellin";
+    else if (_MUNICIPIOS_METRO.includes(nombre)) zona = "metro";
+    else if (_MUNICIPIOS_ORIENTE.includes(nombre)) zona = "oriente";
+    return { nombre, zona, costo: costoEnvio(zona) };
+  });
+}
+
 /** Devuelve el costo de envío de una zona por su id (0 si no existe) */
 function costoEnvio(zonaId) {
   const zona = ZONAS_ENVIO.find(z => z.id === zonaId);

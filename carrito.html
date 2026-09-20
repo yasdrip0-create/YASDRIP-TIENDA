@@ -613,35 +613,72 @@ function pintarCarrito() {
   }
   recalcularResumen();
 
-  /* ---- buscador de municipio (autocompletar sobre el <select> real) ---- */
+  /* ---- buscador de municipio (autocompletar sobre el <select> real) ----
+     Busca entre los 125 municipios de Antioquia (sin importar tildes ni
+     mayúsculas) y, al elegir uno, selecciona solo la zona de envío que le
+     corresponde. Al final siempre quedan "Vereda / zona rural" y "Otra
+     ciudad de Colombia" para quien no vive en un casco urbano de Antioquia. */
   const municipioInput = document.getElementById('municipioInput');
   const municipioSugerencias = document.getElementById('municipioSugerencias');
+  let municipioElegidoNombre = '';   // nombre tal cual lo eligió el cliente (ej. "Barbosa")
   if (municipioInput && selectMunicipio) {
-    const zonas = zonasEnvio();
+    const quitarTildes = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const fmtCosto = (n) => '$' + Number(n).toLocaleString('es-CO');
+    const municipios = municipiosAntioquia().map(m => ({ ...m, detalle: 'Antioquia', clave: quitarTildes(m.nombre) }));
+    const zonasGenericas = zonasEnvio()
+      .filter(z => z.id === 'vereda' || z.id === 'otra_ciudad')
+      .map(z => ({ nombre: z.nombre, zona: z.id, costo: z.costo, detalle: '', clave: quitarTildes(z.nombre) }));
 
+    function fila(m, i) {
+      return `<button type="button" class="municipio-sug" data-i="${i}"><span>${esc(m.nombre)}${m.detalle ? ` <small style="opacity:.6">· ${m.detalle}</small>` : ''}</span><span class="municipio-sug-costo">${fmtCosto(m.costo)}</span></button>`;
+    }
+
+    let visibles = [];
+    let coincidencias = [];
     function pintarSugerencias(filtro) {
-      const texto = (filtro || '').toLowerCase();
-      const coincidencias = zonas.filter(z => z.nombre.toLowerCase().includes(texto));
-      if (!coincidencias.length) {
-        municipioSugerencias.innerHTML = `<div class="municipio-sug-vacio">No encontramos esa zona. Elige la más cercana 👇</div>` +
-          zonas.map(z => `<button type="button" class="municipio-sug" data-id="${z.id}">${z.nombre}<span class="municipio-sug-costo">$${z.costo.toLocaleString('es-CO')}</span></button>`).join('');
-      } else {
-        municipioSugerencias.innerHTML = coincidencias.map(z => `<button type="button" class="municipio-sug" data-id="${z.id}">${z.nombre}<span class="municipio-sug-costo">$${z.costo.toLocaleString('es-CO')}</span></button>`).join('');
-      }
+      const q = quitarTildes(filtro || '');
+      let lista = q ? municipios.filter(m => m.clave.includes(q)) : municipios.slice();
+      // primero los que EMPIEZAN con lo escrito ("bar" -> Barbosa antes que "Abriaquí")
+      if (q) lista.sort((a, b) => (b.clave.startsWith(q) - a.clave.startsWith(q)) || a.nombre.localeCompare(b.nombre, 'es'));
+      coincidencias = lista;
+      visibles = lista.concat(zonasGenericas);
+      let html = '';
+      if (!lista.length) html += `<div class="municipio-sug-vacio">No encontramos "${esc(filtro)}" en Antioquia. Si vives en otra ciudad o en el campo, elige una opción de abajo 👇</div>`;
+      html += visibles.map(fila).join('');
+      municipioSugerencias.innerHTML = html;
       municipioSugerencias.querySelectorAll('.municipio-sug').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const zona = zonas.find(z => z.id === btn.dataset.id);
-          if (!zona) return;
-          municipioInput.value = zona.nombre;
-          selectMunicipio.value = zona.id;
-          selectMunicipio.dispatchEvent(new Event('change'));
-          municipioSugerencias.classList.remove('open');
-        });
+        btn.addEventListener('click', () => elegir(visibles[Number(btn.dataset.i)]));
       });
     }
 
-    municipioInput.addEventListener('focus', () => { pintarSugerencias(municipioInput.value); municipioSugerencias.classList.add('open'); });
-    municipioInput.addEventListener('input', () => { pintarSugerencias(municipioInput.value); municipioSugerencias.classList.add('open'); });
+    function elegir(m) {
+      if (!m) return;
+      municipioElegidoNombre = m.nombre;
+      municipioInput.value = m.nombre;
+      selectMunicipio.value = m.zona;
+      selectMunicipio.dispatchEvent(new Event('change'));
+      municipioSugerencias.classList.remove('open');
+    }
+
+    municipioInput.addEventListener('focus', () => { pintarSugerencias(municipioInput.value === municipioElegidoNombre ? '' : municipioInput.value); municipioSugerencias.classList.add('open'); });
+    municipioInput.addEventListener('input', () => {
+      // si el cliente cambia el texto, la elección anterior ya no vale
+      if (municipioInput.value !== municipioElegidoNombre) {
+        municipioElegidoNombre = '';
+        selectMunicipio.value = '';
+        selectMunicipio.dispatchEvent(new Event('change'));
+      }
+      pintarSugerencias(municipioInput.value);
+      municipioSugerencias.classList.add('open');
+    });
+    // Enter con la lista abierta = elegir la primera coincidencia (en vez de "Siguiente")
+    municipioInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || !municipioSugerencias.classList.contains('open') || !municipioInput.value.trim()) return;
+      const q = quitarTildes(municipioInput.value);
+      const exacto = municipios.find(m => m.clave === q);
+      const primero = exacto || coincidencias[0];
+      if (primero) { e.preventDefault(); e.stopImmediatePropagation(); elegir(primero); }
+    });
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#municipioAutocomplete')) municipioSugerencias.classList.remove('open');
     });
@@ -771,7 +808,7 @@ function pintarCarrito() {
       if (!validarPaso2()) return;
       const sel = document.getElementById('municipioEnvio');
       step.classList.add('done');
-      step.querySelector('.step-summary').textContent = sel.selectedOptions[0].textContent.split(' — ')[0];
+      step.querySelector('.step-summary').textContent = (typeof municipioElegidoNombre !== 'undefined' && municipioElegidoNombre) || sel.selectedOptions[0].textContent.split(' — ')[0];
       activarPaso(3);
     });
   }
@@ -930,7 +967,7 @@ function pintarCarrito() {
       }
 
       const envio = {
-        municipio: municipioOpt ? municipioOpt.textContent.split(' — ')[0] : municipio,
+        municipio: municipioElegidoNombre || (municipioOpt ? municipioOpt.textContent.split(' — ')[0] : municipio),
         costo: envioActual,
         barrio, vereda, direccion, edificio, referencia,
       };
