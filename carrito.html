@@ -248,7 +248,7 @@ function pintarCarrito() {
                 <div class="metodo-pago-chips">
                   <button type="button" class="metodo-chip" data-metodo="tarjeta"><span class="metodo-chip-icono">💳</span>Tarjeta</button>
                   <button type="button" class="metodo-chip" data-metodo="contraentrega"><span class="metodo-chip-icono">📦</span>Contraentrega</button>
-                  <button type="button" class="metodo-chip" data-metodo="nequi"><span class="metodo-chip-icono">📲</span>Nequi / Daviplata</button>
+                  <button type="button" class="metodo-chip" data-metodo="nequi"><span class="metodo-chip-icono">📲</span>Nequi</button>
                 </div>
 
                 <div class="campos-tarjeta" id="camposTarjeta">
@@ -285,6 +285,31 @@ function pintarCarrito() {
                     <input type="text" id="tarjetaCvv" placeholder="CVV" inputmode="numeric" maxlength="4">
                   </div>
                   <p class="tarjeta-nota">🔒 Tu info va segura, cero drama. (Pago simulado — demo sin pasarela ni banco real todavía.)</p>
+                </div>
+
+                <div class="campos-tarjeta campos-nequi" id="camposNequi">
+                  <div class="nequi-datos-box">
+                    <div class="nequi-datos-header">📲 Transfiere a este Nequi</div>
+                    <div class="nequi-dato-fila">
+                      <span class="nequi-dato-label">Número</span>
+                      <span class="nequi-dato-valor" id="nequiNumeroTxt">300 000 0000</span>
+                      <button type="button" class="nequi-copiar" data-copiar="nequiNumeroTxt">Copiar</button>
+                    </div>
+                    <div class="nequi-dato-fila">
+                      <span class="nequi-dato-label">A nombre de</span>
+                      <span class="nequi-dato-valor" id="nequiTitularTxt">YAS DRIP</span>
+                    </div>
+                    <div class="nequi-dato-fila nequi-dato-total">
+                      <span class="nequi-dato-label">Valor exacto a enviar</span>
+                      <span class="nequi-dato-valor" id="nequiValorTxt">$0</span>
+                      <button type="button" class="nequi-copiar" data-copiar="nequiValorTxt">Copiar</button>
+                    </div>
+                  </div>
+                  <label class="nequi-check-fila">
+                    <input type="checkbox" id="nequiConfirmado">
+                    <span>Ya hice la transferencia por este valor exacto</span>
+                  </label>
+                  <p class="tarjeta-nota">Cuando confirmes el pedido, revisamos la transferencia y lo alistamos para enviar. (Pago simulado — demo sin pasarela ni banco real todavía.)</p>
                 </div>
 
                 <button type="submit" class="btn-pagar">Confirmar pedido ⚡</button>
@@ -541,12 +566,28 @@ function pintarCarrito() {
   let metodoPago = null;
   const chips = wrap.querySelectorAll('.metodo-chip');
   const camposTarjeta = document.getElementById('camposTarjeta');
+  const camposNequi = document.getElementById('camposNequi');
   chips.forEach(chip => {
     chip.addEventListener('click', () => {
       chips.forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       metodoPago = chip.dataset.metodo;
       camposTarjeta.classList.toggle('open', metodoPago === 'tarjeta');
+      camposNequi.classList.toggle('open', metodoPago === 'nequi');
+      if (metodoPago === 'nequi') {
+        // Total a transferir: lo mismo que ya se muestra en el resumen del pedido.
+        const totalTxt = document.getElementById('totalValor');
+        document.getElementById('nequiValorTxt').textContent = totalTxt ? totalTxt.textContent : '$0';
+      }
+    });
+  });
+
+  /* ---- botón "Copiar" de los datos de Nequi ---- */
+  wrap.querySelectorAll('.nequi-copiar').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const texto = document.getElementById(btn.dataset.copiar).textContent.trim();
+      navigator.clipboard?.writeText(texto);
+      showToastCarrito('Copiado: ' + texto);
     });
   });
 
@@ -625,6 +666,13 @@ function pintarCarrito() {
         }
         tarjetaFinal = numLimpio.slice(-4);
       }
+      if (metodoPago === 'nequi') {
+        const chk = document.getElementById('nequiConfirmado');
+        if (!chk || !chk.checked) {
+          showToastCarrito('Confirma que ya hiciste la transferencia por Nequi.');
+          return;
+        }
+      }
 
       // Antes de intentar cobrar, confirma que hay internet — si no,
       // avisamos de una vez en vez de dejar al cliente mirando el
@@ -643,12 +691,12 @@ function pintarCarrito() {
 
       enviandoPedido = true;
       if (btnPagar) { btnPagar.disabled = true; btnPagar.textContent = 'Procesando...'; }
-      mostrarOverlay();
+      mostrarOverlay(metodoPago);
 
       setTimeout(async () => {
         try {
           const pedido = await crearPedido({ nombre, email, telefono, metodoPago, tarjetaFinal, envio });
-          mostrarExito(nombre, pedido.codigo_pedido, pedido.items);
+          mostrarExito(nombre, pedido.codigo_pedido, pedido.items, metodoPago);
           document.getElementById('cartCount').textContent = 0;
           // No reactivamos el botón: el pedido ya quedó hecho y el
           // carrito se va a vaciar / redibujar.
@@ -767,11 +815,15 @@ function showToastCarrito(texto) {
 pintarCarrito();
 
 /* ---- animación de "pago" (igual que en el proyecto original) ---- */
-function mostrarOverlay() {
+function mostrarOverlay(metodoPago) {
   const overlay = document.getElementById('pago-overlay');
   overlay.classList.add('activo');
   iniciarParticulas();
-  const msgs = ['Comprobando el pago ⚡','Verificando tus datos','Casi, casi...','Sellando el pedido'];
+  const msgs = metodoPago === 'contraentrega'
+    ? ['Organizando tu pedido ⚡','Verificando tus datos','Casi, casi...','Sellando el pedido']
+    : ['Comprobando el pago ⚡','Verificando tus datos','Casi, casi...','Sellando el pedido'];
+  document.getElementById('pago-status-txt').textContent = msgs[0];
+  document.querySelector('.ring-icon').textContent = metodoPago === 'contraentrega' ? '📦' : '💳';
   let mi = 0;
   const st = document.getElementById('pago-status-txt');
   overlay._iv = setInterval(() => { st.textContent = msgs[++mi % msgs.length]; }, 700);
@@ -786,7 +838,7 @@ function cerrarOverlay() {
   document.getElementById('estado-error').style.display = 'none';
 }
 
-function mostrarExito(nombreCliente, pedidoId, items) {
+function mostrarExito(nombreCliente, pedidoId, items, metodoPago) {
   clearInterval(document.getElementById('pago-overlay')._iv);
   const ver = document.getElementById('estado-verificando');
   ver.style.transition = 'opacity 0.4s'; ver.style.opacity = '0';
@@ -794,6 +846,12 @@ function mostrarExito(nombreCliente, pedidoId, items) {
     ver.style.display = 'none';
     const ex = document.getElementById('estado-exito');
     ex.style.display = 'flex';
+    const esContraentrega = metodoPago === 'contraentrega';
+    document.querySelector('.check-circle').textContent = esContraentrega ? '📦' : '✅';
+    document.querySelector('.exito-titulo').textContent = esContraentrega ? '¡Pedido confirmado! 📦' : '¡Pago exitoso! ⚡';
+    document.querySelector('.exito-sub').textContent = esContraentrega
+      ? 'Ya estamos organizando tu pedido — pagas cuando te llegue 🚀'
+      : 'Tu pago se realizó correctamente — ya casi vuela para tu casa 🚀';
     document.getElementById('gracias-nombre').textContent = '✨ ¡Muchas gracias, ' + nombreCliente + '! ✨';
     document.getElementById('exito-pedido').textContent = pedidoId ? `PEDIDO #${pedidoId}` : 'PEDIDO REGISTRADO';
     document.getElementById('exito-correo').textContent = 'Te mandamos la confirmación con el detalle y las fotos a tu correo ✉️';

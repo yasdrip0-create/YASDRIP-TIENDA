@@ -1255,6 +1255,30 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   max-width:70px;margin-left:auto;
 }
 .tarjeta-nota{font-size:11.5px;color:var(--gray);text-align:center;line-height:1.5;margin-bottom:14px;}
+
+/* ---- Panel "transfiere a este Nequi", estilo PSE ---- */
+.nequi-datos-box{
+  background:var(--offwhite);border:2px solid var(--line);border-radius:16px;
+  padding:16px 18px;margin:4px 0 14px;
+}
+.nequi-datos-header{font-weight:800;font-size:13.5px;margin-bottom:10px;}
+.nequi-dato-fila{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 0;border-top:1px solid var(--line);flex-wrap:wrap;
+}
+.nequi-dato-fila:first-of-type{border-top:none;}
+.nequi-dato-label{font-size:11.5px;color:var(--gray);font-weight:700;}
+.nequi-dato-valor{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;}
+.nequi-dato-total .nequi-dato-valor{color:var(--black);font-size:17px;}
+.nequi-copiar{
+  font-size:11px;font-weight:800;padding:5px 10px;border-radius:8px;
+  border:2px solid var(--black);background:var(--acento);color:var(--black);
+}
+.nequi-check-fila{
+  display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;
+  padding:4px 2px 14px;cursor:pointer;
+}
+.nequi-check-fila input{width:18px;height:18px;accent-color:var(--acento);cursor:pointer;}
 @media (max-width:420px){.campo-fila{flex-direction:column;}}
 
 /* ---------- CHECKOUT OVERLAY ---------- */
