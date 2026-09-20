@@ -511,7 +511,7 @@ function pintarCarrito() {
     }
 
     // si ya eligió Nequi, el valor a transferir tiene que seguir al total
-    const chipActivo = wrap.querySelector('.metodo-chip.active');
+    const chipActivo = wrap.querySelector('.metodo-card.active');
     const nequiValor = document.getElementById('nequiValorTxt');
     if (chipActivo && chipActivo.dataset.metodo === 'nequi' && nequiValor) nequiValor.textContent = totalValorEl.textContent;
   }
@@ -612,7 +612,6 @@ function pintarCarrito() {
     });
   }
   recalcularResumen();
-  actualizarEstadoFinalizar();
 
   /* ---- buscador de municipio (autocompletar sobre el <select> real) ---- */
   const municipioInput = document.getElementById('municipioInput');
