@@ -18,8 +18,10 @@
 <div class="admin-login" id="adminLoginView">
   <div class="admin-login-bg"></div>
   <div class="admin-login-glow"></div>
-  <div class="admin-login-ring admin-login-ring-2"></div>
-  <div class="admin-login-ring admin-login-ring-1"></div>
+
+  <!-- Escenario circular: el aro de barras (lo dibuja js/login-orbit.js) queda detrás y el formulario en el centro -->
+  <div class="al-stage" id="alStage">
+  <div class="al-orbit" id="alOrbit" aria-hidden="true"></div>
 
   <div class="admin-login-wrap">
     <a href="index.html" class="admin-login-brand">
@@ -61,6 +63,7 @@
 
     <div class="admin-login-stamp stamp-font">underground drip co.</div>
   </div>
+  </div><!-- /al-stage -->
 </div>
 
 <!-- ======================= MODAL RECUPERAR CÓDIGO DE ACCESO ======================= -->
@@ -502,6 +505,7 @@
 <script src="js/products.js"></script>
 <script src="js/store.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/login-orbit.js"></script>
 
 </body>
 </html>
