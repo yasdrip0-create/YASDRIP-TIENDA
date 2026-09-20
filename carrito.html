@@ -18,23 +18,23 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="css/estilos.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/carrito.css">
 </head>
-<body>
+<body class="carrito-page">
 
 <div id="site-header"></div>
 
-<section class="section">
-  <div class="section-head reveal" style="border:none;padding-bottom:0;">
-    <div>
-      <div class="section-eyebrow">Paso final</div>
-      <h2>Tu carrito</h2>
-    </div>
-  </div>
+<main class="cart-page">
+  <header class="cart-hero">
+    <span class="cart-eyebrow">Paso final</span>
+    <h1>Tu carrito</h1>
+    <p>Revisa tus productos y completa tu pedido.</p>
+  </header>
 
-  <div class="carrito-wrap" style="margin-top:6px;" id="carritoWrap">
+  <div class="carrito-wrap" id="carritoWrap">
     <!-- se rellena con JS -->
   </div>
-</section>
+</main>
 
 <div id="site-footer"></div>
 
@@ -48,8 +48,8 @@
         <svg class="ring-svg" viewBox="0 0 96 96">
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#151512"/>
-              <stop offset="100%" stop-color="#d7ff3d"/>
+              <stop offset="0%"   stop-color="#0D0D0D"/>
+              <stop offset="100%" stop-color="#FFD600"/>
             </linearGradient>
           </defs>
           <circle class="ring-track"    cx="48" cy="48" r="44"/>
@@ -71,6 +71,7 @@
       <div class="gracias-nombre" id="gracias-nombre"></div>
       <div class="exito-pedido" id="exito-pedido"></div>
       <div class="exito-items" id="exito-items"></div>
+      <div class="exito-totales" id="exito-totales"></div>
       <div class="exito-correo" id="exito-correo"></div>
       <a href="productos.html" class="btn-exito-volver">Seguir comprando</a>
     </div>
@@ -97,13 +98,92 @@
 renderHeader('carrito');
 renderFooter();
 
+/* ============================================================
+   AJUSTES DEL CARRITO
+   ENVIO_GRATIS_DESDE: subtotal (en pesos) desde el cual el envío
+   es gratis. 0 = desactivado (se cobra siempre el envío de la
+   zona). Ejemplo: 250000 -> envío gratis desde $250.000.
+   ============================================================ */
+const ENVIO_GRATIS_DESDE = 0;
+
+/* El catálogo se carga en segundo plano: lo necesita el botón "+"
+   (para revisar stock) y el menú del encabezado. */
+const catalogoListo = cargarCatalogo().then(() => renderHeader('carrito')).catch(e => console.error('Catálogo:', e));
+
+/* ---------- helpers ---------- */
+function fmtDinero(n) {
+  return '$' + Number(n || 0).toLocaleString('es-CO');
+}
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function animarClase(el, clase) {
+  if (!el) return;
+  el.classList.remove(clase);
+  void el.offsetWidth;            // reinicia la animación
+  el.classList.add(clase);
+}
+const reducirMovimiento = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Muestra un valor en pesos y, si cambió, lo "cuenta" hasta el nuevo número. */
+function setDinero(el, valor) {
+  if (!el) return;
+  const desde = typeof el._valor === 'number' ? el._valor : valor;
+  el._valor = valor;
+  cancelAnimationFrame(el._raf);
+  if (desde === valor || reducirMovimiento) { el.textContent = fmtDinero(valor); return; }
+  const t0 = performance.now(), dur = 380;
+  (function paso(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    const suave = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmtDinero(Math.round(desde + (valor - desde) * suave));
+    if (p < 1) el._raf = requestAnimationFrame(paso);
+  })(t0);
+  animarClase(el, 'tick');
+}
+
+/** Nombre aproximado del color a partir de su HEX (el catálogo solo guarda el código). */
+const PALETA_COLORES = [
+  ['Negro', '#151512'], ['Gris oscuro', '#3a3a36'], ['Gris', '#83807a'], ['Blanco', '#faf9f5'],
+  ['Hueso', '#eceae3'], ['Crema', '#f5ecd6'], ['Beige', '#d8c3a5'], ['Café', '#6b4423'],
+  ['Verde menta', '#dfe8da'], ['Verde', '#2f6b4a'], ['Verde oscuro', '#1b4332'], ['Lila', '#e7d9ee'],
+  ['Morado', '#6a3d9a'], ['Rosado', '#f3e0da'], ['Fucsia', '#d63384'], ['Rojo', '#c0392b'],
+  ['Naranja', '#e67e22'], ['Amarillo', '#ffd600'], ['Azul claro', '#9ec5e8'], ['Azul', '#2d4a8a'],
+];
+function nombreColor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return '';
+  const rgb = h => [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  const [r, g, b] = rgb(m[1]);
+  let mejor = '', dMin = Infinity;
+  PALETA_COLORES.forEach(([nombre, h]) => {
+    const [r2, g2, b2] = rgb(h.slice(1));
+    const d = (r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2;
+    if (d < dMin) { dMin = d; mejor = nombre; }
+  });
+  return mejor;
+}
+
+/* iconos minimalistas (trazo, heredan el color del texto) */
+function svgCandado() {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>';
+}
+function svgCamion() {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5h11v9h-11z"/><path d="M13.5 9.5h4l3 3.2v2.8h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>';
+}
+function svgBolsa() {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>';
+}
+
 /* Agrupa items idénticos (mismo id + color + talla) en uno solo con cantidad */
 function agruparCarrito(carrito) {
   const grupos = [];
   carrito.forEach(item => {
     const existente = grupos.find(g => g.id == item.id && g.color === item.color && g.talla === item.talla);
-    if (existente) existente.cantidad++;
-    else grupos.push({ ...item, cantidad: 1 });
+    if (existente) { existente.cantidad++; existente.subtotal += Number(item.precio); }
+    else grupos.push({ ...item, cantidad: 1, subtotal: Number(item.precio) });
   });
   return grupos;
 }
@@ -114,34 +194,52 @@ function pintarCarrito() {
 
   if (carrito.length === 0) {
     wrap.innerHTML = `
-      <div class="empty-state">
-        <p>Tu carrito está vacío. Hora de armar el fit. <a href="productos.html" style="color:var(--forest);font-weight:600;">Ver el drop →</a></p>
+      <div class="cart-empty">
+        <div class="cart-empty-icon">${svgBolsa()}</div>
+        <h2>Tu carrito está vacío</h2>
+        <p>Hora de armar el fit.</p>
+        <a href="productos.html" class="btn-finalizar btn-inline">Ver el drop <span aria-hidden="true">→</span></a>
       </div>`;
     return;
   }
 
   const grupos = agruparCarrito(carrito);
+  const totalUnidades = carrito.length;
 
   let itemsHtml = '';
   grupos.forEach(g => {
+    const colorTxt = nombreColor(g.color);
     itemsHtml += `
-      <div class="producto-carrito">
-        <div class="prod-icon-wrap">${g.foto ? `<img src="${g.foto}" class="prod-icon-photo" alt="${g.nombre}" loading="lazy">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
-        <div class="producto-info">
-          <h3>${g.nombre}</h3>
-          <div class="producto-meta">TALLA ${g.talla || '—'} · ${g.categoria || ''}</div>
-          <div class="qty-stepper">
-            <button class="qty-btn qty-minus" data-id="${g.id}" data-color="${g.color}" data-talla="${g.talla}">−</button>
-            <span class="qty-value">${g.cantidad}</span>
-            <button class="qty-btn qty-plus" data-id="${g.id}" data-color="${g.color}" data-talla="${g.talla}">+</button>
+      <article class="cart-item" data-id="${esc(g.id)}" data-color="${esc(g.color)}" data-talla="${esc(g.talla)}">
+        <div class="cart-item-media">${g.foto ? `<img src="${esc(g.foto)}" alt="${esc(g.nombre)}" loading="lazy">` : iconoProducto(g.icono, g.color || '#dfe8da')}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-top">
+            <div class="cart-item-heading">
+              <h3 class="cart-item-name">${esc(g.nombre)}</h3>
+              <p class="cart-item-meta">
+                <span class="cart-swatch" style="background:${esc(g.color || '#dfe8da')}"></span>
+                ${colorTxt ? `<span>${colorTxt}</span><span class="sep">|</span>` : ''}
+                <span>Talla ${esc(g.talla || '—')}</span>
+              </p>
+            </div>
+            <button type="button" class="btn-eliminar" aria-label="Quitar ${esc(g.nombre)}">${svgEquisBoton()}</button>
+          </div>
+          <div class="cart-item-bottom">
+            <div class="qty-stepper" role="group" aria-label="Cantidad">
+              <button type="button" class="qty-btn qty-minus" aria-label="Quitar una unidad">−</button>
+              <span class="qty-value" aria-live="polite">${g.cantidad}</span>
+              <button type="button" class="qty-btn qty-plus" aria-label="Agregar una unidad">+</button>
+            </div>
+            <div class="cart-item-prices">
+              <span class="cart-item-line">${fmtDinero(g.subtotal)}</span>
+              <span class="cart-item-unit"${g.cantidad > 1 ? '' : ' hidden'}>c/u ${fmtDinero(g.precio)}</span>
+            </div>
           </div>
         </div>
-        <div class="producto-precio-total mono">$${Number(g.precio * g.cantidad).toLocaleString('es-CO')}</div>
-        <a href="#" class="btn-eliminar" data-id="${g.id}" data-color="${g.color}" data-talla="${g.talla}" aria-label="Quitar ${g.nombre}">${svgEquisBoton()}</a>
-      </div>`;
+      </article>`;
   });
 
-  const total = totalCarritoValor();
+  const subtotalInicial = totalCarritoValor();
   const html = `
     <div class="checkout-stepper" id="checkoutStepper">
       <div class="stepper-step is-done" data-stepper="1">
@@ -165,8 +263,15 @@ function pintarCarrito() {
       </div>
     </div>
     <div class="carrito-layout">
-      <div class="carrito-items">
-        ${itemsHtml}
+      <section class="carrito-items" aria-label="Productos de tu carrito">
+        <div class="cart-list-head">
+          <span class="cart-list-count"><b id="cartListCount">${totalUnidades}</b> <span id="cartListWord">${totalUnidades === 1 ? 'producto' : 'productos'}</span></span>
+          <a href="#" class="btn-limpiar" id="btnLimpiar">Vaciar carrito</a>
+        </div>
+        <div class="cart-list" id="cartList">
+          ${itemsHtml}
+        </div>
+      </section>
 
         <div class="pagar-box pagar-box-abajo">
           <div class="pagar-box-header">
@@ -318,54 +423,140 @@ function pintarCarrito() {
 
           </form>
         </div>
-      </div>
-      <div class="carrito-summary-col">
+
+      <aside class="carrito-summary-col" aria-label="Resumen del pedido">
         <div class="carrito-summary-card">
-          <div class="summary-eyebrow">Resumen del pedido</div>
-          <div class="summary-row"><span>Subtotal</span><span id="subtotalValor">$${Number(total).toLocaleString('es-CO')}</span></div>
-          <div class="summary-row"><span>Envío</span><span id="envioValor">Elige tu municipio</span></div>
+          <h2 class="summary-eyebrow">Resumen del pedido</h2>
+          <div class="summary-row"><span>Subtotal</span><span id="subtotalValor">${fmtDinero(subtotalInicial)}</span></div>
+          <div class="summary-row" id="envioFila"><span>Envío</span><span id="envioValor">Elige tu municipio</span></div>
+          ${ENVIO_GRATIS_DESDE > 0 ? `
+          <div class="ship-banner" id="shipBanner">
+            <div class="ship-line">${svgCamion()}<span id="shipBannerTxt"></span></div>
+            <div class="ship-progress"><i id="shipBar"></i></div>
+          </div>` : ''}
           <div class="carrito-total">
-            <span>TOTAL</span>
-            <span class="total-valor" id="totalValor">$${Number(total).toLocaleString('es-CO')}</span>
+            <span>Total</span>
+            <span class="total-valor" id="totalValor">${fmtDinero(subtotalInicial)}</span>
           </div>
-          <a href="#" class="btn-limpiar" id="btnLimpiar">${svgRayoBoton()}<span>Vaciar carrito</span></a>
+          <button type="button" class="btn-finalizar" id="btnFinalizar">${svgCandado()}<span>Finalizar compra</span></button>
+          <button type="button" class="btn-paypal" id="btnPaypal"><span class="pp-mark" aria-hidden="true">P</span><span>Pagar con PayPal</span><span class="pp-soon">Pronto</span></button>
+          <p class="summary-seguro">${svgCandado()}<span>Pago 100% seguro</span></p>
         </div>
-      </div>
+      </aside>
     </div>`;
 
   wrap.innerHTML = html;
 
-  wrap.querySelectorAll('.qty-plus').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const producto = buscarProducto(btn.dataset.id);
-      if (!producto) return;
-      const enGrupo = getCarrito().filter(it => it.id == producto.id && it.color === btn.dataset.color && it.talla === btn.dataset.talla).length;
-      const stockDisponible = stockColor(producto, btn.dataset.color);
+  /* ---------- resumen: subtotal / envío / total (se actualiza solo) ---------- */
+  const listEl = document.getElementById('cartList');
+  const selectMunicipio = document.getElementById('municipioEnvio');
+  const envioValorEl = document.getElementById('envioValor');
+  const totalValorEl = document.getElementById('totalValor');
+  let envioZona = 0;     // costo del envío según el municipio elegido
+  let envioActual = 0;   // costo que de verdad se cobra (0 si aplica envío gratis)
+
+  function recalcularResumen() {
+    const subtotal = totalCarritoValor();
+    const gratis = ENVIO_GRATIS_DESDE > 0 && subtotal >= ENVIO_GRATIS_DESDE;
+    envioActual = gratis ? 0 : envioZona;
+
+    setDinero(document.getElementById('subtotalValor'), subtotal);
+    const filaEnvio = document.getElementById('envioFila');
+    if (filaEnvio) filaEnvio.classList.toggle('is-free', gratis);
+    if (gratis) envioValorEl.textContent = '¡Gratis!';
+    else envioValorEl.textContent = envioZona ? fmtDinero(envioZona) : 'Elige tu municipio';
+    setDinero(totalValorEl, subtotal + envioActual);
+
+    const banner = document.getElementById('shipBanner');
+    if (banner) {
+      const falta = Math.max(0, ENVIO_GRATIS_DESDE - subtotal);
+      banner.classList.toggle('is-done', gratis);
+      document.getElementById('shipBannerTxt').textContent = gratis
+        ? '¡Envío gratis!'
+        : `Te faltan ${fmtDinero(falta)} para el envío gratis`;
+      document.getElementById('shipBar').style.width = Math.min(100, Math.round(subtotal / ENVIO_GRATIS_DESDE * 100)) + '%';
+    }
+
+    // si ya eligió Nequi, el valor a transferir tiene que seguir al total
+    const chipActivo = wrap.querySelector('.metodo-chip.active');
+    const nequiValor = document.getElementById('nequiValorTxt');
+    if (chipActivo && chipActivo.dataset.metodo === 'nequi' && nequiValor) nequiValor.textContent = totalValorEl.textContent;
+  }
+
+  function actualizarContadores() {
+    const n = totalCarritoCount();
+    const hdr = document.getElementById('cartCount');
+    if (hdr) { hdr.textContent = n; animarClase(hdr, 'bump'); }
+    const c = document.getElementById('cartListCount');
+    const w = document.getElementById('cartListWord');
+    if (c) c.textContent = n;
+    if (w) w.textContent = n === 1 ? 'producto' : 'productos';
+  }
+
+  /* ---------- filas del carrito: cambiar cantidad / quitar (sin repintar todo,
+     así no se pierde lo que el cliente ya escribió en el formulario) ---------- */
+  function itemsDelGrupo(id, color, talla) {
+    return getCarrito().filter(it => it.id == id && it.color === color && it.talla === talla);
+  }
+
+  function quitarFilaAnimada(fila) {
+    if (fila.dataset.saliendo) return;
+    fila.dataset.saliendo = '1';
+    fila.style.maxHeight = fila.offsetHeight + 'px';
+    void fila.offsetWidth;
+    fila.classList.add('is-leaving');
+    setTimeout(() => {
+      fila.remove();
+      if (!listEl.querySelector('.cart-item')) pintarCarrito();   // ya no queda nada: estado vacío
+    }, reducirMovimiento ? 0 : 340);
+  }
+
+  function refrescarFila(fila) {
+    const { id, color, talla } = fila.dataset;
+    const items = itemsDelGrupo(id, color, talla);
+    if (items.length === 0) { quitarFilaAnimada(fila); return; }
+    const suma = items.reduce((s, it) => s + Number(it.precio), 0);
+    const qty = fila.querySelector('.qty-value');
+    qty.textContent = items.length;
+    animarClase(qty, 'bump');
+    setDinero(fila.querySelector('.cart-item-line'), suma);
+    const unit = fila.querySelector('.cart-item-unit');
+    unit.textContent = 'c/u ' + fmtDinero(items[0].precio);
+    unit.hidden = items.length < 2;
+    animarClase(fila, 'flash');
+  }
+
+  function despuesDeCambio(fila) {
+    refrescarFila(fila);
+    recalcularResumen();
+    actualizarContadores();
+  }
+
+  listEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.qty-plus, .qty-minus, .btn-eliminar');
+    if (!btn) return;
+    e.preventDefault();
+    const fila = btn.closest('.cart-item');
+    if (!fila || fila.dataset.saliendo) return;
+    const { id, color, talla } = fila.dataset;
+
+    if (btn.classList.contains('qty-plus')) {
+      await catalogoListo;                       // necesitamos el catálogo para revisar el stock
+      const producto = buscarProducto(id);
+      if (!producto) { showToastCarrito('No pudimos revisar el stock de este producto ahora mismo. Intenta de nuevo.'); return; }
+      const enGrupo = itemsDelGrupo(id, color, talla).length;
+      const stockDisponible = stockColor(producto, color);
       if (enGrupo >= stockDisponible) {
         showToastCarrito(`Ya tienes las ${stockDisponible} unidades disponibles de ${producto.nombre} en ese color.`);
         return;
       }
-      agregarAlCarrito(producto, btn.dataset.color, btn.dataset.talla);
-      pintarCarrito();
-      document.getElementById('cartCount').textContent = totalCarritoCount();
-    });
-  });
-
-  wrap.querySelectorAll('.qty-minus').forEach(btn => {
-    btn.addEventListener('click', () => {
-      quitarUnidad(btn.dataset.id, btn.dataset.color, btn.dataset.talla);
-      pintarCarrito();
-      document.getElementById('cartCount').textContent = totalCarritoCount();
-    });
-  });
-
-  wrap.querySelectorAll('.btn-eliminar').forEach(a => {
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      eliminarGrupo(a.dataset.id, a.dataset.color, a.dataset.talla);
-      pintarCarrito();
-      document.getElementById('cartCount').textContent = totalCarritoCount();
-    });
+      agregarAlCarrito(producto, color, talla);
+    } else if (btn.classList.contains('qty-minus')) {
+      quitarUnidad(id, color, talla);
+    } else {
+      eliminarGrupo(id, color, talla);
+    }
+    despuesDeCambio(fila);
   });
 
   const btnLimpiar = document.getElementById('btnLimpiar');
@@ -373,25 +564,21 @@ function pintarCarrito() {
     btnLimpiar.addEventListener('click', (e) => {
       e.preventDefault();
       limpiarCarrito();
-      pintarCarrito();
-      document.getElementById('cartCount').textContent = 0;
+      listEl.querySelectorAll('.cart-item').forEach((fila, i) => setTimeout(() => quitarFilaAnimada(fila), reducirMovimiento ? 0 : i * 70));
+      recalcularResumen();
+      actualizarContadores();
     });
   }
 
   /* ---- envío dinámico según municipio elegido ---- */
-  const selectMunicipio = document.getElementById('municipioEnvio');
-  const envioValorEl = document.getElementById('envioValor');
-  const totalValorEl = document.getElementById('totalValor');
-  let envioActual = 0;
-
   if (selectMunicipio) {
     selectMunicipio.addEventListener('change', () => {
       const opt = selectMunicipio.selectedOptions[0];
-      envioActual = opt ? Number(opt.dataset.costo || 0) : 0;
-      envioValorEl.textContent = envioActual ? `$${envioActual.toLocaleString('es-CO')}` : 'Elige tu municipio';
-      totalValorEl.textContent = `$${Number(total + envioActual).toLocaleString('es-CO')}`;
+      envioZona = opt ? Number(opt.dataset.costo || 0) : 0;
+      recalcularResumen();
     });
   }
+  recalcularResumen();
 
   /* ---- buscador de municipio (autocompletar sobre el <select> real) ---- */
   const municipioInput = document.getElementById('municipioInput');
@@ -696,7 +883,9 @@ function pintarCarrito() {
       setTimeout(async () => {
         try {
           const pedido = await crearPedido({ nombre, email, telefono, metodoPago, tarjetaFinal, envio });
-          mostrarExito(nombre, pedido.codigo_pedido, pedido.items, metodoPago);
+          mostrarExito(nombre, pedido.codigo_pedido, pedido.items, metodoPago, {
+            subtotal: pedido.subtotal, envio: pedido.costo_envio, total: pedido.total,
+          });
           document.getElementById('cartCount').textContent = 0;
           // No reactivamos el botón: el pedido ya quedó hecho y el
           // carrito se va a vaciar / redibujar.
@@ -716,6 +905,37 @@ function pintarCarrito() {
           }
         }
       }, 1600);
+    });
+  }
+
+  /* ---- "Finalizar compra" (resumen): lleva al paso que falta o confirma el pedido ---- */
+  const btnFinalizar = document.getElementById('btnFinalizar');
+  if (btnFinalizar && formPago) {
+    btnFinalizar.addEventListener('click', () => {
+      const caja = wrap.querySelector('.pagar-box');
+      const irAlFormulario = () => { if (caja) caja.scrollIntoView({ behavior: reducirMovimiento ? 'auto' : 'smooth', block: 'start' }); };
+      const valor = id => (document.getElementById(id).value || '').trim();
+
+      // formulario todavía vacío: solo lo abrimos, sin llenarlo de errores rojos
+      if (!valor('nombreCliente') && !valor('emailCliente') && !valor('telefonoCliente')) {
+        activarPaso(1);
+        irAlFormulario();
+        setTimeout(() => document.getElementById('nombreCliente').focus({ preventScroll: true }), 450);
+        return;
+      }
+      if (!validarPaso1()) { activarPaso(1); irAlFormulario(); return; }
+      if (!validarPaso2()) { activarPaso(2); irAlFormulario(); return; }
+      if (!metodoPago) { activarPaso(3); irAlFormulario(); showToastCarrito('Elige un método de pago.'); return; }
+      if (formPago.requestSubmit) formPago.requestSubmit();
+      else formPago.querySelector('.btn-pagar').click();
+    });
+  }
+
+  /* ---- PayPal: todavía no hay pasarela conectada, así que avisamos con honestidad ---- */
+  const btnPaypal = document.getElementById('btnPaypal');
+  if (btnPaypal) {
+    btnPaypal.addEventListener('click', () => {
+      showToastCarrito('PayPal llega muy pronto ⚡ Por ahora paga con tarjeta, Nequi o contraentrega.');
     });
   }
 }
@@ -838,7 +1058,7 @@ function cerrarOverlay() {
   document.getElementById('estado-error').style.display = 'none';
 }
 
-function mostrarExito(nombreCliente, pedidoId, items, metodoPago) {
+function mostrarExito(nombreCliente, pedidoId, items, metodoPago, resumen) {
   clearInterval(document.getElementById('pago-overlay')._iv);
   const ver = document.getElementById('estado-verificando');
   ver.style.transition = 'opacity 0.4s'; ver.style.opacity = '0';
@@ -867,6 +1087,14 @@ function mostrarExito(nombreCliente, pedidoId, items, metodoPago) {
             <div class="exito-item-meta">Talla ${it.talla || '—'} · $${Number(it.precio || 0).toLocaleString('es-CO')}</div>
           </div>
         </div>`).join('');
+    }
+    // Subtotal, envío y total del pedido
+    const cajaTotales = document.getElementById('exito-totales');
+    if (cajaTotales) {
+      cajaTotales.innerHTML = resumen ? `
+        <div class="exito-totales-fila"><span>Subtotal</span><span>${fmtDinero(resumen.subtotal)}</span></div>
+        <div class="exito-totales-fila"><span>Envío</span><span>${resumen.envio ? fmtDinero(resumen.envio) : 'Gratis'}</span></div>
+        <div class="exito-totales-total"><span>${esContraentrega ? 'Total a pagar al recibir' : 'Total'}</span><span>${fmtDinero(resumen.total)}</span></div>` : '';
     }
     document.querySelectorAll('.stepper-step').forEach(s => { s.classList.add('is-done'); s.classList.remove('is-active'); s.querySelector('.stepper-circle').textContent = '✓'; });
     document.querySelectorAll('.stepper-line').forEach(l => l.classList.add('is-done'));
@@ -899,7 +1127,7 @@ function iniciarParticulas() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     pts.forEach(p => {
       ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle = `rgba(27,67,50,${p.a})`; ctx.fill();
+      ctx.fillStyle = `rgba(255,214,0,${p.a})`; ctx.fill();
       p.x += p.vx; p.y += p.vy;
       if (p.x<0||p.x>canvas.width) p.vx*=-1;
       if (p.y<0||p.y>canvas.height) p.vy*=-1;
@@ -909,7 +1137,7 @@ function iniciarParticulas() {
 }
 
 function lanzarConfeti() {
-  const colores = ['#1b4332','#4c8c68','#dfe8da','#f3e0da','#f5ecd6','#d9a441'];
+  const colores = ['#FFD600','#F4F4F4','#0D0D0D','#ffe95c','#6B7280','#FFD600'];
   const card = document.querySelector('.pago-card');
   for (let i=0; i<50; i++) setTimeout(() => {
     const d = document.createElement('div');

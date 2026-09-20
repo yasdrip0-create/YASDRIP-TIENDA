@@ -5,6 +5,7 @@
      1) pedido_nuevo               -> escribe la fila en Sheets
                                        + manda correo de confirmación al cliente
      2) codigo_panel_recuperacion  -> manda el código del panel por correo
+     3) pedido_eliminado           -> borra la fila de ese pedido en Sheets
    ============================================================ */
 
 /* ---------- CONFIGURA ESTO ---------- */
@@ -27,6 +28,10 @@ function doPost(e) {
 
     if (datos.tipo === 'codigo_panel_recuperacion') {
       enviarCorreoCodigoPanel(datos.correo, datos.codigo);
+    }
+
+    if (datos.tipo === 'pedido_eliminado') {
+      eliminarPedidoDeSheet(datos.codigo_pedido || datos.id);
     }
 
     return ContentService.createTextOutput('ok');
@@ -177,4 +182,25 @@ function enviarCorreoCodigoPanel(correo, codigo) {
       '— YAS DRIP',
     name: 'YAS DRIP',
   });
+}
+
+/* ============================================================
+   5) BORRA LA FILA DE UN PEDIDO ELIMINADO DESDE EL PANEL
+   La columna A guarda el N° de pedido = últimos 6 caracteres del
+   id de Firestore, en mayúsculas. Se busca de abajo hacia arriba
+   y nunca se toca el encabezado (fila 1).
+   ============================================================ */
+function eliminarPedidoDeSheet(idPedido) {
+  if (!idPedido) return;
+  const id = String(idPedido);
+  const codigo = id.slice(-6).toUpperCase();
+  const hoja = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_TAB);
+  if (!hoja) throw new Error('No se encontró la pestaña "' + SHEET_TAB + '"');
+  const ultima = hoja.getLastRow();
+  if (ultima < 2) return;
+  const valores = hoja.getRange(1, 1, ultima, 1).getValues();
+  for (let i = valores.length - 1; i >= 1; i--) {
+    const celda = String(valores[i][0]).trim();
+    if (celda === codigo || celda === id) hoja.deleteRow(i + 1);
+  }
 }
