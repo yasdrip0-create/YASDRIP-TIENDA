@@ -98,8 +98,7 @@
 renderHeader('carrito');
 renderFooter();
 
-/* ============================================================
-   AJUSTES DEL CARRITO
+/* =====================================================   AJUSTES DEL CARRITO
    ENVIO_GRATIS_DESDE: subtotal (en pesos) desde el cual el envío
    es gratis. 0 = desactivado (se cobra siempre el envío de la
    zona). Ejemplo: 250000 -> envío gratis desde $250.000.
@@ -613,6 +612,7 @@ function pintarCarrito() {
     });
   }
   recalcularResumen();
+  actualizarEstadoFinalizar();
 
   /* ---- buscador de municipio (autocompletar sobre el <select> real) ---- */
   const municipioInput = document.getElementById('municipioInput');
@@ -809,8 +809,8 @@ function pintarCarrito() {
   });
 
   /* ---- "Finalizar compra": habilitado solo cuando los 3 pasos están
-     completos (datos + dirección + método de pago). Si falta algo, se ve
-     apagado y el texto de abajo dice qué falta — pero se puede seguir
+    completos (datos + dirección + método de pago). Si falta algo, se ve
+    apagado y el texto de abajo dice qué falta — pero se puede seguir
      tocando: lleva directo al paso que falta, igual que antes. ---- */
   function actualizarEstadoFinalizar() {
     const btn = document.getElementById('btnFinalizar');
