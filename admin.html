@@ -106,6 +106,117 @@
   </div>
 </div>
 
+<!-- ======================= MODAL EDITAR PRODUCTO ======================= -->
+<div class="admin-modal-overlay pe-overlay" id="modalEditarProducto">
+  <div class="pe-modal" role="dialog" aria-modal="true" aria-labelledby="peTitulo">
+    <div class="pe-head">
+      <div class="pe-head-txt">
+        <div class="pe-eyebrow">// Editar pieza</div>
+        <h3 id="peTitulo">Producto</h3>
+      </div>
+      <button type="button" class="pe-x" id="peCerrar" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="pe-body">
+      <div class="pe-field">
+        <span class="pe-label">Imagen</span>
+        <div class="pe-imagen">
+          <div class="pe-imagen-prev" id="peImagenPrev"></div>
+          <div class="pe-imagen-side">
+            <label class="admin-btn admin-btn-ghost pe-subir">📷 Subir foto<input type="file" id="peFotoGeneral" accept="image/*" hidden></label>
+            <p class="admin-foto-hint" id="peImagenHint"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pe-field">
+        <label class="pe-label" for="peNombre">Nombre</label>
+        <input type="text" id="peNombre" class="pe-input" autocomplete="off">
+      </div>
+
+      <div class="pe-field">
+        <label class="pe-label" for="peDescripcion">Descripción</label>
+        <textarea id="peDescripcion" class="pe-input" rows="3" placeholder="Descripción del producto (opcional)"></textarea>
+      </div>
+
+      <div class="pe-grid2">
+        <div class="pe-field">
+          <label class="pe-label" for="pePrecio">Precio ($)</label>
+          <input type="number" id="pePrecio" class="pe-input" min="0" step="100" inputmode="numeric">
+        </div>
+        <div class="pe-field">
+          <label class="pe-label" for="peDescuento">Descuento (%)</label>
+          <input type="number" id="peDescuento" class="pe-input" min="0" max="90" step="1" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="pe-grid2">
+        <div class="pe-field">
+          <label class="pe-label" for="peCategoria">Categoría</label>
+          <input type="text" id="peCategoria" class="pe-input" list="peCategoriasLista" autocomplete="off">
+          <datalist id="peCategoriasLista"></datalist>
+        </div>
+        <div class="pe-field">
+          <label class="pe-label" for="peStock">Stock</label>
+          <input type="number" id="peStock" class="pe-input" min="0" step="1" inputmode="numeric">
+          <span class="pe-hint" id="peStockHint"></span>
+        </div>
+      </div>
+
+      <details class="pe-det" id="peDetTallasPrecio">
+        <summary>Precio por talla</summary>
+        <p class="pe-hint">Déjalo vacío para que la talla use el precio base.</p>
+        <div class="pe-mini-grid" id="peTallasPrecio"></div>
+      </details>
+
+      <details class="pe-det" id="peDetStockColor">
+        <summary>Stock por color</summary>
+        <p class="pe-hint">Opcional: cuántas unidades hay de cada color.</p>
+        <div class="pe-mini-grid" id="peStockColor"></div>
+      </details>
+
+      <details class="pe-det" id="peDetStockTalla">
+        <summary>Stock por talla</summary>
+        <p class="pe-hint">Opcional: cuántas unidades hay de cada talla.</p>
+        <div class="pe-mini-grid" id="peStockTalla"></div>
+      </details>
+
+      <details class="pe-det" id="peDetFotos">
+        <summary>Fotos por color</summary>
+        <p class="pe-hint">Frente: la foto principal de ese color. Espalda: se ve al pasar el mouse (o tocar en celular) sobre la foto en la tienda.</p>
+        <div id="peFotosColor"></div>
+      </details>
+
+      <label class="pe-check"><input type="checkbox" id="peNewDrop"><span>Marcar como <b>New Drop</b></span></label>
+      <label class="pe-check"><input type="checkbox" id="peVisible"><span>Visible en la tienda</span></label>
+
+      <div class="pe-final">
+        <span class="pe-label">Precio final calculado</span>
+        <div class="pe-final-row"><s id="peFinalAntes" hidden></s><b id="peFinalValor">$0</b></div>
+      </div>
+    </div>
+
+    <div class="pe-foot">
+      <button type="button" class="admin-btn admin-btn-ghost" id="peCancelar">Cancelar</button>
+      <button type="button" class="admin-btn admin-btn-primary" id="peGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MODAL CONFIRMAR ELIMINAR PRODUCTO ======================= -->
+<div class="admin-modal-overlay" id="modalEliminarProducto">
+  <div class="pe-confirm" role="alertdialog" aria-modal="true" aria-labelledby="peElimTitulo">
+    <div class="pe-confirm-icono">🗑</div>
+    <h3 id="peElimTitulo">¿Seguro que quieres eliminar este producto?</h3>
+    <p class="pe-confirm-nombre" id="peElimNombre"></p>
+    <p class="admin-foto-hint">Esta acción no se puede deshacer.</p>
+    <div class="pe-confirm-btns">
+      <button type="button" class="admin-btn admin-btn-ghost" id="peElimCancelar">Cancelar</button>
+      <button type="button" class="admin-btn admin-btn-dark" id="peElimConfirmar">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ======================= DASHBOARD ======================= -->
 <div class="admin-page" id="adminDashView" style="display:none;">
   <header class="admin-topbar">
@@ -216,8 +327,8 @@
       </div>
 
       <div class="admin-card">
-        <p class="admin-foto-hint" style="margin-bottom:8px;">💡 En "Precio por talla" puedes poner un precio distinto para cada talla. En "Stock" abre <b>Por color</b> y/o <b>Por talla</b> para llevar la cuenta de cuántas unidades quedan de cada color o de cada talla por separado (ej: 5 blancas, 10 negras — o 3 en talla M, 8 en talla L) en vez de un solo número que no dice qué se acabó. En "Foto trasera" puedes subir cómo se ve la prenda de espaldas: en la tienda, el cliente la ve al pasar el mouse (o tocar en celular) sobre la foto.</p>
-        <input type="text" id="buscarProductoAdmin" class="admin-input" placeholder="🔍 Buscar producto por nombre o categoría…" style="width:100%;max-width:340px;margin-bottom:14px;">
+        <p class="admin-foto-hint admin-inv-hint">💡 Toca <b>✏ Editar</b> en un producto para cambiar su foto, precio (también por talla), descuento, stock (total, por color y por talla), New Drop y si se ve en la tienda. Todo se guarda solo cuando presionas <b>Guardar</b>.</p>
+        <input type="search" id="buscarProductoAdmin" class="admin-input admin-buscar" placeholder="🔍 Buscar por nombre o categoría…" autocomplete="off">
         <div class="admin-table-wrap">
           <table class="admin-table" id="tablaProductos">
             <thead>
@@ -227,11 +338,11 @@
                 <th class="th-ordenable" data-campo="categoria">Categoría</th>
                 <th class="th-ordenable" data-campo="precio">Precio base</th>
                 <th>Precio por talla</th>
-                <th class="th-ordenable" data-campo="descuento">Descuento %</th>
+                <th class="th-ordenable" data-campo="descuento">Descuento</th>
                 <th class="th-ordenable" data-campo="precioFinal">Precio final</th>
                 <th class="th-ordenable" data-campo="stock">Stock</th>
                 <th>Estado</th>
-                <th></th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaProductosBody"></tbody>

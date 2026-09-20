@@ -1148,9 +1148,10 @@ function pintarStats() {
     <div class="admin-stat"><b>${totalProductos}</b><span>Productos</span></div>
     <div class="admin-stat"><b>${totalUnidades}</b><span>Unidades en stock</span></div>
     <div class="admin-stat admin-stat-warn"><b>${agotados}</b><span>Agotados</span></div>
+    <div class="admin-stat admin-stat-warn"><b>${tallasAgotadas}</b><span>Tallas agotadas</span></div>
     ${stockBajo > 0 ? `<div class="admin-stat admin-stat-low"><b>${stockBajo}</b><span>Con poco stock (≤ ${STOCK_BAJO_UMBRAL})</span></div>` : ''}
     ${coloresAgotados > 0 ? `<div class="admin-stat admin-stat-warn"><b>${coloresAgotados}</b><span>Colores agotados</span></div>` : ''}
-    ${tallasAgotadas > 0 ? `<div class="admin-stat admin-stat-warn"><b>${tallasAgotadas}</b><span>Tallas agotadas</span></div>` : ''}
+    
   `;
 }
 
@@ -1217,333 +1218,409 @@ function renderInventario() {
   });
 }
 
+/* ---------- utilidades de la tabla / modal de productos ---------- */
+function _escAdm(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function _pesos(n) { return '$' + (Number(n) || 0).toLocaleString('es-CO'); }
+
+/** Tabla de productos (PC) / tarjetas (celular). Solo MUESTRA los datos:
+    para cambiar algo se usa el botón ✏ Editar, que abre el modal con los
+    datos reales de ese producto. */
 function pintarTabla(productosPagina, sinResultados, hayFiltro) {
   const productos = productosPagina;
   const tbody = document.getElementById('tablaProductosBody');
   if (!obtenerProductosAdmin().length) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
+    tbody.innerHTML = `<tr class="fila-vacia"><td colspan="10" style="text-align:center;padding:30px;color:var(--adm-text-dim);">Todavía no hay productos. Agrega el primero arriba.</td></tr>`;
     return;
   }
   if (!productos.length) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--gray);">${hayFiltro ? 'Ningún producto coincide con la búsqueda.' : 'No hay productos en esta página.'}</td></tr>`;
+    tbody.innerHTML = `<tr class="fila-vacia"><td colspan="10" style="text-align:center;padding:30px;color:var(--adm-text-dim);">${hayFiltro ? 'Ningún producto coincide con la búsqueda.' : 'No hay productos en esta página.'}</td></tr>`;
     return;
   }
   tbody.innerHTML = productos.map(p => {
     const agotado = estaAgotado(p);
-    const rango = rangoPrecioTallas(p);
-    const precioFinalTexto = rango.min === rango.max
-      ? `$${rango.min.toLocaleString('es-CO')}`
-      : `Desde $${rango.min.toLocaleString('es-CO')}`;
-    const precioFinalTitulo = rango.min === rango.max
-      ? ''
-      : `title="Varía según la talla: $${rango.min.toLocaleString('es-CO')} a $${rango.max.toLocaleString('es-CO')}"`;
-    const fotoPrincipal = (p.fotos && p.fotos[p.colores[0]]) || p.foto;
-    const miniatura = fotoPrincipal
-      ? `<img src="${fotoPrincipal}" class="admin-prod-thumb">`
-      : iconoProducto(p.icono, p.colores[0]);
-    const fotosColorHtml = (p.colores || []).map(c => {
-      const fotoColor = p.fotos && p.fotos[c];
-      return `
-        <label class="admin-color-foto" title="Foto para este color" style="background:${c}">
-          ${fotoColor ? `<img src="${fotoColor}" class="admin-color-foto-img">` : ''}
-          <span class="admin-color-foto-cam">📷</span>
-          <input type="file" accept="image/*" class="input-foto-color" data-color="${c}" hidden>
-        </label>`;
-    }).join('');
-    const fotosTraseraHtml = (p.colores || []).map(c => {
-      const fotoTrasera = p.fotosTrasera && p.fotosTrasera[c];
-      return `
-        <label class="admin-color-foto" title="Foto de espaldas para este color" style="background:${c}">
-          ${fotoTrasera ? `<img src="${fotoTrasera}" class="admin-color-foto-img">` : ''}
-          <span class="admin-color-foto-cam">🔄</span>
-          <input type="file" accept="image/*" class="input-foto-trasera" data-color="${c}" hidden>
-        </label>`;
-    }).join('');
-    const numColores = (p.colores || []).length;
-    const fotosColorFaltantes = (p.colores || []).filter(c => !(p.fotos && p.fotos[c])).length;
-    const fotosTraseraFaltantes = (p.colores || []).filter(c => !(p.fotosTrasera && p.fotosTrasera[c])).length;
-    const preciosTallaHtml = (p.tallas || []).map(t => {
-      const valor = precioBaseTalla(p, t);
-      const esDistinto = valor !== (Number(p.precio) || 0);
-      return `<button type="button" class="talla-chip-btn ${esDistinto ? 'tiene-precio-propio' : ''}" data-talla="${t}">${t}</button>`;
-    }).join('');
-    const editoresTallaHtml = (p.tallas || []).map(t => {
-      const valor = precioBaseTalla(p, t);
-      return `
-        <div class="talla-precio-editor" data-talla-editor="${t}" hidden>
-          <span>${t}</span>
-          <input type="number" class="admin-input admin-input-xs input-precio-talla" data-talla="${t}" value="${valor}" min="0" step="1000">
-        </div>`;
-    }).join('');
-    const personalizadas = (p.tallas || []).filter(t => precioBaseTalla(p, t) !== (Number(p.precio) || 0)).length;
+    const nivel = nivelStockProducto(p);
     const stockTotal = stockTotalProducto(p);
-    const coloresConStockPropio = p.colores.filter(c => colorAgotado(p, c)).length;
-    const stockColorEditorsHtml = (p.colores || []).map(c => {
-      const valor = stockColor(p, c);
-      return `
-        <div class="stock-color-editor">
-          <span class="stock-color-swatch" style="background:${c}"></span>
-          <input type="number" class="admin-input admin-input-xs input-stock-color" data-color="${c}" value="${valor}" min="0">
-        </div>`;
-    }).join('');
-    const tallasConStockPropio = (p.tallas || []).filter(t => tallaAgotada(p, t)).length;
-    const stockTallaEditorsHtml = (p.tallas || []).map(t => {
-      const valor = stockTalla(p, t);
-      return `
-        <div class="stock-color-editor">
-          <span class="stock-color-swatch stock-talla-swatch">${t}</span>
-          <input type="number" class="admin-input admin-input-xs input-stock-talla" data-talla="${t}" value="${valor}" min="0">
-        </div>`;
-    }).join('');
+    const colores = p.colores || [];
+    const tallas = p.tallas || [];
+    const rango = rangoPrecioTallas(p);
+    const desc = Number(p.descuento) || 0;
+
+    /* foto principal (la misma lógica de siempre) */
+    const fotoPrincipal = (p.fotos && p.fotos[colores[0]]) || p.foto;
+    const miniatura = fotoPrincipal
+      ? `<img src="${_escAdm(fotoPrincipal)}" class="admin-prod-thumb" alt="${_escAdm(p.nombre)}" loading="lazy">`
+      : iconoProducto(p.icono, colores[0]);
+
+    /* columna FOTOS: miniaturas por color (o la foto general) */
+    const fotosColor = colores.filter(c => p.fotos && p.fotos[c]);
+    const sinFoto = colores.length - fotosColor.length;
+    let fotosHtml = fotosColor.slice(0, 3).map(c => `<span class="tf-mini" style="background:${_escAdm(c)}"><img src="${_escAdm(p.fotos[c])}" alt="" loading="lazy"></span>`).join('');
+    if (!fotosHtml && p.foto) fotosHtml = `<span class="tf-mini"><img src="${_escAdm(p.foto)}" alt="" loading="lazy"></span>`;
+    if (fotosColor.length > 3) fotosHtml += `<span class="tf-mas">+${fotosColor.length - 3}</span>`;
+    if (!fotosHtml) fotosHtml = `<span class="tf-vacio">Sin foto</span>`;
+    const fotosAviso = colores.length > 1 && sinFoto > 0 && fotosColor.length > 0 ? `<span class="tf-aviso">⚠ ${sinFoto} color${sinFoto > 1 ? 'es' : ''} sin foto</span>` : '';
+
+    /* columna PRECIO POR TALLA: solo las tallas con precio propio */
+    const personalizadas = tallas.filter(t => precioBaseTalla(p, t) !== (Number(p.precio) || 0));
+    const tallasHtml = personalizadas.length
+      ? personalizadas.slice(0, 3).map(t => `<span class="pt-chip"><b>${_escAdm(t)}</b> ${_pesos(precioBaseTalla(p, t))}</span>`).join('') + (personalizadas.length > 3 ? `<span class="pt-chip">+${personalizadas.length - 3}</span>` : '')
+      : `<span class="pt-igual">Igual al base</span>`;
+
+    /* PRECIO FINAL (si hay descuento, se muestra el precio anterior tachado) */
+    const finalTxt = rango.min === rango.max ? _pesos(rango.min) : `Desde ${_pesos(rango.min)}`;
+    const antes = desc > 0 ? `<s class="pf-antes">${_pesos(Number(p.precio) || 0)}</s>` : '';
+    const finalTitulo = rango.min === rango.max ? '' : `title="Varía según la talla: ${_pesos(rango.min)} a ${_pesos(rango.max)}"`;
+
+    /* STOCK: total + de dónde sale */
+    const tieneT = p.stockTallas && Object.keys(p.stockTallas).length;
+    const tieneC = p.stockColores && Object.keys(p.stockColores).length;
+    const stockDe = tieneT ? 'por talla' : (tieneC ? 'por color' : 'general');
+
+    const estadoPill = agotado
+      ? '<span class="estado-pill out">Agotado</span>'
+      : (nivel === 'bajo' ? `<span class="estado-pill low">Quedan ${stockTotal}</span>` : '<span class="estado-pill ok">Disponible</span>');
+    const oculto = !p.activo ? '<span class="estado-pill oculto">Oculto</span>' : '';
+    const nuevo = p.badge === 'nuevo' ? '<span class="pill-newdrop">New drop</span>' : '';
+
     return `
-      <tr data-row-id="${p.id}" class="${!p.activo ? 'fila-inactiva' : ''}">
-        <td data-label="Producto">
+      <tr data-row-id="${_escAdm(p.id)}" class="${!p.activo ? 'fila-inactiva' : ''}">
+        <td data-label="Producto" class="td-producto">
           <div class="admin-prod-nombre">
-            <label class="admin-foto-cell admin-foto-cell-sm" title="Foto general (si no hay foto por color)">
-              ${miniatura}
-              <span class="admin-foto-cell-cam">📷</span>
-              <input type="file" accept="image/*" class="input-foto-fila" hidden>
-            </label>
-            ${p.nombre}
+            <div class="admin-prod-thumbwrap">${miniatura}</div>
+            <div class="admin-prod-info">
+              <span class="admin-prod-name">${_escAdm(p.nombre)}</span>
+              ${nuevo}
+            </div>
           </div>
         </td>
-        <td data-label="Fotos">
-          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-color">
-            ${fotosColorFaltantes > 0 ? `⚠️ ${fotosColorFaltantes} sin foto` : `Colores (${numColores})`} <span class="toggle-arrow">▾</span>
-          </button>
-          <div class="admin-colores-fila" hidden>${fotosColorHtml}</div>
-          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-fotos-trasera">
-            ${fotosTraseraFaltantes > 0 && fotosTraseraFaltantes < numColores ? `⚠️ ${fotosTraseraFaltantes} sin foto` : 'Foto trasera'} <span class="toggle-arrow">▾</span>
-          </button>
-          <div class="admin-colores-fila" hidden>${fotosTraseraHtml}</div>
-        </td>
-        <td data-label="Categoría">${p.categoria}</td>
-        <td data-label="Precio base"><input type="number" class="admin-input admin-input-sm" data-campo="precio" value="${p.precio}" min="0" step="1000"></td>
-        <td data-label="Precio por talla">
-          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-tallas">
-            ${personalizadas > 0 ? `Personalizado (${personalizadas})` : 'Precio por talla'} <span class="toggle-arrow">▾</span>
-          </button>
-          <div class="admin-tallas-precios" hidden>
-            <div class="talla-chips">${preciosTallaHtml}</div>
-            <div class="talla-precio-editors">${editoresTallaHtml}</div>
-          </div>
-        </td>
-        <td data-label="Descuento %"><input type="number" class="admin-input admin-input-sm" data-campo="descuento" value="${p.descuento || 0}" min="0" max="90"></td>
-        <td data-label="Precio final" class="mono admin-precio-final" ${precioFinalTitulo}>${precioFinalTexto}</td>
-        <td data-label="Stock">
-          <div class="admin-stock-total mono">${stockTotal} <span style="color:var(--gray);font-weight:400;">total</span></div>
-          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-stock">
-            ${coloresConStockPropio > 0 ? `⚠️ ${coloresConStockPropio} en 0` : 'Por color'} <span class="toggle-arrow">▾</span>
-          </button>
-          <div class="admin-stock-colores" hidden>${stockColorEditorsHtml}</div>
-          <button type="button" class="admin-btn admin-btn-ghost admin-btn-xs btn-toggle-stock-talla">
-            ${tallasConStockPropio > 0 ? `⚠️ ${tallasConStockPropio} en 0` : 'Por talla'} <span class="toggle-arrow">▾</span>
-          </button>
-          <div class="admin-stock-colores admin-stock-tallas" hidden>${stockTallaEditorsHtml}</div>
-        </td>
-        <td data-label="Estado">
-          <span class="estado-pill ${agotado ? 'out' : (nivelStockProducto(p) === 'bajo' ? 'low' : 'ok')}">${agotado ? 'Agotado' : (nivelStockProducto(p) === 'bajo' ? `⚠️ Quedan ${stockTotal}` : 'Disponible')}</span>
-          <label class="admin-toggle">
-            <input type="checkbox" data-campo="activo" ${p.activo ? 'checked' : ''}>
-            <span>Visible</span>
-          </label>
-        </td>
-        <td data-label="">
-          <button class="admin-btn admin-btn-primary admin-btn-xs btn-guardar-fila">Guardar</button>
-          <button class="admin-btn admin-btn-ghost admin-btn-xs btn-borrar-fila">Eliminar</button>
+        <td data-label="Fotos" class="td-fotos"><div class="tf-fila">${fotosHtml}</div>${fotosAviso}</td>
+        <td data-label="Categoría" class="td-cat">${_escAdm(p.categoria)}</td>
+        <td data-label="Precio" class="mono td-precio">${_pesos(p.precio)}</td>
+        <td data-label="Precio por talla" class="td-tallas ${personalizadas.length ? '' : 'sin-dato-mobile'}"><div class="pt-fila">${tallasHtml}</div></td>
+        <td data-label="Descuento" class="mono td-desc">${desc > 0 ? `<span class="desc-pill">-${desc}%</span>` : '<span class="td-nada">0%</span>'}</td>
+        <td data-label="Precio final" class="mono admin-precio-final" ${finalTitulo}>${antes}<span>${finalTxt}</span></td>
+        <td data-label="Stock" class="td-stock"><b class="mono">${stockTotal}</b> <span class="td-stock-de">${stockDe}</span></td>
+        <td data-label="Estado" class="td-estado">${estadoPill}${oculto}</td>
+        <td data-label="Acciones" class="td-acciones">
+          <button type="button" class="admin-btn admin-btn-xs btn-editar-fila" aria-label="Editar ${_escAdm(p.nombre)}"><span aria-hidden="true">✏️</span> Editar</button>
+          <button type="button" class="admin-btn admin-btn-xs btn-borrar-fila" aria-label="Eliminar ${_escAdm(p.nombre)}"><span aria-hidden="true">🗑</span> Eliminar</button>
         </td>
       </tr>`;
   }).join('');
-
-  /* ---- cambiar la foto general de un producto que ya existe ---- */
-  tbody.querySelectorAll('.input-foto-fila').forEach(input => {
-    input.addEventListener('change', async () => {
-      const file = input.files[0];
-      if (!file) return;
-      const fila = input.closest('tr');
-      try {
-        const dataUrl = await comprimirImagen(file, 700, 0.75);
-        actualizarProductoAdmin(fila.dataset.rowId, { foto: dataUrl });
-        showToast('Foto actualizada ✓');
-        pintarTodo();
-      } catch (err) {
-        showToast('No se pudo usar esa imagen.', true);
-      }
-    });
-  });
-
-  /* ---- cambiar la foto de UN color específico (ej: la versión negra vs la blanca) ---- */
-  tbody.querySelectorAll('.input-foto-color').forEach(input => {
-    input.addEventListener('change', async () => {
-      const file = input.files[0];
-      if (!file) return;
-      const fila = input.closest('tr');
-      try {
-        const dataUrl = await comprimirImagen(file, 700, 0.75);
-        actualizarFotoColorAdmin(fila.dataset.rowId, input.dataset.color, dataUrl);
-        showToast('Foto del color actualizada ✓');
-        pintarTodo();
-      } catch (err) {
-        showToast('No se pudo usar esa imagen.', true);
-      }
-    });
-  });
-
-  /* ---- cambiar la foto DE ESPALDAS de UN color específico: se ve en
-     la tienda al pasar el mouse (o tocar en celular) sobre la tarjeta ---- */
-  tbody.querySelectorAll('.input-foto-trasera').forEach(input => {
-    input.addEventListener('change', async () => {
-      const file = input.files[0];
-      if (!file) return;
-      const fila = input.closest('tr');
-      try {
-        const dataUrl = await comprimirImagen(file, 700, 0.75);
-        actualizarFotoTraseraColorAdmin(fila.dataset.rowId, input.dataset.color, dataUrl);
-        showToast('Foto de espaldas actualizada ✓');
-        pintarTodo();
-      } catch (err) {
-        showToast('No se pudo usar esa imagen.', true);
-      }
-    });
-  });
-
-  /* ---- si la foto ya está puesta, el clic abre "Ver / Cambiar" en vez
-     de saltar directo al explorador de archivos (ver más arriba) ---- */
-  tbody.querySelectorAll('.admin-foto-cell, .admin-color-foto').forEach(engancharMenuFoto);
-
-  /* ---- botón "Colores (N)": expande/colapsa las fotos por color, para que la tabla no se vea saturada ---- */
-  tbody.querySelectorAll('.btn-toggle-fotos-color').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bloque = btn.nextElementSibling;
-      const abrir = bloque.hasAttribute('hidden');
-      bloque.toggleAttribute('hidden', !abrir);
-      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
-    });
-  });
-
-  /* ---- botón "Foto trasera": expande/colapsa las fotos de espaldas por color ---- */
-  tbody.querySelectorAll('.btn-toggle-fotos-trasera').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bloque = btn.nextElementSibling;
-      const abrir = bloque.hasAttribute('hidden');
-      bloque.toggleAttribute('hidden', !abrir);
-      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
-    });
-  });
-
-  /* ---- botón "Por color" (stock): expande/colapsa el editor de stock por color ---- */
-  tbody.querySelectorAll('.btn-toggle-stock').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bloque = btn.nextElementSibling;
-      const abrir = bloque.hasAttribute('hidden');
-      bloque.toggleAttribute('hidden', !abrir);
-      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
-    });
-  });
-
-  /* ---- botón "Por talla" (stock): expande/colapsa el editor de stock por talla ---- */
-  tbody.querySelectorAll('.btn-toggle-stock-talla').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bloque = btn.nextElementSibling;
-      const abrir = bloque.hasAttribute('hidden');
-      bloque.toggleAttribute('hidden', !abrir);
-      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
-    });
-  });
-
-  /* ---- botón "Precio por talla": expande/colapsa el bloque para que la tabla no se vea saturada ---- */
-  tbody.querySelectorAll('.btn-toggle-tallas').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bloque = btn.nextElementSibling;
-      const abrir = bloque.hasAttribute('hidden');
-      bloque.toggleAttribute('hidden', !abrir);
-      btn.querySelector('.toggle-arrow').textContent = abrir ? '▴' : '▾';
-    });
-  });
-
-  /* ---- chips de talla: clic muestra/oculta el input de precio de esa talla ---- */
-  tbody.querySelectorAll('.talla-chip-btn').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const fila = chip.closest('tr');
-      const talla = chip.dataset.talla;
-      const editor = fila.querySelector(`[data-talla-editor="${CSS.escape(talla)}"]`);
-      if (!editor) return;
-      const abrir = editor.hasAttribute('hidden');
-      editor.toggleAttribute('hidden', !abrir);
-      chip.classList.toggle('active', abrir);
-      if (abrir) editor.querySelector('input')?.focus();
-    });
-  });
-
-  /* al escribir, actualiza el "precio final" en vivo sin guardar todavía */
-  tbody.querySelectorAll('tr').forEach(fila => {
-    const inPrecio = fila.querySelector('[data-campo="precio"]');
-    const inDescuento = fila.querySelector('[data-campo="descuento"]');
-    const inputsTalla = fila.querySelectorAll('.input-precio-talla');
-    const inputsStockColor = fila.querySelectorAll('.input-stock-color');
-    const inputsStockTalla = fila.querySelectorAll('.input-stock-talla');
-    const finalCell = fila.querySelector('.admin-precio-final');
-    const totalStockCell = fila.querySelector('.admin-stock-total');
-    function refrescarFinal() {
-      const precioBase = Number(inPrecio.value) || 0;
-      const descuento = Math.min(90, Math.max(0, Number(inDescuento.value) || 0));
-      const valoresBase = inputsTalla.length ? [...inputsTalla].map(i => Number(i.value) || 0) : [precioBase];
-      const finales = valoresBase.map(v => descuento > 0 ? Math.round(v * (1 - descuento / 100)) : v);
-      const min = Math.min(...finales), max = Math.max(...finales);
-      finalCell.textContent = min === max
-        ? `$${min.toLocaleString('es-CO')}`
-        : `$${min.toLocaleString('es-CO')}–$${max.toLocaleString('es-CO')}`;
-    }
-    /* el total mostrado sigue la misma prioridad que stockTotalProducto:
-       si hay desglose por talla, ese manda; si no, el de color. */
-    function refrescarTotalStock() {
-      const total = inputsStockTalla.length
-        ? [...inputsStockTalla].reduce((s, i) => s + (Number(i.value) || 0), 0)
-        : [...inputsStockColor].reduce((s, i) => s + (Number(i.value) || 0), 0);
-      totalStockCell.innerHTML = `${total} <span style="color:var(--gray);font-weight:400;">total</span>`;
-    }
-    inPrecio.addEventListener('input', refrescarFinal);
-    inDescuento.addEventListener('input', refrescarFinal);
-    inputsTalla.forEach(inp => inp.addEventListener('input', refrescarFinal));
-    inputsStockColor.forEach(inp => inp.addEventListener('input', refrescarTotalStock));
-    inputsStockTalla.forEach(inp => inp.addEventListener('input', refrescarTotalStock));
-
-    fila.querySelector('.btn-guardar-fila').addEventListener('click', () => {
-      const id = fila.dataset.rowId;
-      const preciosTalla = {};
-      inputsTalla.forEach(inp => {
-        preciosTalla[inp.dataset.talla] = Math.max(0, Number(inp.value) || 0);
-      });
-      const stockColores = {};
-      inputsStockColor.forEach(inp => {
-        stockColores[inp.dataset.color] = Math.max(0, Number(inp.value) || 0);
-      });
-      const stockTallas = {};
-      inputsStockTalla.forEach(inp => {
-        stockTallas[inp.dataset.talla] = Math.max(0, Number(inp.value) || 0);
-      });
-      const cambios = {
-        precio: inPrecio.value,
-        descuento: inDescuento.value,
-        activo: fila.querySelector('[data-campo="activo"]').checked,
-        preciosTalla,
-      };
-      actualizarProductoAdmin(id, cambios);
-      actualizarStockColoresAdmin(id, stockColores);
-      actualizarStockTallasAdmin(id, stockTallas);
-      showToast('Cambios guardados ✓');
-      pintarTodo();
-    });
-
-    fila.querySelector('.btn-borrar-fila').addEventListener('click', () => {
-      if (confirm('¿Eliminar este producto por completo del catálogo?')) {
-        eliminarProductoAdmin(fila.dataset.rowId);
-        showToast('Producto eliminado');
-        pintarTodo();
-      }
-    });
-  });
 }
+
+/* Un solo listener para los botones de todas las filas (sirve tras cada repintado) */
+document.getElementById('tablaProductosBody').addEventListener('click', (e) => {
+  const btnEditar = e.target.closest('.btn-editar-fila');
+  const btnBorrar = e.target.closest('.btn-borrar-fila');
+  if (!btnEditar && !btnBorrar) return;
+  const fila = e.target.closest('tr[data-row-id]');
+  if (!fila) return;
+  if (btnEditar) abrirEditorProducto(fila.dataset.rowId);
+  else abrirConfirmarEliminar(fila.dataset.rowId);
+});
+
+/* =====================================================================
+   MODAL "EDITAR PIEZA"
+   Se llena con los datos REALES del producto elegido. Nada se guarda
+   hasta presionar Guardar; si no tocas una foto o un campo, queda
+   exactamente igual que estaba.
+   ===================================================================== */
+const modalEditarProducto = document.getElementById('modalEditarProducto');
+const peEl = {
+  titulo: document.getElementById('peTitulo'),
+  imagenPrev: document.getElementById('peImagenPrev'),
+  imagenHint: document.getElementById('peImagenHint'),
+  fotoGeneral: document.getElementById('peFotoGeneral'),
+  nombre: document.getElementById('peNombre'),
+  descripcion: document.getElementById('peDescripcion'),
+  precio: document.getElementById('pePrecio'),
+  descuento: document.getElementById('peDescuento'),
+  categoria: document.getElementById('peCategoria'),
+  categoriasLista: document.getElementById('peCategoriasLista'),
+  stock: document.getElementById('peStock'),
+  stockHint: document.getElementById('peStockHint'),
+  tallasPrecio: document.getElementById('peTallasPrecio'),
+  stockColor: document.getElementById('peStockColor'),
+  stockTalla: document.getElementById('peStockTalla'),
+  fotosColor: document.getElementById('peFotosColor'),
+  newDrop: document.getElementById('peNewDrop'),
+  visible: document.getElementById('peVisible'),
+  finalAntes: document.getElementById('peFinalAntes'),
+  finalValor: document.getElementById('peFinalValor'),
+};
+let peId = null;                 // id del producto que se está editando
+let peDraft = null;              // cambios de fotos pendientes (se aplican al Guardar)
+let peTieneDesgloseT = false;    // ¿el producto ya llevaba stock por talla?
+let peTieneDesgloseC = false;    // ¿... por color?
+let peStockGeneral = 0;          // último valor del stock general
+
+function _bloquearScrollFondo(bloquear) { document.body.style.overflow = bloquear ? 'hidden' : ''; }
+
+function abrirEditorProducto(id) {
+  const p = obtenerProductosAdmin().find(x => String(x.id) === String(id));
+  if (!p) { showToast('No se encontró ese producto.', true); return; }
+  peId = p.id;
+  peDraft = { foto: undefined, fotos: {}, fotosTrasera: {} };
+  const colores = p.colores || [];
+  const tallas = p.tallas || [];
+
+  peEl.titulo.textContent = p.nombre;
+  peEl.nombre.value = p.nombre || '';
+  peEl.descripcion.value = p.descripcion || '';
+  peEl.precio.value = Number(p.precio) || 0;
+  peEl.descuento.value = Number(p.descuento) || 0;
+  peEl.categoria.value = p.categoria || '';
+  peEl.newDrop.checked = p.badge === 'nuevo';
+  peEl.visible.checked = !!p.activo;
+
+  /* categorías ya usadas, para sugerirlas al escribir */
+  const cats = [...new Set(obtenerProductosAdmin().map(x => x.categoria).filter(Boolean))].sort();
+  peEl.categoriasLista.innerHTML = cats.map(c => `<option value="${_escAdm(c)}"></option>`).join('');
+
+  /* imagen principal */
+  peRenderImagenGeneral(p, p.foto || (p.fotos && p.fotos[colores[0]]) || null);
+  peEl.imagenHint.textContent = p.foto
+    ? 'Foto general del producto. Se usa cuando un color no tiene foto propia.'
+    : ((p.fotos && Object.keys(p.fotos).length) ? 'Se muestra la foto del primer color. La foto general se usa cuando un color no tiene foto propia.' : 'Este producto todavía no tiene foto.');
+  peEl.fotoGeneral.value = '';
+
+  /* precio por talla: solo se muestra valor si esa talla tiene precio propio */
+  const preciosPropios = p.preciosTalla || {};
+  peEl.tallasPrecio.innerHTML = tallas.length ? tallas.map(t => {
+    const tiene = preciosPropios[t] !== undefined && preciosPropios[t] !== null && preciosPropios[t] !== '';
+    return `<label class="pe-mini"><span class="pe-mini-tag">${_escAdm(t)}</span><input type="number" class="pe-mini-input pe-input-precio-talla" data-talla="${_escAdm(t)}" min="0" step="100" inputmode="numeric" ${tiene ? `value="${Number(preciosPropios[t]) || 0}"` : ''} placeholder="= base"></label>`;
+  }).join('') : '<p class="pe-hint">Este producto no tiene tallas.</p>';
+  document.getElementById('peDetTallasPrecio').open = tallas.some(t => preciosPropios[t] !== undefined && preciosPropios[t] !== null && preciosPropios[t] !== '' && Number(preciosPropios[t]) !== Number(p.precio));
+
+  /* stock por color / por talla (solo hay valores si el producto ya los tenía) */
+  peTieneDesgloseC = !!(p.stockColores && Object.keys(p.stockColores).length);
+  peTieneDesgloseT = !!(p.stockTallas && Object.keys(p.stockTallas).length);
+  peEl.stockColor.innerHTML = colores.length ? colores.map(c => {
+    const tiene = peTieneDesgloseC && Object.prototype.hasOwnProperty.call(p.stockColores, c);
+    return `<label class="pe-mini"><span class="pe-mini-tag pe-mini-swatch" style="background:${_escAdm(c)}" title="${_escAdm(c)}"></span><input type="number" class="pe-mini-input pe-input-stock-color" data-color="${_escAdm(c)}" min="0" step="1" inputmode="numeric" ${tiene ? `value="${Math.max(0, Number(p.stockColores[c]) || 0)}"` : ''} placeholder="—"></label>`;
+  }).join('') : '<p class="pe-hint">Este producto no tiene colores.</p>';
+  peEl.stockTalla.innerHTML = tallas.length ? tallas.map(t => {
+    const tiene = peTieneDesgloseT && Object.prototype.hasOwnProperty.call(p.stockTallas, t);
+    return `<label class="pe-mini"><span class="pe-mini-tag">${_escAdm(t)}</span><input type="number" class="pe-mini-input pe-input-stock-talla" data-talla="${_escAdm(t)}" min="0" step="1" inputmode="numeric" ${tiene ? `value="${Math.max(0, Number(p.stockTallas[t]) || 0)}"` : ''} placeholder="—"></label>`;
+  }).join('') : '<p class="pe-hint">Este producto no tiene tallas.</p>';
+  document.getElementById('peDetStockColor').open = peTieneDesgloseC;
+  document.getElementById('peDetStockTalla').open = peTieneDesgloseT;
+  peStockGeneral = Math.max(0, Number(p.stock) || 0);
+  peEl.stock.value = peStockGeneral;
+
+  /* fotos por color: frente y espalda */
+  peEl.fotosColor.innerHTML = colores.length ? colores.map(c => {
+    const f = p.fotos && p.fotos[c];
+    const t = p.fotosTrasera && p.fotosTrasera[c];
+    return `
+      <div class="pe-color-fila" data-color="${_escAdm(c)}">
+        <span class="pe-color-swatch" style="background:${_escAdm(c)}" title="${_escAdm(c)}"></span>
+        <label class="pe-foto" title="Foto de frente de este color">
+          ${f ? `<img src="${_escAdm(f)}" alt="Frente">` : '<span class="pe-foto-vacio">＋</span>'}
+          <em>Frente</em>
+          <input type="file" accept="image/*" hidden data-tipo="frente" data-color="${_escAdm(c)}">
+        </label>
+        <label class="pe-foto" title="Foto de espalda de este color">
+          ${t ? `<img src="${_escAdm(t)}" alt="Espalda">` : '<span class="pe-foto-vacio">＋</span>'}
+          <em>Espalda</em>
+          <input type="file" accept="image/*" hidden data-tipo="espalda" data-color="${_escAdm(c)}">
+        </label>
+      </div>`;
+  }).join('') : '<p class="pe-hint">Este producto no tiene colores.</p>';
+  document.getElementById('peDetFotos').open = !!(p.fotos && Object.keys(p.fotos).length) || !!(p.fotosTrasera && Object.keys(p.fotosTrasera).length);
+
+  peRecalcular();
+  modalEditarProducto.classList.add('open');
+  _bloquearScrollFondo(true);
+  const cuerpo = modalEditarProducto.querySelector('.pe-body');
+  if (cuerpo) cuerpo.scrollTop = 0;
+}
+
+function peRenderImagenGeneral(p, src) {
+  peEl.imagenPrev.innerHTML = src
+    ? `<img src="${_escAdm(src)}" alt="${_escAdm(p ? p.nombre : '')}">`
+    : (p ? iconoProducto(p.icono, (p.colores || [])[0]) : '');
+}
+
+function cerrarEditorProducto() {
+  modalEditarProducto.classList.remove('open');
+  _bloquearScrollFondo(false);
+  peId = null;
+  peDraft = null;
+}
+
+/* Recalcula en vivo el precio final y el total de stock */
+function peRecalcular() {
+  const base = Math.max(0, Number(peEl.precio.value) || 0);
+  const d = Math.min(90, Math.max(0, Number(peEl.descuento.value) || 0));
+  const inputsT = [...peEl.tallasPrecio.querySelectorAll('.pe-input-precio-talla')];
+  const bases = inputsT.length ? inputsT.map(i => (i.value !== '' ? Math.max(0, Number(i.value) || 0) : base)) : [base];
+  const finales = bases.map(v => (d > 0 ? Math.round(v * (1 - d / 100)) : v));
+  const minF = Math.min(...finales), maxF = Math.max(...finales);
+  peEl.finalValor.textContent = minF === maxF ? _pesos(minF) : `${_pesos(minF)} – ${_pesos(maxF)}`;
+  const minB = Math.min(...bases), maxB = Math.max(...bases);
+  if (d > 0) {
+    peEl.finalAntes.hidden = false;
+    peEl.finalAntes.textContent = minB === maxB ? _pesos(minB) : `${_pesos(minB)} – ${_pesos(maxB)}`;
+  } else {
+    peEl.finalAntes.hidden = true;
+  }
+
+  /* stock: si hay desglose por talla o color, el total se calcula solo (igual que en la tienda) */
+  const inT = [...peEl.stockTalla.querySelectorAll('.pe-input-stock-talla')];
+  const inC = [...peEl.stockColor.querySelectorAll('.pe-input-stock-color')];
+  const usaT = peTieneDesgloseT || inT.some(i => i.value !== '');
+  const usaC = peTieneDesgloseC || inC.some(i => i.value !== '');
+  const suma = (arr) => arr.reduce((s, i) => s + Math.max(0, Math.floor(Number(i.value) || 0)), 0);
+  if (usaT || usaC) {
+    peEl.stock.readOnly = true;
+    peEl.stock.value = usaT ? suma(inT) : suma(inC);
+    peEl.stockHint.textContent = usaT ? 'Suma automática del stock por talla.' : 'Suma automática del stock por color.';
+  } else {
+    if (peEl.stock.readOnly) peEl.stock.value = peStockGeneral;
+    peEl.stock.readOnly = false;
+    peEl.stockHint.textContent = '';
+  }
+}
+['pePrecio', 'peDescuento'].forEach(id => document.getElementById(id).addEventListener('input', peRecalcular));
+peEl.tallasPrecio.addEventListener('input', peRecalcular);
+peEl.stockColor.addEventListener('input', peRecalcular);
+peEl.stockTalla.addEventListener('input', peRecalcular);
+peEl.stock.addEventListener('input', () => { if (!peEl.stock.readOnly) peStockGeneral = Math.max(0, Math.floor(Number(peEl.stock.value) || 0)); });
+
+/* Fotos: se comprimen y quedan "pendientes"; solo se guardan al presionar Guardar */
+peEl.fotoGeneral.addEventListener('change', async () => {
+  const file = peEl.fotoGeneral.files[0];
+  if (!file || !peDraft) return;
+  try {
+    const dataUrl = await comprimirImagen(file, 700, 0.75);
+    peDraft.foto = dataUrl;
+    peRenderImagenGeneral(null, dataUrl);
+    peEl.imagenHint.textContent = '✓ Foto nueva lista — se guarda al presionar Guardar.';
+  } catch (err) {
+    showToast('No se pudo usar esa imagen.', true);
+  }
+});
+peEl.fotosColor.addEventListener('change', async (e) => {
+  const input = e.target.closest('input[type="file"]');
+  if (!input || !peDraft) return;
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const dataUrl = await comprimirImagen(file, 700, 0.75);
+    (input.dataset.tipo === 'espalda' ? peDraft.fotosTrasera : peDraft.fotos)[input.dataset.color] = dataUrl;
+    const label = input.closest('.pe-foto');
+    let img = label.querySelector('img');
+    if (!img) { label.querySelector('.pe-foto-vacio')?.remove(); img = document.createElement('img'); label.prepend(img); }
+    img.src = dataUrl;
+    label.classList.add('pe-foto-nueva');
+  } catch (err) {
+    showToast('No se pudo usar esa imagen.', true);
+  }
+});
+
+function guardarEditorProducto() {
+  const p = obtenerProductosAdmin().find(x => String(x.id) === String(peId));
+  if (!p) { showToast('No se encontró ese producto.', true); cerrarEditorProducto(); return; }
+  const nombre = peEl.nombre.value.trim();
+  if (!nombre) { showToast('El producto necesita un nombre.', true); peEl.nombre.focus(); return; }
+  if (peEl.precio.value === '' || !(Number(peEl.precio.value) >= 0)) { showToast('Escribe un precio válido.', true); peEl.precio.focus(); return; }
+  const precio = Math.max(0, Number(peEl.precio.value) || 0);
+  const descuento = Math.min(90, Math.max(0, Number(peEl.descuento.value) || 0));
+
+  /* precio por talla: las tallas con precio escrito se guardan; si una talla tenía precio propio
+     y ahora está vacía, pasa a costar lo mismo que el precio base */
+  const tallas = p.tallas || [];
+  let preciosTalla;
+  if (tallas.length) {
+    preciosTalla = { ...(p.preciosTalla || {}) };
+    peEl.tallasPrecio.querySelectorAll('.pe-input-precio-talla').forEach(inp => {
+      const t = inp.dataset.talla;
+      if (inp.value !== '') preciosTalla[t] = Math.max(0, Number(inp.value) || 0);
+      else if (Object.prototype.hasOwnProperty.call(preciosTalla, t)) preciosTalla[t] = precio;
+    });
+  }
+
+  /* stock por color / talla: solo se escribe si ya existía o si se llenó algo */
+  const inT = [...peEl.stockTalla.querySelectorAll('.pe-input-stock-talla')];
+  const inC = [...peEl.stockColor.querySelectorAll('.pe-input-stock-color')];
+  const usaT = peTieneDesgloseT || inT.some(i => i.value !== '');
+  const usaC = peTieneDesgloseC || inC.some(i => i.value !== '');
+
+  const cambios = {
+    nombre,
+    categoria: peEl.categoria.value,
+    precio,
+    descuento,
+    activo: peEl.visible.checked,
+  };
+  if (preciosTalla) cambios.preciosTalla = preciosTalla;
+  if (!usaT && !usaC) cambios.stock = peEl.stock.value;
+  if (peDraft.foto !== undefined) cambios.foto = peDraft.foto;
+  if ((peEl.descripcion.value.trim()) !== (p.descripcion || '')) cambios.descripcion = peEl.descripcion.value;
+  /* New Drop = badge "nuevo". Otras etiquetas (ej: "pocas") no se tocan si no cambias este check */
+  const eraNuevo = p.badge === 'nuevo';
+  if (peEl.newDrop.checked && !eraNuevo) cambios.badge = 'nuevo';
+  else if (!peEl.newDrop.checked && eraNuevo) cambios.badge = null;
+
+  const id = p.id;
+  actualizarProductoAdmin(id, cambios);
+  Object.keys(peDraft.fotos).forEach(c => actualizarFotoColorAdmin(id, c, peDraft.fotos[c]));
+  Object.keys(peDraft.fotosTrasera).forEach(c => actualizarFotoTraseraColorAdmin(id, c, peDraft.fotosTrasera[c]));
+  if (usaC) {
+    const stockColores = {};
+    inC.forEach(i => { stockColores[i.dataset.color] = Math.max(0, Math.floor(Number(i.value) || 0)); });
+    actualizarStockColoresAdmin(id, stockColores);
+  }
+  if (usaT) {
+    const stockTallas = {};
+    inT.forEach(i => { stockTallas[i.dataset.talla] = Math.max(0, Math.floor(Number(i.value) || 0)); });
+    actualizarStockTallasAdmin(id, stockTallas);
+  }
+  cerrarEditorProducto();
+  showToast('Cambios guardados ✓');
+  pintarTodo();
+}
+
+document.getElementById('peGuardar').addEventListener('click', guardarEditorProducto);
+document.getElementById('peCancelar').addEventListener('click', cerrarEditorProducto);
+document.getElementById('peCerrar').addEventListener('click', cerrarEditorProducto);
+
+/* =====================================================================
+   CONFIRMAR ELIMINAR (solo el producto elegido)
+   ===================================================================== */
+const modalEliminarProducto = document.getElementById('modalEliminarProducto');
+let peElimId = null;
+function abrirConfirmarEliminar(id) {
+  const p = obtenerProductosAdmin().find(x => String(x.id) === String(id));
+  if (!p) return;
+  peElimId = p.id;
+  document.getElementById('peElimNombre').textContent = p.nombre;
+  modalEliminarProducto.classList.add('open');
+  _bloquearScrollFondo(true);
+}
+function cerrarConfirmarEliminar() {
+  modalEliminarProducto.classList.remove('open');
+  peElimId = null;
+  if (!modalEditarProducto.classList.contains('open')) _bloquearScrollFondo(false);
+}
+document.getElementById('peElimCancelar').addEventListener('click', cerrarConfirmarEliminar);
+modalEliminarProducto.addEventListener('click', (e) => { if (e.target === modalEliminarProducto) cerrarConfirmarEliminar(); });
+document.getElementById('peElimConfirmar').addEventListener('click', () => {
+  if (peElimId == null) return;
+  eliminarProductoAdmin(peElimId);
+  cerrarConfirmarEliminar();
+  showToast('Producto eliminado');
+  pintarTodo();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (modalEliminarProducto.classList.contains('open')) cerrarConfirmarEliminar();
+  else if (modalEditarProducto.classList.contains('open')) cerrarEditorProducto();
+});
 
 function pintarTodo() {
   pintarStats();

@@ -336,6 +336,8 @@ function actualizarProductoAdmin(id, cambios) {
   if (cambios.activo !== undefined) p.activo = !!cambios.activo;
   if (cambios.preciosTalla !== undefined) p.preciosTalla = cambios.preciosTalla;
   if (cambios.foto !== undefined) p.foto = cambios.foto;
+  if (cambios.badge !== undefined) p.badge = cambios.badge;            // "nuevo" = New Drop, o null
+  if (cambios.descripcion !== undefined) p.descripcion = String(cambios.descripcion).trim();
   _guardarProductoEnNube(p);
   return p;
 }
