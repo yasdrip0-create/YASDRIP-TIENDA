@@ -1758,6 +1758,151 @@ footer.footer-contacto{border-top:1px solid var(--line);margin-top:auto;backgrou
   --adm-red:#ff5c72;
   --adm-green:#3ddc97;
 }
+
+/* ============================================================
+   LOGIN DEL PANEL ADMIN — versión con anillo de neón
+   (inspirada en el clip de referencia, pero con la paleta lima /
+   violeta de la marca en vez del azul). Solo aplica dentro de
+   #adminLoginView: el login de clientes (login.html) no se toca.
+============================================================ */
+.admin-login{
+  position:relative;min-height:100vh;min-height:100svh;min-height:100dvh;
+  background:radial-gradient(120% 90% at 50% -10%, #1c1c2e 0%, var(--adm-bg) 55%), var(--adm-bg);
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  padding:48px 20px calc(40px + env(safe-area-inset-bottom));
+}
+.admin-login-bg{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.4px);
+  background-size:24px 24px;
+  -webkit-mask:radial-gradient(80% 70% at 50% 38%, black 0%, transparent 72%);
+  mask:radial-gradient(80% 70% at 50% 38%, black 0%, transparent 72%);
+}
+.admin-login-glow{
+  position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+  width:min(900px,150vw);height:min(900px,150vw);border-radius:50%;z-index:0;pointer-events:none;
+  background:radial-gradient(closest-side, rgba(215,255,61,0.16), rgba(139,92,246,0.09) 55%, transparent 75%);
+  filter:blur(6px);
+}
+.admin-login-ring{
+  position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);
+  border-radius:50%;pointer-events:none;z-index:0;
+}
+.admin-login-ring-1{
+  width:min(560px,128vw);height:min(560px,128vw);
+  background:repeating-conic-gradient(from 0deg, var(--adm-lime) 0deg 3.2deg, transparent 3.2deg 9deg);
+  -webkit-mask:radial-gradient(closest-side, transparent 66%, black 69%, black 90%, transparent 93%);
+  mask:radial-gradient(closest-side, transparent 66%, black 69%, black 90%, transparent 93%);
+  filter:drop-shadow(0 0 16px rgba(215,255,61,0.45));
+  animation:adminRingSpin 70s linear infinite;
+  opacity:0.85;
+}
+.admin-login-ring-2{
+  width:min(700px,145vw);height:min(700px,145vw);
+  background:repeating-conic-gradient(from 12deg, var(--adm-violet) 0deg 2.2deg, transparent 2.2deg 9deg);
+  -webkit-mask:radial-gradient(closest-side, transparent 72%, black 75%, black 88%, transparent 91%);
+  mask:radial-gradient(closest-side, transparent 72%, black 75%, black 88%, transparent 91%);
+  filter:drop-shadow(0 0 20px rgba(139,92,246,0.35));
+  animation:adminRingSpin 100s linear infinite reverse;
+  opacity:0.55;
+}
+@keyframes adminRingSpin{to{transform:translate(-50%,-50%) rotate(360deg);}}
+
+.admin-login-wrap{position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;}
+.admin-login-brand{display:flex;align-items:center;gap:6px;font-size:21px;font-weight:700;color:var(--adm-text);margin-bottom:26px;}
+.admin-login-brand .logo-mark{color:var(--adm-lime);font-size:21px;}
+.admin-login-brand em{font-style:italic;color:var(--adm-lime);}
+
+.admin-login-card{
+  width:100%;
+  background:linear-gradient(180deg, rgba(24,24,38,0.92), rgba(19,19,32,0.94));
+  border:1px solid var(--adm-line);
+  border-radius:24px;
+  padding:34px 30px 28px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(215,255,61,0.05) inset;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  text-align:center;
+}
+.admin-login-eyebrow{
+  font-family:'Space Mono',monospace;font-size:11.5px;letter-spacing:0.22em;text-transform:uppercase;
+  color:var(--adm-lime);display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.admin-login-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--adm-lime);box-shadow:0 0 0 3px rgba(215,255,61,0.25);}
+.admin-login-card h1{font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:var(--adm-text);margin-bottom:6px;}
+.admin-login-card h1 em{font-style:italic;color:var(--adm-lime);}
+.admin-login-sub{color:var(--adm-text-dim);font-size:13.5px;margin-bottom:26px;}
+
+.admin-login-form{text-align:left;}
+.nf-field{position:relative;margin-bottom:16px;}
+.nf-field input{
+  width:100%;padding:17px 16px 15px;border-radius:14px;
+  background:rgba(255,255,255,0.03);
+  border:1.4px solid var(--adm-line);
+  color:var(--adm-text);font-family:'Work Sans',sans-serif;font-size:14.5px;
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.nf-field-pass input{padding-right:46px;}
+.nf-field input::placeholder{color:transparent;}
+.nf-field label{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  color:var(--adm-text-dim);font-size:14.5px;pointer-events:none;
+  transition:top .18s ease, transform .18s ease, color .18s ease;
+  background:transparent;padding:0 5px;
+}
+.nf-field input:focus,
+.nf-field input:not(:placeholder-shown){
+  border-color:var(--adm-lime);
+  background:rgba(215,255,61,0.045);
+  box-shadow:0 0 0 4px rgba(215,255,61,0.08);
+  outline:none;
+}
+.nf-field input:focus + label,
+.nf-field input:not(:placeholder-shown) + label{
+  top:0;transform:translateY(-50%) scale(0.82);
+  color:var(--adm-lime);background:#14141f;
+}
+.nf-eye{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:16px;line-height:1;
+  padding:10px;color:var(--adm-text-dim);border-radius:10px;
+}
+.nf-eye:hover{color:var(--adm-lime);background:rgba(255,255,255,0.06);}
+
+.admin-login-submit{
+  width:100%;border:none;cursor:pointer;text-align:center;margin-top:6px;
+  padding:16px;border-radius:14px;
+  background:linear-gradient(135deg, var(--adm-lime), #b9e620);
+  color:var(--adm-lime-ink);
+  font-family:'Space Mono',monospace;font-size:14px;font-weight:800;
+  letter-spacing:0.05em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 14px 34px rgba(215,255,61,0.22);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.admin-login-submit:hover{transform:translateY(-1px);box-shadow:0 18px 42px rgba(215,255,61,0.3);}
+.admin-login-submit:active{transform:translateY(0);}
+.admin-login-submit:disabled{opacity:0.6;cursor:default;transform:none;}
+
+.admin-login-links{display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:22px;}
+.admin-login-links a{font-size:12.5px;color:var(--adm-text-dim);}
+.admin-login-links a:hover{color:var(--adm-lime);}
+.admin-login-back{display:block;text-align:center;margin-top:16px;font-size:12.5px;color:var(--adm-text-dim);}
+.admin-login-back:hover{color:var(--adm-lime);}
+.admin-login-stamp{margin-top:24px;color:rgba(244,243,250,0.28);font-size:12px;text-align:center;letter-spacing:0.02em;}
+
+.admin-login .auth-error{background:rgba(255,92,114,0.12);color:#ff8a9a;border:1px solid rgba(255,92,114,0.35);}
+.admin-login .auth-ok{background:rgba(61,220,151,0.12);color:#6eebb0;border:1px solid rgba(61,220,151,0.35);}
+
+@media (max-width:520px){
+  .admin-login-card{padding:28px 22px 24px;border-radius:20px;}
+  .admin-login-ring-1{width:175vw;height:175vw;}
+  .admin-login-ring-2{width:195vw;height:195vw;}
+}
+@media (prefers-reduced-motion: reduce){
+  .admin-login-ring-1,.admin-login-ring-2{animation:none;}
+}
+
 .admin-page{
   min-height:100vh;
   background:

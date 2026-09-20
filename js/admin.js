@@ -880,6 +880,20 @@ document.getElementById('btnConfirmarBorrarPedido').addEventListener('click', as
   pintarPedidos();
 });
 
+/* ---------- ojito de mostrar/ocultar en Contraseña y Código de acceso del login ---------- */
+document.querySelectorAll('.nf-eye').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    if (!input) return;
+    const esCodigo = btn.dataset.target === 'adminCodigoPanel';
+    const mostrar = input.type === 'password';
+    input.type = mostrar ? 'text' : 'password';
+    btn.textContent = mostrar ? '🙈' : '👁️';
+    btn.setAttribute('aria-label', mostrar ? (esCodigo ? 'Ocultar código' : 'Ocultar contraseña') : (esCodigo ? 'Mostrar código' : 'Mostrar contraseña'));
+    input.focus();
+  });
+});
+
 document.getElementById('formAdminLogin').addEventListener('submit', async (e) => {
   e.preventDefault();
   const usuario = document.getElementById('adminUsuario').value.trim();

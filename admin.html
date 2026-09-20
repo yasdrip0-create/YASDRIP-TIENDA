@@ -15,43 +15,51 @@
 <body>
 
 <!-- ======================= LOGIN DEL ADMIN ======================= -->
-<div class="auth-page" id="adminLoginView">
-  <div class="auth-visual">
-    <a href="index.html" class="nav-logo">
-      <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
-    </a>
-    <div class="auth-copy">
-      <div class="auth-eyebrow">Solo para el equipo</div>
-      <h1>Panel del <em>vendedor</em>.</h1>
-      <p>Desde aquí controlas cuánto stock hay de cada prenda, el precio y los descuentos que ve la tienda.</p>
-    </div>
-    <div class="auth-stamp stamp-font">underground<br>drip co.</div>
-  </div>
+<div class="admin-login" id="adminLoginView">
+  <div class="admin-login-bg"></div>
+  <div class="admin-login-glow"></div>
+  <div class="admin-login-ring admin-login-ring-2"></div>
+  <div class="admin-login-ring admin-login-ring-1"></div>
 
-  <div class="auth-form-side">
-    <div class="auth-card">
-      <a href="index.html" class="auth-brand">
-        <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
-      </a>
-      <h2>Entrar al <em>panel</em></h2>
-      <p class="auth-sub">Correo, contraseña y tu código de acceso.</p>
+  <div class="admin-login-wrap">
+    <a href="index.html" class="admin-login-brand">
+      <span class="logo-mark">⚡</span><span class="display">YAS<em>DRIP</em></span>
+    </a>
+
+    <div class="admin-login-card">
+      <div class="admin-login-eyebrow">Solo para el equipo</div>
+      <h1>Entrar al <em>panel</em></h1>
+      <p class="admin-login-sub">Correo, contraseña y tu código de acceso.</p>
+
       <div id="adminAuthMsg"></div>
-      <form id="formAdminLogin">
-        <div class="auth-field">
-          <input type="email" id="adminUsuario" placeholder="Correo" autocomplete="email" required>
+
+      <form id="formAdminLogin" class="admin-login-form">
+        <div class="nf-field">
+          <input type="email" id="adminUsuario" placeholder=" " autocomplete="email" required>
+          <label for="adminUsuario">Correo</label>
         </div>
-        <div class="auth-field">
-          <input type="password" id="adminClave" placeholder="Contraseña" autocomplete="current-password" required>
+        <div class="nf-field nf-field-pass">
+          <input type="password" id="adminClave" placeholder=" " autocomplete="current-password" required data-ojito-listo="1">
+          <label for="adminClave">Contraseña</label>
+          <button type="button" class="nf-eye" data-target="adminClave" aria-label="Mostrar contraseña">👁️</button>
         </div>
-        <div class="auth-field">
-          <input type="text" id="adminCodigoPanel" placeholder="Código de acceso (6 números)" inputmode="numeric" maxlength="6" autocomplete="off">
+        <div class="nf-field nf-field-pass">
+          <input type="password" id="adminCodigoPanel" placeholder=" " inputmode="numeric" maxlength="6" autocomplete="off" data-ojito-listo="1">
+          <label for="adminCodigoPanel">Código de acceso (6 números)</label>
+          <button type="button" class="nf-eye" data-target="adminCodigoPanel" aria-label="Mostrar código">👁️</button>
         </div>
-        <button type="submit" class="btn btn-primary auth-submit">Entrar <span class="auth-submit-arrow">→</span></button>
+
+        <button type="submit" class="admin-login-submit">Entrar <span class="auth-submit-arrow">→</span></button>
       </form>
-      <p class="auth-footnote"><a href="#" id="linkOlvideCodigoPanel">¿Olvidaste tu código de acceso?</a></p>
-      <p class="auth-footnote"><a href="#" id="linkOlvideClavePanel">¿Olvidaste tu contraseña?</a></p>
-      <p class="auth-footnote"><a href="index.html">← Volver a la tienda</a></p>
+
+      <div class="admin-login-links">
+        <a href="#" id="linkOlvideCodigoPanel">¿Olvidaste tu código de acceso?</a>
+        <a href="#" id="linkOlvideClavePanel">¿Olvidaste tu contraseña?</a>
+      </div>
+      <a href="index.html" class="admin-login-back">← Volver a la tienda</a>
     </div>
+
+    <div class="admin-login-stamp stamp-font">underground drip co.</div>
   </div>
 </div>
 
