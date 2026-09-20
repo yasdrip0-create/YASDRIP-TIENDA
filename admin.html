@@ -336,7 +336,7 @@
         </div>
 
         <div class="admin-add-grid" style="grid-template-columns:1fr;margin-top:14px;">
-          <input type="password" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" autocomplete="off">
+          <input type="text" id="codigoDesarrolladorUsuario" class="admin-input" placeholder="Código de desarrollador" inputmode="numeric" autocomplete="off">
         </div>
         <p class="admin-foto-hint" style="margin:8px 0 0;">🔒 Crear, editar permisos, activar/desactivar o eliminar usuarios pide el código de desarrollador, para que solo alguien del equipo con ese código pueda tocar esta pestaña.</p>
         <div class="admin-add-actions">
@@ -403,7 +403,7 @@
       </label>
     </div>
     <input type="text" id="nuevoCodigoPanelPermisos" placeholder="Nuevo código de acceso (6 números, déjalo vacío para no cambiarlo)" inputmode="numeric" maxlength="6" autocomplete="off" style="margin-bottom:10px;">
-    <input type="password" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="text" id="codigoDesarrolladorPermisos" placeholder="Código de desarrollador" inputmode="numeric" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarPermisos">Guardar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalPermisos">Cancelar</button>
@@ -429,7 +429,7 @@
   <div class="admin-modal">
     <h3 id="modalCodigoDevTitulo">Código de desarrollador</h3>
     <p class="admin-foto-hint" id="modalCodigoDevTexto" style="margin-bottom:12px;"></p>
-    <input type="password" id="inputCodigoDev" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="text" id="inputCodigoDev" placeholder="Código de desarrollador" inputmode="numeric" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarCodigoDev">Aceptar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCancelarCodigoDev">Cancelar</button>
@@ -464,7 +464,7 @@
   <div class="admin-modal">
     <h3>Eliminar pedido</h3>
     <p class="admin-foto-hint" style="margin-bottom:12px;">Escribe el código de desarrollador para confirmar. Esta acción no se puede deshacer.</p>
-    <input type="password" id="claveBorrarPedido" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="text" id="claveBorrarPedido" placeholder="Código de desarrollador" inputmode="numeric" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnConfirmarBorrarPedido">Eliminar pedido</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalBorrarPedido">Cancelar</button>
@@ -478,7 +478,7 @@
     <h3>Cambiar contraseña del panel</h3>
     <input type="password" id="claveActual" placeholder="Contraseña actual">
     <input type="password" id="claveNueva" placeholder="Nueva contraseña">
-    <input type="password" id="codigoDesarrolladorClave" placeholder="Código de desarrollador" autocomplete="off">
+    <input type="text" id="codigoDesarrolladorClave" placeholder="Código de desarrollador" inputmode="numeric" autocomplete="off">
     <div class="admin-add-actions">
       <button class="admin-btn admin-btn-primary" id="btnGuardarClave">Guardar</button>
       <button class="admin-btn admin-btn-ghost" id="btnCerrarModalClave">Cancelar</button>
