@@ -24,7 +24,7 @@
    ============================================================ */
 const YD_HERO_SLIDES = [
   {
-    imagen: null,              // p. ej. "img/banner-1.jpg"
+    imagen: "img/banner-hoodie-1.jpg",
     arte: { print: "YASDRIP", bajo: "VOLTAGE CLUB · MEDELLÍN", luz: "#8af04e", pos: 0 },
     eyebrow: "Nueva colección",
     titulo: 'YAS<span>DRIP</span>',
