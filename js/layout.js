@@ -23,6 +23,16 @@ function renderHeader(paginaActual = "") {
 
   const generosNav = typeof GENEROS_MENU !== 'undefined' ? GENEROS_MENU : [];
 
+  /* "Tienda" y "Categorías" apuntan los dos a productos.html, así que
+     no pueden resaltarse los dos por la misma condición (paginaActual
+     === 'productos') o siempre se prenden juntos. Se distinguen por
+     la URL: si llegaste con ?cat= o ?genero= (es decir, entraste
+     eligiendo algo del menú Categorías), se resalta "Categorías";
+     si no, se resalta "Tienda". */
+  const paramsNav = new URLSearchParams(window.location.search);
+  const vieneDeCategorias = paginaActual === 'productos' && (paramsNav.has('cat') || paramsNav.has('genero'));
+  const esTiendaPlano = paginaActual === 'productos' && !vieneDeCategorias;
+
   /* ---- menú "Categorías": un solo desplegable ancho que reúne los
      géneros (Hombre / Mujer / Niño / Niña) y todas las categorías del
      catálogo. Antes cada género era un menú aparte; se juntaron para
@@ -30,7 +40,7 @@ function renderHeader(paginaActual = "") {
      sin perder ningún enlace. */
   const navCategoriasHtml = `
     <div class="nav-drop">
-      <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Categorías</a>
+      <a href="productos.html" class="${vieneDeCategorias ? 'active' : ''}">Categorías</a>
       <div class="nav-drop-panel nav-drop-panel-ancho">
         <div class="nav-genero-panel">
           ${categorias.length ? `
@@ -100,7 +110,7 @@ function renderHeader(paginaActual = "") {
       </a>
       <div class="nav-links">
         <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
-        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
+        <a href="productos.html" class="${esTiendaPlano ? 'active' : ''}">Tienda</a>
         ${navCategoriasHtml}
         <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>
       </div>
@@ -136,7 +146,7 @@ function renderHeader(paginaActual = "") {
       </div>
       <div class="mobile-nav-links">
         <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
-        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
+        <a href="productos.html" class="${esTiendaPlano ? 'active' : ''}">Tienda</a>
         ${categorias.length ? `<div class="mobile-nav-subwrap">${categorias.map(cat => `<a href="productos.html?cat=${encodeURIComponent(cat)}">${cat}</a>`).join('')}</div>` : ''}
         ${generosNav.map(g => {
           const grupos = typeof categoriasPorGeneroAgrupadas === 'function' ? categoriasPorGeneroAgrupadas(g.id) : [];
