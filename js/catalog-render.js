@@ -76,10 +76,12 @@ function construirTarjetaHtml(p, i = 0) {
           ? `<img src="${fotoInicial}" class="card-photo" data-photo alt="${p.nombre}" loading="lazy">`
           : `<div data-icon>${iconoProducto(p.icono, colorInicial)}</div>`}
         ${fotoTraseraInicial ? `<img src="${fotoTraseraInicial}" class="card-photo card-photo-trasera" data-photo-trasera alt="${p.nombre} de espaldas" loading="lazy">` : ''}
+        ${typeof YD_ICONOS !== 'undefined' ? `<button class="yd-quick" data-quick="${p.id}" type="button">${YD_ICONOS.ojo} Vista rápida</button>` : ''}
       </div>
       <div class="card-body">
         <div class="card-cat">${p.categoria}</div>
-        <div class="card-name display">${p.nombre}</div>
+        <a class="card-name display" href="producto.html?id=${p.id}">${p.nombre}</a>
+        ${typeof ydEstrellasHtml === 'function' ? ydEstrellasHtml(p) : ''}
         <div class="swatches">${swatchesHtml}</div>
         <div class="sizes">${sizesHtml}</div>
         ${stockNoteHtml}
@@ -164,7 +166,7 @@ function activarInteraccionGrid(gridEl, opciones = {}) {
        la foto alterna entre la vista de adelante y la de espaldas */
     const mediaEl = card.querySelector('[data-media]');
     mediaEl.addEventListener('click', (e) => {
-      if (e.target.closest('.fav-heart')) return;
+      if (e.target.closest('.fav-heart') || e.target.closest('.yd-quick')) return;
       if (card.querySelector('[data-photo-trasera]')) {
         card.classList.toggle('card-trasera-activa');
       }
@@ -223,6 +225,16 @@ function activarInteraccionGrid(gridEl, opciones = {}) {
         }
       });
     });
+
+    /* ---- vista rápida ---- */
+    const quickBtn = card.querySelector('.yd-quick');
+    if (quickBtn && typeof ydAbrirVistaRapida === 'function') {
+      quickBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        ydAbrirVistaRapida(id);
+      });
+    }
 
     /* ---- corazón de favoritos ---- */
     const favBtn = card.querySelector('.fav-heart');

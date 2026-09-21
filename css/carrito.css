@@ -1,9 +1,9 @@
 /* ============================================================
-   CARRITO — rediseño streetwear (negro + amarillo)
+   CARRITO — rediseño streetwear (negro + verde neón)
    ------------------------------------------------------------
    Solo afecta a carrito.html: todo cuelga de body.carrito-page,
    así que el resto del sitio queda exactamente igual.
-   Paleta:  negro #0D0D0D · amarillo #FFD600 · blanco #F4F4F4 · gris #6B7280
+   Paleta:  negro #0D0D0D · verde neón #8AF04E · blanco #F4F4F4 · gris #6B7280
 ============================================================ */
 
 body.carrito-page{
@@ -11,15 +11,15 @@ body.carrito-page{
   --c-surface:#161616;
   --c-line:#2A2A2A;
   --c-card:#F4F4F4;
-  --c-yellow:#FFD600;
-  --c-yellow-soft:rgba(255,214,0,.13);
+  --c-yellow:#8AF04E;
+  --c-yellow-soft:rgba(138,240,78,.13);
   --c-gray:#6B7280;
   --c-gray-2:#9CA3AF;
 
   /* Las variables globales del sitio, en la paleta neutra + amarilla */
-  --acento:#FFD600;
+  --acento:#8AF04E;
   --acento-ink:#0D0D0D;
-  --acento-glow:rgba(255,214,0,.38);
+  --acento-glow:rgba(138,240,78,.38);
   --black:#0D0D0D;
   --forest:#0D0D0D;
   --forest-dark:#0D0D0D;
@@ -87,7 +87,7 @@ body.carrito-page{
   flex:1;color:#F4F4F4;
   padding:clamp(28px,5vw,60px) clamp(16px,5vw,56px) clamp(56px,8vw,96px);
   background:
-    radial-gradient(900px 380px at 12% -8%, rgba(255,214,0,.07), transparent 70%);
+    radial-gradient(900px 380px at 12% -8%, rgba(138,240,78,.07), transparent 70%);
 }
 .cart-hero{max-width:1180px;margin:0 auto clamp(24px,4vw,38px);}
 .cart-eyebrow{
@@ -120,7 +120,7 @@ body.carrito-page{
 /* paso activo: círculo amarillo, texto en negrita, animación suave al entrar */
 .carrito-page .stepper-step.is-active .stepper-circle{
   background:var(--c-yellow);border-color:var(--c-yellow);color:#0D0D0D;
-  box-shadow:0 0 0 6px rgba(255,214,0,.22);transform:scale(1.08);animation:none;
+  box-shadow:0 0 0 6px rgba(138,240,78,.22);transform:scale(1.08);animation:none;
 }
 .carrito-page .stepper-step.is-active .stepper-label{color:#F4F4F4;font-weight:800;}
 /* paso completado: check en amarillo sobre círculo negro, texto un poco más destacado */
@@ -183,7 +183,7 @@ body.carrito-page{
 .cart-item.flash{animation:itemFlash .55s ease;}
 @keyframes itemFlash{
   0%{box-shadow:0 0 0 3px var(--c-yellow), 0 12px 28px rgba(0,0,0,.35);}
-  100%{box-shadow:0 0 0 0 rgba(255,214,0,0), 0 12px 28px rgba(0,0,0,.35);}
+  100%{box-shadow:0 0 0 0 rgba(138,240,78,0), 0 12px 28px rgba(0,0,0,.35);}
 }
 /* animación al quitar: se desliza, se desvanece y se cierra el hueco */
 .cart-item.is-leaving{
@@ -268,7 +268,7 @@ body.carrito-page{
 
 .ship-banner{
   display:flex;flex-direction:column;gap:9px;margin:12px 0 4px;padding:12px 14px;border-radius:12px;
-  background:var(--c-yellow-soft);border:1px solid rgba(255,214,0,.3);font-size:13.5px;font-weight:600;color:#F4F4F4;
+  background:var(--c-yellow-soft);border:1px solid rgba(138,240,78,.3);font-size:13.5px;font-weight:600;color:#F4F4F4;
 }
 .ship-line{display:flex;align-items:center;gap:9px;}
 .ship-line svg{width:20px;height:20px;color:var(--c-yellow);flex-shrink:0;}
@@ -295,11 +295,11 @@ body.carrito-page{
   width:100%;min-height:62px;display:flex;align-items:center;justify-content:center;gap:10px;
   background:var(--c-yellow);color:#0D0D0D;border-radius:14px;
   font-family:'Work Sans',sans-serif;font-weight:800;font-size:16px;letter-spacing:.05em;text-transform:uppercase;
-  box-shadow:0 10px 26px rgba(255,214,0,.22);
+  box-shadow:0 10px 26px rgba(138,240,78,.22);
   transition:transform .2s cubic-bezier(.3,1.4,.5,1), box-shadow .2s ease, filter .2s ease;
 }
 .btn-finalizar svg{width:19px;height:19px;flex-shrink:0;}
-.btn-finalizar:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(255,214,0,.36);filter:brightness(1.04);}
+.btn-finalizar:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(138,240,78,.36);filter:brightness(1.04);}
 .btn-finalizar:active{transform:scale(.98);}
 .btn-finalizar.btn-inline{width:auto;display:inline-flex;padding:0 30px;min-height:54px;text-decoration:none;}
 
@@ -347,7 +347,7 @@ body.carrito-page{
 .carrito-page .pagar-box input:focus,
 .carrito-page .pagar-box select:focus,
 .carrito-page .pagar-box textarea:focus{
-  border-color:#0D0D0D;box-shadow:0 0 0 4px rgba(255,214,0,.5);
+  border-color:#0D0D0D;box-shadow:0 0 0 4px rgba(138,240,78,.5);
 }
 .carrito-page .pagar-box input.campo-error,
 .carrito-page .pagar-box select.campo-error,
@@ -369,11 +369,11 @@ body.carrito-page{
 .carrito-page .btn-pagar{
   background:var(--c-yellow);color:#0D0D0D;border:none;border-radius:14px;padding:19px;
   font-weight:800;letter-spacing:.05em;animation:none;
-  box-shadow:0 10px 26px rgba(255,214,0,.25);
+  box-shadow:0 10px 26px rgba(138,240,78,.25);
   transition:transform .2s cubic-bezier(.3,1.4,.5,1), box-shadow .2s ease, filter .2s ease;
 }
 .carrito-page .btn-pagar::after{display:none;}
-.carrito-page .btn-pagar:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(255,214,0,.4);filter:brightness(1.04);}
+.carrito-page .btn-pagar:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(138,240,78,.4);filter:brightness(1.04);}
 .carrito-page .btn-pagar:active{transform:scale(.98);}
 
 /* ============================================================
@@ -405,7 +405,7 @@ body.carrito-page{
 .carrito-page .metodo-card:hover{border-color:#0D0D0D;transform:translateY(-2px);}
 .carrito-page .metodo-card.active{
   border-color:var(--c-yellow);background:var(--c-yellow-soft);
-  box-shadow:0 10px 22px rgba(255,214,0,.28);transform:translateY(-2px);
+  box-shadow:0 10px 22px rgba(138,240,78,.28);transform:translateY(-2px);
 }
 .carrito-page .metodo-card.active .metodo-radio{border-color:var(--c-yellow);}
 .carrito-page .metodo-card.active .metodo-radio::after{transform:scale(1);}
@@ -436,10 +436,10 @@ body.carrito-page{
 .carrito-page .finalizar-hint:empty{display:none;margin:0;}
 
 .carrito-page .municipio-sugerencias{border:1.5px solid #D2D2D2;border-radius:14px;}
-.carrito-page .municipio-sug:hover{background:#FFF3B0;}
+.carrito-page .municipio-sug:hover{background:#D8FFB8;}
 .carrito-page .municipio-sug-costo{color:#0D0D0D;}
 .carrito-page .btn-mapa-toggle{background:#ECECEC;color:#0D0D0D;border:1.5px dashed #0D0D0D;border-radius:12px;}
-.carrito-page .btn-mapa-toggle:hover{background:#FFF3B0;}
+.carrito-page .btn-mapa-toggle:hover{background:#D8FFB8;}
 .carrito-page .btn-mi-ubicacion:hover{background:#0D0D0D;color:var(--c-yellow);}
 .carrito-page .mapa-caja{border-radius:14px;}
 .carrito-page .nequi-datos-box{background:#FFF;border:2px solid #DCDCDC;border-radius:14px;}
@@ -447,13 +447,13 @@ body.carrito-page{
 .carrito-page .nequi-check-fila input{accent-color:#0D0D0D;}
 .carrito-page .tarjeta-frente{
   background:
-    radial-gradient(120% 140% at 15% 0%, rgba(255,214,0,.36), transparent 55%),
-    radial-gradient(120% 140% at 100% 100%, rgba(255,214,0,.18), transparent 50%),
+    radial-gradient(120% 140% at 15% 0%, rgba(138,240,78,.36), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgba(138,240,78,.18), transparent 50%),
     linear-gradient(135deg,#0D0D0D,#1c1c1c 55%,#0D0D0D);
-  background-size:220% 220%;border:1px solid rgba(255,214,0,.3);
+  background-size:220% 220%;border:1px solid rgba(138,240,78,.3);
 }
-.carrito-page .tarjeta-reverso{border:1px solid rgba(255,214,0,.3);}
-.carrito-page .tarjeta-chip{color:var(--c-yellow);background:rgba(255,214,0,.14);}
+.carrito-page .tarjeta-reverso{border:1px solid rgba(138,240,78,.3);}
+.carrito-page .tarjeta-chip{color:var(--c-yellow);background:rgba(138,240,78,.14);}
 .carrito-page .tarjeta-marca{color:var(--c-yellow);}
 
 /* ============================================================
@@ -509,7 +509,7 @@ body.carrito-page{
 .carrito-page .footer-cta::after{display:none;}
 .carrito-page .footer-cta-text h3{color:#F4F4F4;}
 .carrito-page .footer-cta-text p{color:var(--c-gray-2);}
-.carrito-page .footer-cta-bolt{background:var(--c-yellow-soft);border:1px dashed rgba(255,214,0,.5);}
+.carrito-page .footer-cta-bolt{background:var(--c-yellow-soft);border:1px dashed rgba(138,240,78,.5);}
 .carrito-page .footer-cta-btn{background:var(--c-yellow);color:#0D0D0D;border-radius:12px;}
 .carrito-page .social-pill.tk{background:#1E1E1E;border:1px solid #333;}
 .carrito-page .foot-logo,
@@ -545,4 +545,38 @@ body.carrito-page{
   .carrito-page *,
   .carrito-page *::before,
   .carrito-page *::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+}
+
+/* ============================================================
+   COMPATIBILIDAD CON LA PALETA OSCURA DEL SITIO
+   ------------------------------------------------------------
+   El sitio completo ahora es oscuro (negro + verde neón), así
+   que las variables globales de texto y superficie son claras.
+   Dentro del carrito hay bloques que siguen siendo tarjetas
+   CLARAS a propósito (producto, formulario, recibo). Aquí se
+   les devuelve la tinta oscura para que su contenido se lea
+   bien, sin tocar una sola línea de JavaScript.
+   ============================================================ */
+.carrito-page .cart-item,
+.carrito-page .pagar-box,
+.carrito-page .pagar-box-abajo,
+.carrito-page .pago-card,
+.carrito-page .nequi-datos-box,
+.carrito-page .modal-caja{
+  --ink:#0D0D0D;
+  --surface:#FFFFFF;
+  --surface-2:#F4F4F4;
+  --surface-3:#0D0D0D;
+  --line:#DCDCDC;
+  --line-strong:#0D0D0D;
+  --gray:#6B7280;
+  --offwhite:#0D0D0D;
+  --white:#FFFFFF;
+}
+.carrito-page .carrito-summary-card{
+  --ink:#F4F4F4;
+  --surface:#1B1B1B;
+  --surface-2:#161616;
+  --line:#2A2A2A;
+  --line-strong:#3A3A3A;
 }

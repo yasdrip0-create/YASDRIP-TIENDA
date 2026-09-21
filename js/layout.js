@@ -21,41 +21,40 @@ function renderHeader(paginaActual = "") {
   const usuario = usuarioActual();
   const categorias = typeof categoriasDisponibles === 'function' ? categoriasDisponibles() : [];
 
-  const dropdownCategorias = categorias.map(cat =>
-    `<a href="productos.html?cat=${encodeURIComponent(cat)}">${cat}</a>`
-  ).join("");
-
-  /* ---- menú desplegable por género (Hombre / Mujer / Niño / Niña) ----
-     cada uno muestra sus columnas de Ropa / Accesorios según lo que
-     ese género sí tiene en el catálogo; si todavía no hay nada para
-     ese género, muestra un aviso en vez de columnas vacías. */
-  function panelGenero(generoId, etiqueta) {
-    const grupos = typeof categoriasPorGeneroAgrupadas === 'function' ? categoriasPorGeneroAgrupadas(generoId) : [];
-    if (!grupos.length) {
-      return `
-        <div class="nav-genero-panel nav-genero-vacio">
-          <p>Muy pronto vamos a tener piezas para <b>${etiqueta.toLowerCase()}</b> ⚡</p>
-          <a href="productos.html">Ver toda la colección →</a>
-        </div>`;
-    }
-    return `
-      <div class="nav-genero-panel">
-        ${grupos.map(g => `
-          <div class="nav-genero-col">
-            <h4>${g.grupo}</h4>
-            ${g.categorias.map(c => `<a href="productos.html?genero=${generoId}&cat=${encodeURIComponent(c)}">${c}</a>`).join('')}
-          </div>`).join('')}
-        <div class="nav-genero-col nav-genero-cta">
-          <a href="productos.html?genero=${generoId}" class="nav-genero-vertodo">Ver todo ${etiqueta} →</a>
-        </div>
-      </div>`;
-  }
   const generosNav = typeof GENEROS_MENU !== 'undefined' ? GENEROS_MENU : [];
-  const navGenerosHtml = generosNav.map(g => `
+
+  /* ---- menú "Categorías": un solo desplegable ancho que reúne los
+     géneros (Hombre / Mujer / Niño / Niña) y todas las categorías del
+     catálogo. Antes cada género era un menú aparte; se juntaron para
+     dejar la barra limpia (Inicio · Tienda · Categorías · Contacto)
+     sin perder ningún enlace. */
+  const navCategoriasHtml = `
     <div class="nav-drop">
-      <a href="productos.html?genero=${g.id}">${g.etiqueta} ▾</a>
-      <div class="nav-drop-panel nav-drop-panel-ancho">${panelGenero(g.id, g.etiqueta)}</div>
-    </div>`).join('');
+      <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Categorías</a>
+      <div class="nav-drop-panel nav-drop-panel-ancho">
+        <div class="nav-genero-panel">
+          ${categorias.length ? `
+          <div class="nav-genero-col">
+            <h4>Colección</h4>
+            ${categorias.map(c => `<a href="productos.html?cat=${encodeURIComponent(c)}">${c}</a>`).join('')}
+          </div>` : ''}
+          ${generosNav.map(g => {
+            const grupos = typeof categoriasPorGeneroAgrupadas === 'function' ? categoriasPorGeneroAgrupadas(g.id) : [];
+            const cats = grupos.flatMap(gr => gr.categorias);
+            return `
+            <div class="nav-genero-col">
+              <h4>${g.etiqueta}</h4>
+              ${cats.length
+                ? cats.map(c => `<a href="productos.html?genero=${g.id}&cat=${encodeURIComponent(c)}">${c}</a>`).join('')
+                : `<a href="productos.html">Muy pronto</a>`}
+            </div>`;
+          }).join('')}
+          <div class="nav-genero-col nav-genero-cta">
+            <a href="productos.html" class="nav-genero-vertodo">Ver toda la colección</a>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
   const inicial = usuario ? usuario.nombre.trim().charAt(0).toUpperCase() : '';
   const cuentaHtml = usuario
@@ -100,13 +99,10 @@ function renderHeader(paginaActual = "") {
         <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
       </a>
       <div class="nav-links">
-        ${navGenerosHtml}
-        <div class="nav-drop">
-          <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Colección ▾</a>
-          <div class="nav-drop-panel">${dropdownCategorias}</div>
-        </div>
-        <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Servicio al cliente</a>
-        <a href="index.html#club">Voltage Club</a>
+        <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
+        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
+        ${navCategoriasHtml}
+        <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>
       </div>
       <div class="nav-right">
         <button class="icon-only-btn nav-burger" id="navBurger" aria-label="Abrir menú" aria-expanded="false">
@@ -139,6 +135,9 @@ function renderHeader(paginaActual = "") {
         <button class="search-close" id="mobileNavClose" aria-label="Cerrar menú">✕</button>
       </div>
       <div class="mobile-nav-links">
+        <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
+        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
+        ${categorias.length ? `<div class="mobile-nav-subwrap">${categorias.map(cat => `<a href="productos.html?cat=${encodeURIComponent(cat)}">${cat}</a>`).join('')}</div>` : ''}
         ${generosNav.map(g => {
           const grupos = typeof categoriasPorGeneroAgrupadas === 'function' ? categoriasPorGeneroAgrupadas(g.id) : [];
           const catsDelGenero = grupos.flatMap(gr => gr.categorias);
@@ -148,10 +147,9 @@ function renderHeader(paginaActual = "") {
             ${catsDelGenero.length ? `<div class="mobile-nav-subwrap">${catsDelGenero.map(c => `<a href="productos.html?genero=${g.id}&cat=${encodeURIComponent(c)}">${c}</a>`).join('')}</div>` : ''}
           </div>`;
         }).join('')}
-        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Colección completa</a>
-        ${categorias.length ? `<div class="mobile-nav-subwrap">${categorias.map(cat => `<a href="productos.html?cat=${encodeURIComponent(cat)}">${cat}</a>`).join('')}</div>` : ''}
-        <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Servicio al cliente</a>
+        <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>
         <a href="index.html#club">Voltage Club</a>
+        <a href="favoritos.html">Mis favoritos</a>
       </div>
       <div class="mobile-nav-foot">
         ${usuario
@@ -265,7 +263,7 @@ function initSearch() {
       return;
     }
     results.innerHTML = lista.slice(0, 6).map(p => `
-      <a href="productos.html?buscar=${p.id}" class="search-result">
+      <a href="producto.html?id=${p.id}" class="search-result">
         <div class="search-result-icon" style="background:${p.colores[0]}33">${iconoProducto(p.icono, p.colores[0])}</div>
         <div class="search-result-info">
           <div class="search-result-name">${p.nombre}</div>

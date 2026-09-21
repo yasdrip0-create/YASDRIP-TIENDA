@@ -4,46 +4,61 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google" content="notranslate">
-<title>YAS DRIP — Ropa urbana de edición limitada</title>
+<title>YASDRIP — Ropa urbana de edición limitada</title>
 <meta name="description" content="Busos, camisetas y accesorios urbanos de edición limitada. Envíos a toda Colombia, paga contra entrega.">
 <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<meta property="og:title" content="YAS DRIP — Ropa urbana de edición limitada">
+<meta property="og:title" content="YASDRIP — Ropa urbana de edición limitada">
 <meta property="og:description" content="Busos, camisetas y accesorios urbanos de edición limitada. Envíos a toda Colombia, paga contra entrega.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://yasdrip.com/index.html">
 <meta property="og:image" content="https://yasdrip.com/img/portada.jpg">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0a0a0a">
 <link rel="stylesheet" href="css/estilos.css">
+<link rel="stylesheet" href="css/yasdrip-ui.css">
 </head>
 <body>
 
 <div id="site-header"></div>
 
-<section class="hero">
-  <div class="reveal-left">
-    <div class="hero-eyebrow">Drop 01 · Voltage <span class="hero-note">— no dormimos haciéndolo</span></div>
-    <h1>Drip para gente que <em>ya trae</em><br>su propia energía.</h1>
-    <p class="sub">Busos, camisetas y accesorios urbanos con cortes sueltos y detalles de confección real. Edición limitada — cuando se acaban, no vuelven en el mismo color.</p>
-    <div class="hero-ctas">
-      <a href="productos.html" class="btn btn-primary">Explora el drop</a>
-      <a href="productos.html" id="heroDestacadoLink" class="btn btn-ghost">La más pedida</a>
-    </div>
+<!-- ========== BANNER PRINCIPAL ========== -->
+<section class="yd-hero" id="ydHero" aria-label="Novedades de YASDRIP"></section>
+
+<!-- ========== BARRA DE BENEFICIOS ========== -->
+<div id="ydBeneficios"></div>
+
+<!-- ========== PRODUCTOS DESTACADOS ========== -->
+<section class="yd-sec" id="destacados">
+  <div class="yd-sec-head">
+    <h2>Productos destacados</h2>
+    <div class="yd-tabs" id="ydTabs"></div>
   </div>
-  <div class="hero-visual reveal-scale reveal-d2" id="heroVisual">
-    <!-- se rellena con JS -->
-    <div class="hero-stamp stamp-font">underground<br>drip co.</div>
+  <div class="grid" id="gridDestacados"></div>
+  <div style="text-align:center;margin-top:34px;">
+    <a href="productos.html" class="btn btn-ghost">Ver toda la colección</a>
   </div>
 </section>
 
-<div class="marquee-wrap">
-  <div class="marquee">
-    <span>Nuevo drop de busos</span><span>Envíos a toda Colombia</span><span>Stock limitado</span><span>Paga contra entrega</span>
-    <span>Nuevo drop de busos</span><span>Envíos a toda Colombia</span><span>Stock limitado</span><span>Paga contra entrega</span>
-  </div>
-</div>
+<!-- ========== CATEGORÍAS ========== -->
+<section class="yd-sec" style="padding-top:0;">
+  <div class="yd-sec-head"><h2>Categorías</h2></div>
+  <div class="yd-cats" id="ydCats"></div>
+</section>
 
+<!-- ========== BANNER PROMOCIONAL ========== -->
+<section class="yd-sec" style="padding-top:0;">
+  <div class="yd-promo">
+    <div class="yd-promo-in">
+      <h3>Estilo urbano<br><span>sin límites</span></h3>
+      <p>La verdadera actitud no se compra, se viste. Cada drop se hace una sola vez y en cantidades cortas.</p>
+      <a href="productos.html" class="yd-hero-btn" style="margin-top:22px;">Ver más</a>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CUENTA REGRESIVA DEL PRÓXIMO DROP ========== -->
 <section class="drop-countdown reveal-scale" id="dropCountdown">
   <div class="drop-countdown-inner">
     <div class="drop-countdown-label" id="dropLabel">Próximo drop en</div>
@@ -57,47 +72,36 @@
       <div class="drop-unit"><span id="dtSeg">--</span><small>seg</small></div>
     </div>
     <div class="drop-live-grid" id="dropLiveGrid" hidden></div>
-    <a href="#club" class="btn drop-countdown-cta" id="dropCta">Avísenme primero ⚡</a>
+    <a href="#club" class="btn drop-countdown-cta" id="dropCta">Avísenme primero</a>
   </div>
 </section>
 
-<div class="banners">
-  <div class="banner b1 reveal-left">
-    <h3 class="display">Busos</h3>
-    <p>La pieza más pedida del drop, en varios colores.</p>
-    <a href="productos.html?cat=Busos" class="arrow-link">Ver busos →</a>
+<!-- ========== LO MÁS PEDIDO ========== -->
+<section class="yd-sec" id="masPedido">
+  <div class="yd-sec-head">
+    <h2>Lo más pedido</h2>
+    <a href="productos.html" class="yd-clear">Ver todo</a>
   </div>
-  <div class="banner b2 reveal-right">
-    <h3 class="display">Accesorios</h3>
-    <p>Gorras y complementos para rematar el fit.</p>
-    <a href="productos.html?cat=Gorras" class="arrow-link">Ver accesorios →</a>
-  </div>
-</div>
-
-<section class="manifesto">
-  <div class="section" style="padding-top:90px;padding-bottom:90px;">
-    <div class="manifesto-inner reveal">
-      <p class="big">No hacemos ropa para pasar desapercibido. Hacemos ropa para gente que <em>ya trae su propia energía</em> y solo necesita una tela que la deje salir.</p>
-      <div class="manifesto-row">
-        <div class="stat reveal reveal-d1"><b>2021</b><span>Desde</span></div>
-        <div class="stat reveal reveal-d2"><b>100%</b><span>Diseño propio</span></div>
-        <div class="stat reveal reveal-d3"><b>Ed. Ltd</b><span>Cada drop</span></div>
-      </div>
-    </div>
-  </div>
+  <div class="grid" id="gridMasPedido"></div>
 </section>
 
+<!-- ========== VOLTAGE CLUB ========== -->
 <section class="club reveal-scale" id="club">
   <h2>Únete al Voltage Club</h2>
   <p>Acceso anticipado a cada drop, antes de que se agote.</p>
   <form class="club-form" id="clubForm">
     <input type="email" name="email" id="clubEmail" placeholder="tu@correo.com" required>
-    <button class="btn btn-primary" type="submit">Quiero entrar ⚡</button>
+    <button class="btn btn-primary" type="submit">Quiero entrar</button>
   </form>
   <div class="club-msg" id="clubMsg"></div>
 </section>
 
+<!-- ========== INFORMACIÓN DE ENVÍOS / PAGOS / CAMBIOS ========== -->
+<div class="yd-info" id="ydInfo"></div>
+
 <div id="site-footer"></div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText">Aviso</span></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -106,18 +110,24 @@
 <script src="js/icons.js"></script>
 <script src="js/products.js"></script>
 <script src="js/store.js"></script>
+<script src="js/catalog-render.js"></script>
 <script src="js/layout.js"></script>
+<script src="js/yasdrip-ui.js"></script>
 <script>
 renderHeader('inicio');
 renderFooter();
 
+/* El banner y las barras no dependen del catálogo: se pintan de una. */
+ydRenderHero('ydHero');
+ydRenderBeneficios('ydBeneficios');
+ydRenderBeneficios('ydInfo');
+
 /* ============================================================
    CUENTA REGRESIVA DEL PRÓXIMO DROP
    La fecha, el título y qué productos se muestran cuando el
-   tiempo se acaba ahora se configuran desde el panel (pestaña
-   "Drop" de admin.html) — ya no hay que tocar código. Si el
-   vendedor todavía no ha configurado nada, se usa esta fecha de
-   respaldo para que la sección no se vea rota.
+   tiempo se acaba se configuran desde el panel (pestaña "Drop"
+   de admin.html). Si todavía no se ha configurado nada, se usa
+   esta fecha de respaldo para que la sección no se vea rota.
    ============================================================ */
 const FECHA_DROP_RESPALDO = new Date('2026-09-15T00:00:00-05:00');
 
@@ -129,9 +139,9 @@ function actualizarCountdown() {
   const diff = fechaObjetivo - new Date();
 
   if (diff <= 0) {
-    document.getElementById('dropLabel').textContent = config.titulo || '¡Ya está aquí! ⚡';
+    document.getElementById('dropLabel').textContent = config.titulo || '¡Ya está aquí!';
     document.getElementById('dropTimer').style.display = 'none';
-    document.getElementById('dropCta').textContent = 'Ver la colección →';
+    document.getElementById('dropCta').textContent = 'Ver la colección';
     document.getElementById('dropCta').href = 'productos.html';
 
     const grid = document.getElementById('dropLiveGrid');
@@ -149,7 +159,7 @@ function actualizarCountdown() {
           ? `<img src="${fotoFrente}" class="drop-live-img drop-live-img-frente" alt="${p.nombre}" loading="lazy">${fotoAtras ? `<img src="${fotoAtras}" class="drop-live-img drop-live-img-atras" alt="${p.nombre} de espaldas" loading="lazy">` : ''}`
           : iconoProducto(p.icono, p.colores[0]);
         return `
-          <a class="drop-live-item" href="productos.html#${p.id}">
+          <a class="drop-live-item" href="producto.html?id=${p.id}">
             <div class="drop-live-visual">${visual}</div>
             <span>${p.nombre}</span>
           </a>`;
@@ -170,33 +180,68 @@ actualizarCountdown();
 setInterval(actualizarCountdown, 1000);
 
 (async function () {
-await Promise.all([cargarCatalogo(), cargarConfigDrop()]); // catálogo y config del drop desde Firestore antes de pintar nada
-actualizarCountdown(); // repinta ya con la fecha/productos reales, no con el respaldo
+const gridDest = document.getElementById('gridDestacados');
+const gridTop  = document.getElementById('gridMasPedido');
+gridDest.innerHTML = construirSkeletonHtml(4);
+gridTop.innerHTML  = construirSkeletonHtml(4);
 
-/* producto destacado del hero: el primero con badge 'pocas', si existe */
+await Promise.all([cargarCatalogo(), cargarConfigDrop()]);
+actualizarCountdown();
+
 const activos = productosActivos();
-const destacado = activos.find(p => p.badge === 'pocas') || activos[0] || null;
 
-if (destacado) {
-  document.getElementById('heroDestacadoLink').href = 'productos.html#' + destacado.id;
-  const visualProducto = destacado.foto
-    ? `<img src="${destacado.foto}" class="hero-visual-photo" alt="${destacado.nombre}">`
-    : iconoProducto(destacado.icono, destacado.colores[0]);
-  document.getElementById('heroVisual').innerHTML =
-    visualProducto +
-    `<div class="blob-tag"><span class="dot"></span>Quedan ${destacado.stock} unidades de ${destacado.nombre}</div>` +
-    `<div class="hero-stamp stamp-font">underground<br>drip co.</div>`;
-} else {
-  document.getElementById('heroVisual').innerHTML =
-    iconoProducto('hoodie', '#dfe8da') +
-    `<div class="hero-stamp stamp-font">underground<br>drip co.</div>`;
+/* ---------- pestañas de categoría ---------- */
+const categorias = Array.from(new Set(activos.map(p => p.categoria))).sort();
+const tabsEl = document.getElementById('ydTabs');
+tabsEl.innerHTML = '<button class="yd-tab is-active" data-cat="todos">Todos</button>' +
+  categorias.map(c => `<button class="yd-tab" data-cat="${c}">${c}</button>`).join('');
+
+function pintarDestacados(cat) {
+  const lista = (cat === 'todos' ? activos : activos.filter(p => p.categoria === cat)).slice(0, 8);
+  gridDest.innerHTML = lista.length
+    ? construirTarjetasHtml(lista)
+    : '<div class="yd-empty"><b>Todavía no hay nada aquí</b>Pronto cae algo en esta categoría.</div>';
+  initScrollReveal();
+  activarInteraccionGrid(gridDest);
 }
+pintarDestacados('todos');
 
-/* suscripción al Voltage Club (antes iba a la tabla 'suscriptores') */
-// Si el cliente ya había dejado su correo antes en este navegador,
-// se lo dejamos puesto de una vez para que no tenga que escribirlo otra vez.
+tabsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.yd-tab');
+  if (!btn) return;
+  [...tabsEl.children].forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  pintarDestacados(btn.dataset.cat);
+});
+
+/* ---------- categorías ---------- */
+const iconoPorCategoria = { Busos:'hoodie', Camisetas:'tee', Gorras:'cap', Pantalones:'pants', Chaquetas:'jacket', Shorts:'shorts' };
+document.getElementById('ydCats').innerHTML = categorias.slice(0, 8).map(cat => {
+  const dela = activos.filter(p => p.categoria === cat);
+  const conFoto = dela.find(p => p.foto || (p.fotos && Object.keys(p.fotos).length));
+  const foto = conFoto ? (conFoto.foto || conFoto.fotos[Object.keys(conFoto.fotos)[0]]) : null;
+  const arte = foto
+    ? `<img src="${foto}" alt="${cat}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+    : iconoProducto(iconoPorCategoria[cat] || 'tee', '#8af04e');
+  return `
+    <a class="yd-cat" href="productos.html?cat=${encodeURIComponent(cat)}">
+      <div class="yd-cat-art">${arte}</div>
+      <div class="yd-cat-label"><b>${cat}</b><span class="yd-cat-go">${YD_ICONOS.der}</span></div>
+    </a>`;
+}).join('');
+
+/* ---------- lo más pedido ----------
+   Se priorizan las piezas marcadas como "quedan pocas" (son las
+   que más salen) y se completa con el resto del catálogo. */
+const masPedido = [...activos.filter(p => p.badge === 'pocas'), ...activos.filter(p => p.badge !== 'pocas')].slice(0, 4);
+gridTop.innerHTML = masPedido.length
+  ? construirTarjetasHtml(masPedido)
+  : '<div class="yd-empty"><b>El próximo drop está por caer</b>Vuelve pronto.</div>';
+initScrollReveal();
+activarInteraccionGrid(gridTop);
+
+/* ---------- Voltage Club ---------- */
 document.getElementById('clubEmail').value = correoClubGuardado();
-
 document.getElementById('clubForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const email = document.getElementById('clubEmail').value.trim();
