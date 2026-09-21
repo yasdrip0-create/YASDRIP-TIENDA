@@ -31,7 +31,7 @@
 
     <div class="yd-side-group">
       <h4>Categoría</h4>
-      <div id="fCategorias"></div>
+      <div class="yd-cat-tiles" id="fCategorias"></div>
     </div>
 
     <div class="yd-side-group">
@@ -47,7 +47,7 @@
 
     <div class="yd-side-group">
       <h4>Color</h4>
-      <div id="fColores"></div>
+      <div class="yd-color-tiles" id="fColores"></div>
     </div>
 
     <div class="yd-side-actions">
@@ -168,22 +168,32 @@ function ydNombreColor(hex) {
 }
 
 /* ---------- pintar los filtros ---------- */
-document.getElementById('fCategorias').innerHTML = categorias.map(c => `
-  <label class="yd-check">
-    <input type="checkbox" data-filtro="categoria" value="${c}" ${estado.categorias.includes(c) ? 'checked' : ''}>
-    <span>${c}</span>
-    <span class="yd-n">(${productos.filter(p => p.categoria === c).length})</span>
-  </label>`).join('');
+/* Un ícono por categoría, tomado del mismo tipo de prenda que ya
+   usan los productos de esa categoría (hoodie, tee, cap, etc). Si la
+   categoría trae varios tipos, se usa el más repetido. */
+function ydIconoDeCategoria(cat) {
+  const conteo = {};
+  productos.filter(p => p.categoria === cat).forEach(p => { conteo[p.icono] = (conteo[p.icono] || 0) + 1; });
+  const tipos = Object.keys(conteo).sort((a, b) => conteo[b] - conteo[a]);
+  return tipos[0] || 'tee';
+}
+
+function pintarTilesCategoria() {
+  document.getElementById('fCategorias').innerHTML = categorias.map(c => `
+    <button type="button" class="yd-cat-tile ${estado.categorias.includes(c) ? 'is-active' : ''}" data-cat-tile="${c}">
+      <span class="yd-cat-tile-check">${YD_ICONOS.check}</span>
+      <span class="yd-cat-tile-art">${iconoProducto(ydIconoDeCategoria(c), '#8af04e')}</span>
+      <b>${c}</b>
+      <span>(${productos.filter(p => p.categoria === c).length})</span>
+    </button>`).join('');
+}
+pintarTilesCategoria();
 
 document.getElementById('fTallas').innerHTML = tallas.map(t =>
   `<button class="yd-size" data-talla="${t}">${t}</button>`).join('');
 
 document.getElementById('fColores').innerHTML = colores.map(c => `
-  <label class="yd-check">
-    <input type="checkbox" data-filtro="color" value="${c}">
-    <span>${ydNombreColor(c)}</span>
-    <span class="yd-n" style="width:16px;height:16px;border-radius:50%;background:${c};border:1px solid #3a3a3a;"></span>
-  </label>`).join('');
+  <button type="button" class="yd-color-tile" data-color-tile="${c}" style="background:${c};" aria-label="${ydNombreColor(c)}" title="${ydNombreColor(c)}"></button>`).join('');
 
 const rangoEl = document.getElementById('fPrecio');
 rangoEl.min = precioMin;
@@ -220,14 +230,24 @@ function pintarGrid() {
 pintarGrid();
 
 /* ---------- eventos de los filtros ---------- */
-document.getElementById('ydSide').addEventListener('change', (e) => {
-  const input = e.target.closest('input[type="checkbox"]');
-  if (!input) return;
-  const lista = input.dataset.filtro === 'categoria' ? estado.categorias : estado.colores;
-  const i = lista.indexOf(input.value);
-  if (input.checked && i === -1) lista.push(input.value);
-  if (!input.checked && i > -1) lista.splice(i, 1);
-  pintarGrid();
+document.getElementById('ydSide').addEventListener('click', (e) => {
+  const catBtn = e.target.closest('[data-cat-tile]');
+  if (catBtn) {
+    const val = catBtn.dataset.catTile;
+    const i = estado.categorias.indexOf(val);
+    if (i === -1) estado.categorias.push(val); else estado.categorias.splice(i, 1);
+    catBtn.classList.toggle('is-active');
+    pintarGrid();
+    return;
+  }
+  const colorBtn = e.target.closest('[data-color-tile]');
+  if (colorBtn) {
+    const val = colorBtn.dataset.colorTile;
+    const i = estado.colores.indexOf(val);
+    if (i === -1) estado.colores.push(val); else estado.colores.splice(i, 1);
+    colorBtn.classList.toggle('is-active');
+    pintarGrid();
+  }
 });
 
 document.getElementById('fTallas').addEventListener('click', (e) => {
@@ -254,7 +274,8 @@ document.getElementById('sortSelect').addEventListener('change', (e) => {
 document.getElementById('fLimpiar').addEventListener('click', () => {
   estado.categorias = []; estado.tallas = []; estado.colores = [];
   estado.precioMax = precioTope;
-  document.querySelectorAll('#ydSide input[type="checkbox"]').forEach(i => { i.checked = false; });
+  document.querySelectorAll('#fCategorias .yd-cat-tile').forEach(b => b.classList.remove('is-active'));
+  document.querySelectorAll('#fColores .yd-color-tile').forEach(b => b.classList.remove('is-active'));
   document.querySelectorAll('#fTallas .yd-size').forEach(b => b.classList.remove('is-active'));
   rangoEl.value = precioTope;
   document.getElementById('fPrecioMax').textContent = '$' + precioTope.toLocaleString('es-CO');

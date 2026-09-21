@@ -25,7 +25,6 @@
 const YD_HERO_SLIDES = [
   {
     imagen: "img/banner-hoodie-1.jpg",
-    arte: { print: "YASDRIP", bajo: "VOLTAGE CLUB · MEDELLÍN", luz: "#8af04e", pos: 0 },
     eyebrow: "Nueva colección",
     titulo: 'YAS<span>DRIP</span>',
     texto: "Estilo, actitud y comodidad en una sola prenda.",
@@ -33,8 +32,7 @@ const YD_HERO_SLIDES = [
     href: "productos.html",
   },
   {
-    imagen: null,              // p. ej. "img/banner-2.jpg"
-    arte: { print: "YASDRIP", bajo: "OVERSIZE · TELA PESADA", luz: "#6fd3ff", pos: -70 },
+    imagen: "img/banner-hoodie-2.jpg",
     eyebrow: "Drop 01 · Busos",
     titulo: "Busos oversize",
     texto: "Corte ancho, tela pesada y el estampado YASDRIP en la espalda.",
@@ -42,8 +40,7 @@ const YD_HERO_SLIDES = [
     href: "productos.html?cat=Busos",
   },
   {
-    imagen: null,              // p. ej. "img/banner-3.jpg"
-    arte: { print: "YASDRIP", bajo: "EDICIÓN LIMITADA", luz: "#ff7ab8", pos: 80 },
+    imagen: "img/banner-hoodie-3.jpg",
     eyebrow: "Edición limitada",
     titulo: "Cuando se acaba, no vuelve",
     texto: "Cada drop se hace una sola vez. Si te gusta, es ahora.",
@@ -149,6 +146,7 @@ const YD_ICONOS = {
   izq: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>',
   der: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>',
   filtro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg>',
   equis: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
 };
 
@@ -213,7 +211,7 @@ function ydRenderHero(contenedorId = "ydHero") {
 
   cont.innerHTML = YD_HERO_SLIDES.map((s, i) => `
     <div class="yd-slide ${i === 0 ? "is-active" : ""}" data-slide="${i}" aria-hidden="${i === 0 ? "false" : "true"}">
-      <div class="yd-slide-media">${s.imagen ? `<img src="${s.imagen}" alt="${s.eyebrow}">` : ydArteHoodie(s.arte)}</div>
+      <div class="yd-slide-media">${s.imagen ? `<img src="${s.imagen}" alt="${s.eyebrow}">` : ydArteHoodie({})}</div>
       <div class="yd-hero-copy">
         <div class="yd-hero-eyebrow">${s.eyebrow}</div>
         <h1 class="yd-hero-title">${s.titulo}</h1>

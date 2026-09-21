@@ -26,9 +26,6 @@
 <!-- ========== BANNER PRINCIPAL ========== -->
 <section class="yd-hero" id="ydHero" aria-label="Novedades de YASDRIP"></section>
 
-<!-- ========== BARRA DE BENEFICIOS ========== -->
-<div id="ydBeneficios"></div>
-
 <!-- ========== PRODUCTOS DESTACADOS ========== -->
 <section class="yd-sec" id="destacados">
   <div class="yd-sec-head">
@@ -117,9 +114,9 @@
 renderHeader('inicio');
 renderFooter();
 
-/* El banner y las barras no dependen del catálogo: se pintan de una. */
+/* El banner no depende del catálogo: se pinta de una.
+   La barra de envíos/pagos/cambios queda solo abajo, cerca del pie. */
 ydRenderHero('ydHero');
-ydRenderBeneficios('ydBeneficios');
 ydRenderBeneficios('ydInfo');
 
 /* ============================================================
