@@ -19,52 +19,10 @@ function renderHeader(paginaActual = "") {
   }
   const total = totalCarritoCount();
   const usuario = usuarioActual();
-  const categorias = typeof categoriasDisponibles === 'function' ? categoriasDisponibles() : [];
-
-  const generosNav = typeof GENEROS_MENU !== 'undefined' ? GENEROS_MENU : [];
-
-  /* "Tienda" y "Categorías" apuntan los dos a productos.html, así que
-     no pueden resaltarse los dos por la misma condición (paginaActual
-     === 'productos') o siempre se prenden juntos. Se distinguen por
-     la URL: si llegaste con ?cat= o ?genero= (es decir, entraste
-     eligiendo algo del menú Categorías), se resalta "Categorías";
-     si no, se resalta "Tienda". */
-  const paramsNav = new URLSearchParams(window.location.search);
-  const vieneDeCategorias = paginaActual === 'productos' && (paramsNav.has('cat') || paramsNav.has('genero'));
-  const esTiendaPlano = paginaActual === 'productos' && !vieneDeCategorias;
-
-  /* ---- menú "Categorías": un solo desplegable ancho que reúne los
-     géneros (Hombre / Mujer / Niño / Niña) y todas las categorías del
-     catálogo. Antes cada género era un menú aparte; se juntaron para
-     dejar la barra limpia (Inicio · Tienda · Categorías · Contacto)
-     sin perder ningún enlace. */
-  const navCategoriasHtml = `
-    <div class="nav-drop">
-      <a href="productos.html" class="${vieneDeCategorias ? 'active' : ''}">Categorías</a>
-      <div class="nav-drop-panel nav-drop-panel-ancho">
-        <div class="nav-genero-panel">
-          ${categorias.length ? `
-          <div class="nav-genero-col">
-            <h4>Colección</h4>
-            ${categorias.map(c => `<a href="productos.html?cat=${encodeURIComponent(c)}">${c}</a>`).join('')}
-          </div>` : ''}
-          ${generosNav.map(g => {
-            const grupos = typeof categoriasPorGeneroAgrupadas === 'function' ? categoriasPorGeneroAgrupadas(g.id) : [];
-            const cats = grupos.flatMap(gr => gr.categorias);
-            return `
-            <div class="nav-genero-col">
-              <h4>${g.etiqueta}</h4>
-              ${cats.length
-                ? cats.map(c => `<a href="productos.html?genero=${g.id}&cat=${encodeURIComponent(c)}">${c}</a>`).join('')
-                : `<a href="productos.html">Muy pronto</a>`}
-            </div>`;
-          }).join('')}
-          <div class="nav-genero-col nav-genero-cta">
-            <a href="productos.html" class="nav-genero-vertodo">Ver toda la colección</a>
-          </div>
-        </div>
-      </div>
-    </div>`;
+  /* "Categorías" ahora es una página aparte (categorias.html), no un
+     desplegable sobre productos.html — se resalta sola, y "Tienda"
+     se resalta con su propia condición simple, sin depender de la
+     URL de la otra. */
 
   const inicial = usuario ? usuario.nombre.trim().charAt(0).toUpperCase() : '';
   const cuentaHtml = usuario
@@ -110,8 +68,8 @@ function renderHeader(paginaActual = "") {
       </a>
       <div class="nav-links">
         <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
-        <a href="productos.html" class="${esTiendaPlano ? 'active' : ''}">Tienda</a>
-        ${navCategoriasHtml}
+        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
+        <a href="categorias.html" class="${paginaActual === 'categorias' ? 'active' : ''}">Categorías</a>
         <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>
       </div>
       <div class="nav-right">
@@ -146,17 +104,8 @@ function renderHeader(paginaActual = "") {
       </div>
       <div class="mobile-nav-links">
         <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
-        <a href="productos.html" class="${esTiendaPlano ? 'active' : ''}">Tienda</a>
-        ${categorias.length ? `<div class="mobile-nav-subwrap">${categorias.map(cat => `<a href="productos.html?cat=${encodeURIComponent(cat)}">${cat}</a>`).join('')}</div>` : ''}
-        ${generosNav.map(g => {
-          const grupos = typeof categoriasPorGeneroAgrupadas === 'function' ? categoriasPorGeneroAgrupadas(g.id) : [];
-          const catsDelGenero = grupos.flatMap(gr => gr.categorias);
-          return `
-          <div class="mobile-nav-genero">
-            <a href="productos.html?genero=${g.id}" class="mobile-nav-genero-titulo">${g.etiqueta}</a>
-            ${catsDelGenero.length ? `<div class="mobile-nav-subwrap">${catsDelGenero.map(c => `<a href="productos.html?genero=${g.id}&cat=${encodeURIComponent(c)}">${c}</a>`).join('')}</div>` : ''}
-          </div>`;
-        }).join('')}
+        <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
+        <a href="categorias.html" class="${paginaActual === 'categorias' ? 'active' : ''}">Categorías</a>
         <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>
         <a href="index.html#club">Voltage Club</a>
         <a href="favoritos.html">Mis favoritos</a>

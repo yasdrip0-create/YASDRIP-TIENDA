@@ -613,3 +613,102 @@ body{
 }
 .yd-color-tile:hover{transform:translateY(-2px);}
 .yd-color-tile.is-active{border-color:var(--acento);box-shadow:0 0 0 3px rgba(138,240,78,.25);}
+
+/* ============================================================
+   15. AVISO DE CATEGORÍA ACTIVA EN TIENDA
+   (la elección de categoría en sí vive en categorias.html; este
+   es solo el recordatorio + botón de quitar cuando se llega con
+   un filtro ya puesto desde ahí)
+   ============================================================ */
+.yd-cat-chip{
+  display:inline-flex;align-items:center;gap:9px;margin-top:10px;
+  padding:7px 8px 7px 14px;border-radius:999px;
+  background:rgba(138,240,78,.08);border:1px solid rgba(138,240,78,.35);
+  font-size:12.5px;color:var(--gray);
+}
+.yd-cat-chip b{color:var(--acento);font-weight:700;}
+.yd-cat-chip button{
+  width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.06);color:var(--ink);transition:all .18s ease;
+}
+.yd-cat-chip button:hover{background:var(--red);color:#fff;}
+.yd-cat-chip button svg{width:10px;height:10px;}
+
+/* ============================================================
+   16. PÁGINA CATEGORÍAS (categorias.html)
+   ============================================================ */
+.yd-catpage-head{
+  max-width:1400px;margin:0 auto;padding:clamp(50px,7vw,84px) clamp(18px,4vw,48px) clamp(30px,4vw,40px);
+  text-align:center;
+}
+.yd-catpage-eyebrow{
+  display:inline-block;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--acento);
+  margin-bottom:14px;
+}
+.yd-catpage-head h1{
+  font-family:'Anton',sans-serif;font-weight:400;text-transform:uppercase;
+  font-size:clamp(40px,7vw,84px);line-height:.95;letter-spacing:.01em;
+}
+.yd-catpage-head p{margin-top:14px;color:var(--gray);font-size:clamp(14px,1.6vw,17px);}
+.yd-catpage-generos{
+  display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  margin-top:26px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+}
+.yd-catpage-generos a{color:var(--gray);font-weight:600;transition:color .18s ease;}
+.yd-catpage-generos a:hover{color:var(--acento);}
+.yd-catpage-generos span{color:var(--line-strong);}
+
+.yd-catpage-grid{
+  max-width:1400px;margin:0 auto;padding:0 clamp(18px,4vw,48px) clamp(60px,7vw,100px);
+  display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(14px,1.8vw,24px);
+}
+.yd-catpage-card{
+  position:relative;display:flex;flex-direction:column;overflow:hidden;
+  aspect-ratio:3/4;border-radius:20px;border:1.5px solid var(--line);background:var(--surface);
+  transition:border-color .3s ease, box-shadow .3s ease, transform .3s ease;
+}
+.yd-catpage-card:hover{
+  border-color:var(--acento);transform:translateY(-4px);
+  box-shadow:0 0 0 1px var(--acento), 0 24px 50px rgba(138,240,78,.16);
+}
+.yd-catpage-art{
+  position:absolute;inset:0;display:grid;place-items:center;padding:14%;
+  transition:transform .55s cubic-bezier(.22,1,.36,1);
+}
+.yd-catpage-art img{width:100%;height:100%;object-fit:cover;}
+.yd-catpage-art svg{width:60%;height:60%;opacity:.85;}
+.yd-catpage-card:hover .yd-catpage-art{transform:scale(1.08);}
+.yd-catpage-card::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.55) 72%,rgba(0,0,0,.9) 100%);
+  transition:opacity .3s ease;
+}
+.yd-catpage-info{
+  position:relative;z-index:2;margin-top:auto;padding:20px 20px 14px;text-align:center;
+}
+.yd-catpage-info b{
+  display:block;font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(20px,2.2vw,26px);
+  text-transform:uppercase;color:#fff;letter-spacing:.02em;
+}
+.yd-catpage-info span{display:block;margin-top:5px;font-size:11.5px;letter-spacing:.14em;color:#9a9a97;}
+.yd-catpage-btn{
+  position:relative;z-index:2;margin:0 16px 18px;padding:11px;border-radius:10px;
+  text-align:center;font-size:12.5px;font-weight:700;letter-spacing:.04em;
+  border:1.5px solid rgba(255,255,255,.22);color:#fff;
+  opacity:0;transform:translateY(8px);transition:all .3s ease;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.yd-catpage-card:hover .yd-catpage-btn{
+  opacity:1;transform:translateY(0);background:var(--acento);border-color:var(--acento);color:var(--acento-ink);
+}
+.yd-catpage-btn svg{width:14px;height:14px;}
+
+@media (max-width:1100px){
+  .yd-catpage-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media (max-width:760px){
+  .yd-catpage-grid{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .yd-catpage-info{padding:14px 12px 10px;}
+  .yd-catpage-info span{font-size:10px;}
+  .yd-catpage-btn{margin:0 10px 12px;padding:9px;font-size:11px;opacity:1;transform:none;background:rgba(0,0,0,.35);border-color:rgba(255,255,255,.25);}
+}

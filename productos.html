@@ -16,8 +16,8 @@
 <meta property="og:image" content="https://yasdrip.com/img/portada.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0a0a0a">
-<link rel="stylesheet" href="css/estilos.css?v=3">
-<link rel="stylesheet" href="css/yasdrip-ui.css?v=3">
+<link rel="stylesheet" href="css/estilos.css?v=4">
+<link rel="stylesheet" href="css/yasdrip-ui.css?v=4">
 </head>
 <body>
 
@@ -28,11 +28,6 @@
   <aside class="yd-side" id="ydSide" aria-label="Filtros de la tienda">
     <button class="yd-side-close" id="ydSideClose" aria-label="Cerrar filtros">✕</button>
     <div class="yd-side-head">Filtros</div>
-
-    <div class="yd-side-group">
-      <h4>Categoría</h4>
-      <div class="yd-cat-tiles" id="fCategorias"></div>
-    </div>
 
     <div class="yd-side-group">
       <h4>Precio</h4>
@@ -61,6 +56,7 @@
   <section>
     <div class="yd-crumbs"><a href="index.html">Inicio</a> › <span id="ydCrumbActual">Tienda</span></div>
     <h1 class="yd-shop-title" id="ydShopTitulo">Tienda</h1>
+    <div id="ydCatActiva"></div>
 
     <div class="yd-shop-bar" style="margin-top:18px;">
       <div style="display:flex;align-items:center;gap:14px;">
@@ -94,13 +90,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=3"></script>
-<script src="js/icons.js?v=3"></script>
-<script src="js/products.js?v=3"></script>
-<script src="js/store.js?v=3"></script>
-<script src="js/catalog-render.js?v=3"></script>
-<script src="js/layout.js?v=3"></script>
-<script src="js/yasdrip-ui.js?v=3"></script>
+<script src="js/firebase-config.js?v=4"></script>
+<script src="js/icons.js?v=4"></script>
+<script src="js/products.js?v=4"></script>
+<script src="js/store.js?v=4"></script>
+<script src="js/catalog-render.js?v=4"></script>
+<script src="js/layout.js?v=4"></script>
+<script src="js/yasdrip-ui.js?v=4"></script>
 <script>
 renderHeader('productos');
 renderFooter();
@@ -168,26 +164,24 @@ function ydNombreColor(hex) {
 }
 
 /* ---------- pintar los filtros ---------- */
-/* Un ícono por categoría, tomado del mismo tipo de prenda que ya
-   usan los productos de esa categoría (hoodie, tee, cap, etc). Si la
-   categoría trae varios tipos, se usa el más repetido. */
-function ydIconoDeCategoria(cat) {
-  const conteo = {};
-  productos.filter(p => p.categoria === cat).forEach(p => { conteo[p.icono] = (conteo[p.icono] || 0) + 1; });
-  const tipos = Object.keys(conteo).sort((a, b) => conteo[b] - conteo[a]);
-  return tipos[0] || 'tee';
+/* La categoría ya no se elige aquí (eso vive en la página
+   Categorías); acá solo se muestra un aviso de cuál llegó activada
+   por la URL, con opción de quitarla sin salir de Tienda. */
+function pintarCategoriaActiva() {
+  const cont = document.getElementById('ydCatActiva');
+  if (!estado.categorias.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = `
+    <div class="yd-cat-chip">
+      Mostrando: <b>${estado.categorias.join(', ')}</b>
+      <button type="button" id="ydCatChipX" aria-label="Quitar filtro de categoría">${YD_ICONOS.equis}</button>
+    </div>`;
+  document.getElementById('ydCatChipX').addEventListener('click', () => {
+    estado.categorias = [];
+    pintarCategoriaActiva();
+    pintarGrid();
+  });
 }
-
-function pintarTilesCategoria() {
-  document.getElementById('fCategorias').innerHTML = categorias.map(c => `
-    <button type="button" class="yd-cat-tile ${estado.categorias.includes(c) ? 'is-active' : ''}" data-cat-tile="${c}">
-      <span class="yd-cat-tile-check">${YD_ICONOS.check}</span>
-      <span class="yd-cat-tile-art">${iconoProducto(ydIconoDeCategoria(c), '#8af04e')}</span>
-      <b>${c}</b>
-      <span>(${productos.filter(p => p.categoria === c).length})</span>
-    </button>`).join('');
-}
-pintarTilesCategoria();
+pintarCategoriaActiva();
 
 document.getElementById('fTallas').innerHTML = tallas.map(t =>
   `<button class="yd-size" data-talla="${t}">${t}</button>`).join('');
@@ -231,15 +225,6 @@ pintarGrid();
 
 /* ---------- eventos de los filtros ---------- */
 document.getElementById('ydSide').addEventListener('click', (e) => {
-  const catBtn = e.target.closest('[data-cat-tile]');
-  if (catBtn) {
-    const val = catBtn.dataset.catTile;
-    const i = estado.categorias.indexOf(val);
-    if (i === -1) estado.categorias.push(val); else estado.categorias.splice(i, 1);
-    catBtn.classList.toggle('is-active');
-    pintarGrid();
-    return;
-  }
   const colorBtn = e.target.closest('[data-color-tile]');
   if (colorBtn) {
     const val = colorBtn.dataset.colorTile;
@@ -274,7 +259,7 @@ document.getElementById('sortSelect').addEventListener('change', (e) => {
 document.getElementById('fLimpiar').addEventListener('click', () => {
   estado.categorias = []; estado.tallas = []; estado.colores = [];
   estado.precioMax = precioTope;
-  document.querySelectorAll('#fCategorias .yd-cat-tile').forEach(b => b.classList.remove('is-active'));
+  pintarCategoriaActiva();
   document.querySelectorAll('#fColores .yd-color-tile').forEach(b => b.classList.remove('is-active'));
   document.querySelectorAll('#fTallas .yd-size').forEach(b => b.classList.remove('is-active'));
   rangoEl.value = precioTope;
