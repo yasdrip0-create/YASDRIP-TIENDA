@@ -68,6 +68,7 @@ function renderHeader(paginaActual = "") {
       </a>
       <div class="nav-links">
         <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
+        <a href="catalogo.html" class="${paginaActual === 'catalogo' ? 'active' : ''}">Catálogo</a>
         <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
         <a href="categorias.html" class="${paginaActual === 'categorias' ? 'active' : ''}">Categorías</a>
         <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>
@@ -104,6 +105,7 @@ function renderHeader(paginaActual = "") {
       </div>
       <div class="mobile-nav-links">
         <a href="index.html" class="${paginaActual === 'inicio' ? 'active' : ''}">Inicio</a>
+        <a href="catalogo.html" class="${paginaActual === 'catalogo' ? 'active' : ''}">Catálogo</a>
         <a href="productos.html" class="${paginaActual === 'productos' ? 'active' : ''}">Tienda</a>
         <a href="categorias.html" class="${paginaActual === 'categorias' ? 'active' : ''}">Categorías</a>
         <a href="servicios.html" class="${paginaActual === 'servicios' ? 'active' : ''}">Contacto</a>

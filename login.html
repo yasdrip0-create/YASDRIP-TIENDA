@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google" content="notranslate">
-<title>YAS DRIP</title>
-<meta name="description" content="Inicia sesión en tu cuenta de YAS DRIP.">
+<title>Iniciar sesión — YASDRIP</title>
+<meta name="description" content="Accede a tu cuenta YASDRIP.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<meta property="og:title" content="Iniciar sesión — YAS DRIP">
-<meta property="og:description" content="Inicia sesión en tu cuenta de YAS DRIP.">
+<meta property="og:title" content="Iniciar sesión — YASDRIP">
+<meta property="og:description" content="Accede a tu cuenta YASDRIP.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://yasdrip.com/login.html">
 <meta property="og:image" content="https://yasdrip.com/img/portada.jpg">
@@ -20,32 +20,44 @@
 <link rel="stylesheet" href="css/estilos.css?v=4">
 <link rel="stylesheet" href="css/yasdrip-ui.css?v=4">
 </head>
-<body>
+<body class="yd-login-body">
 
-<div class="auth-page">
+<div class="yd-login">
 
-  <div class="auth-visual">
-    <div class="auth-visual-blur"></div>
-    <div class="auth-visual-sharp"></div>
-    <a href="index.html" class="nav-logo">
+  <div class="yd-login-media">
+    <img src="img/banner-hoodie-2.jpg" alt="" loading="eager">
+  </div>
+  <div class="yd-login-overlay"></div>
+
+  <div class="yd-login-top">
+    <a href="index.html" class="yd-login-logo">
       <span class="logo-mark">⚡</span><span class="logo-text display">YAS<em>DRIP</em></span>
     </a>
-
-    <div class="auth-copy">
-      <div class="auth-eyebrow">Acceso miembros</div>
-      <h1>Bienvenido de vuelta.<br>Ya traes tu <em>propia energía</em>.</h1>
-      <p>Entra para ver el drop, seguir tus pedidos y enterarte de cada lanzamiento antes que se agote.</p>
-    </div>
-
-    <div class="auth-stamp stamp-font">underground<br>drip co.</div>
+    <button type="button" class="yd-login-back" id="ydLoginBack" aria-label="Volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
   </div>
 
-  <div class="auth-enter-wrap">
-    <a href="index.html" class="btn btn-primary auth-enter-btn">Ingresar</a>
+  <div class="yd-login-content">
+    <span class="yd-login-eyebrow">Inicia sesión</span>
+    <h1 class="yd-login-title">Bienvenido<br>de vuelta.</h1>
+    <p class="yd-login-tagline">Ya traes tu propia <span class="accent">energía</span>.</p>
+    <p class="yd-login-desc">Accede a tu cuenta y sigue disfrutando de la mejor ropa urbana. Tu estilo, siempre contigo.</p>
+
+    <a href="index.html" class="yd-login-btn">
+      Ingresar
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
   </div>
 
 </div>
 
+<script>
+document.getElementById('ydLoginBack').addEventListener('click', function () {
+  if (window.history.length > 1) window.history.back();
+  else window.location.href = 'index.html';
+});
+</script>
+
 </body>
 </html>
-
