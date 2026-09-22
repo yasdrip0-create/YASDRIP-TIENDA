@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google" content="notranslate">
-<title>Tienda — YASDRIP</title>
-<meta name="description" content="Explora la colección completa de YASDRIP: busos, camisetas y accesorios urbanos de edición limitada.">
+<title>Catálogo — YASDRIP</title>
+<meta name="description" content="Descubre la colección completa de YASDRIP por categoría: busos, camisetas, chaquetas, gorras, pantalones y shorts.">
 <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<meta property="og:title" content="Tienda — YASDRIP">
-<meta property="og:description" content="Explora la colección completa de YASDRIP: busos, camisetas y accesorios urbanos de edición limitada.">
+<meta property="og:title" content="Catálogo — YASDRIP">
+<meta property="og:description" content="Descubre la colección completa de YASDRIP por categoría.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://yasdrip.com/productos.html">
+<meta property="og:url" content="https://yasdrip.com/catalogo.html">
 <meta property="og:image" content="https://yasdrip.com/img/portada.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0a0a0a">
@@ -23,23 +23,16 @@
 
 <div id="site-header"></div>
 
-<!-- ========== BANNER DE TIENDA ========== -->
-<section class="yd-shop-hero">
-  <div class="yd-shop-hero-media"><img src="img/banner-hoodie-1.jpg" alt="" loading="eager"></div>
-  <div class="yd-shop-hero-overlay"></div>
-  <div class="yd-shop-hero-content">
-    <span class="yd-shop-hero-eyebrow">Tienda</span>
-    <h1>Todos nuestros <span class="accent">productos</span></h1>
-    <p>Encuentra el estilo que te define. Ropa urbana, con actitud.</p>
-  </div>
-  <div class="yd-shop-hero-word">YAS<em>DRIP</em></div>
-</section>
-
 <main class="yd-shop">
   <!-- ========== FILTROS ========== -->
-  <aside class="yd-side" id="ydSide" aria-label="Filtros de la tienda">
+  <aside class="yd-side" id="ydSide" aria-label="Filtros del catálogo">
     <button class="yd-side-close" id="ydSideClose" aria-label="Cerrar filtros">✕</button>
     <div class="yd-side-head">Filtros</div>
+
+    <div class="yd-side-group">
+      <h4>Categoría</h4>
+      <div class="yd-cat-tiles" id="fCategorias"></div>
+    </div>
 
     <div class="yd-side-group">
       <h4>Precio</h4>
@@ -57,11 +50,6 @@
       <div class="yd-color-tiles" id="fColores"></div>
     </div>
 
-    <div class="yd-side-group">
-      <h4>Categoría</h4>
-      <div id="fCategorias"></div>
-    </div>
-
     <div class="yd-side-actions">
       <button class="yd-btn-main" id="fAplicar">Aplicar filtros</button>
       <button class="yd-clear" id="fLimpiar">Limpiar todo</button>
@@ -71,9 +59,9 @@
 
   <!-- ========== RESULTADOS ========== -->
   <section>
-    <div class="yd-crumbs"><a href="index.html">Inicio</a> › <span id="ydCrumbActual">Tienda</span></div>
-    <h1 class="yd-shop-title" id="ydShopTitulo">Tienda</h1>
-    <div id="ydCatActiva"></div>
+    <div class="yd-crumbs"><a href="index.html">Inicio</a> › <span>Catálogo</span></div>
+    <h1 class="yd-shop-title">Catálogo</h1>
+    <p class="yd-shop-subtitle">Descubre nuestra colección de ropa urbana.</p>
 
     <div class="yd-shop-bar" style="margin-top:18px;">
       <div style="display:flex;align-items:center;gap:14px;">
@@ -115,7 +103,7 @@
 <script src="js/layout.js?v=4"></script>
 <script src="js/yasdrip-ui.js?v=4"></script>
 <script>
-renderHeader('productos');
+renderHeader('catalogo');
 renderFooter();
 ydRenderBeneficios('ydInfo');
 
@@ -126,24 +114,14 @@ gridEl.innerHTML = construirSkeletonHtml(6);
 await cargarCatalogo();
 
 const params = new URLSearchParams(window.location.search);
-const generoInicial = params.get('genero') || null;
-const productosBase = productosActivos();
-const productos = generoInicial
-  ? productosBase.filter(p => Array.isArray(p.genero) && p.genero.includes(generoInicial))
-  : productosBase;
-
-const etiquetaGenero = { hombre: 'Hombre', mujer: 'Mujer', nino: 'Niño', nina: 'Niña' }[generoInicial] || null;
-if (etiquetaGenero) {
-  document.getElementById('ydShopTitulo').textContent = etiquetaGenero;
-  document.getElementById('ydCrumbActual').textContent = 'Tienda · ' + etiquetaGenero;
-}
+const productos = productosActivos();
 
 /* ============================================================
    ESTADO DE LOS FILTROS
    ============================================================ */
 const catInicial = params.get('cat');
 const estado = {
-  categorias: catInicial ? [catInicial] : [],
+  categoria: (catInicial && productos.some(p => p.categoria === catInicial)) ? catInicial : null,
   tallas: [],
   colores: [],
   precioMax: null,
@@ -155,13 +133,9 @@ const precioMin = productos.length ? Math.min(...precios) : 0;
 const precioTope = productos.length ? Math.max(...precios) : 0;
 estado.precioMax = precioTope;
 
-/* ---------- opciones disponibles ---------- */
-const categorias = Array.from(new Set(productos.map(p => p.categoria))).sort();
 const tallas = Array.from(new Set(productos.flatMap(p => p.tallas || [])));
 const colores = Array.from(new Set(productos.flatMap(p => p.colores || [])));
 
-/* Pone nombre a un color a partir de su código, para que el filtro
-   diga "Negro" y no "#151512". */
 function ydNombreColor(hex) {
   const h = String(hex).replace('#', '');
   const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
@@ -180,52 +154,44 @@ function ydNombreColor(hex) {
   return 'Otro';
 }
 
-/* ---------- pintar los filtros ---------- */
-/* La categoría ya no se elige aquí (eso vive en la página
-   Categorías); acá solo se muestra un aviso de cuál llegó activada
-   por la URL, con opción de quitarla sin salir de Tienda. */
-function pintarCategoriaActiva() {
-  const cont = document.getElementById('ydCatActiva');
-  if (!estado.categorias.length) { cont.innerHTML = ''; return; }
-  cont.innerHTML = `
-    <div class="yd-cat-chip">
-      Mostrando: <b>${estado.categorias.join(', ')}</b>
-      <button type="button" id="ydCatChipX" aria-label="Quitar filtro de categoría">${YD_ICONOS.equis}</button>
-    </div>`;
-  document.getElementById('ydCatChipX').addEventListener('click', () => {
-    estado.categorias = [];
-    document.querySelectorAll('#fCategorias [data-cat-check]').forEach(b => b.checked = false);
-    pintarCategoriaActiva();
-    pintarGrid();
-  });
+/* ---------- categoría en miniaturas visuales (arriba, como en la referencia) ---------- */
+const iconoPorCategoria = { Busos:'hoodie', Camisetas:'tee', Gorras:'cap', Pantalones:'pants', Chaquetas:'jacket', Shorts:'shorts', Camisas:'tee' };
+const categorias = Array.from(new Set(productos.map(p => p.categoria))).sort();
+
+function pintarTilesCategoria() {
+  document.getElementById('fCategorias').innerHTML = categorias.map(cat => {
+    const deEsta = productos.filter(p => p.categoria === cat);
+    const conFoto = deEsta.find(p => p.foto || (p.fotos && Object.keys(p.fotos).length));
+    const foto = conFoto ? (conFoto.foto || conFoto.fotos[Object.keys(conFoto.fotos)[0]]) : null;
+    const arte = foto
+      ? `<img src="${foto}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;">`
+      : iconoProducto(iconoPorCategoria[cat] || 'tee', '#8af04e');
+    const activa = estado.categoria === cat;
+    return `
+      <button type="button" class="yd-cat-tile ${activa ? 'is-active' : ''}" data-cat-tile="${cat}">
+        <span class="yd-cat-tile-check">${YD_ICONOS.check || '✓'}</span>
+        <span class="yd-cat-tile-art">${arte}</span>
+        <b>${cat}</b>
+        <span>${deEsta.length} ${deEsta.length === 1 ? 'ITEM' : 'ITEMS'}</span>
+      </button>`;
+  }).join('');
 }
-pintarCategoriaActiva();
+pintarTilesCategoria();
+
+document.getElementById('fCategorias').addEventListener('click', (e) => {
+  const tile = e.target.closest('[data-cat-tile]');
+  if (!tile) return;
+  const val = tile.dataset.catTile;
+  estado.categoria = estado.categoria === val ? null : val;
+  pintarTilesCategoria();
+  pintarGrid();
+});
 
 document.getElementById('fTallas').innerHTML = tallas.map(t =>
   `<button class="yd-size" data-talla="${t}">${t}</button>`).join('');
 
 document.getElementById('fColores').innerHTML = colores.map(c => `
   <button type="button" class="yd-color-tile" data-color-tile="${c}" style="background:${c};" aria-label="${ydNombreColor(c)}" title="${ydNombreColor(c)}"></button>`).join('');
-
-document.getElementById('fCategorias').innerHTML = categorias.map(cat => {
-  const n = productos.filter(p => p.categoria === cat).length;
-  const marcada = estado.categorias.includes(cat) ? 'checked' : '';
-  return `
-    <label class="yd-check">
-      <input type="checkbox" data-cat-check="${cat}" ${marcada}>
-      ${cat}<span class="yd-n">(${n})</span>
-    </label>`;
-}).join('');
-document.getElementById('fCategorias').addEventListener('change', (e) => {
-  const box = e.target.closest('[data-cat-check]');
-  if (!box) return;
-  const val = box.dataset.catCheck;
-  const i = estado.categorias.indexOf(val);
-  if (box.checked && i === -1) estado.categorias.push(val);
-  if (!box.checked && i > -1) estado.categorias.splice(i, 1);
-  pintarCategoriaActiva();
-  pintarGrid();
-});
 
 const rangoEl = document.getElementById('fPrecio');
 rangoEl.min = precioMin;
@@ -239,7 +205,7 @@ document.getElementById('fPrecioMax').textContent = '$' + precioTope.toLocaleStr
    ============================================================ */
 function filtrar() {
   return productos.filter(p => {
-    if (estado.categorias.length && !estado.categorias.includes(p.categoria)) return false;
+    if (estado.categoria && p.categoria !== estado.categoria) return false;
     if (estado.tallas.length && !(p.tallas || []).some(t => estado.tallas.includes(t))) return false;
     if (estado.colores.length && !(p.colores || []).some(c => estado.colores.includes(c))) return false;
     if (estado.precioMax != null && rangoPrecioTallas(p).min > estado.precioMax) return false;
@@ -254,7 +220,7 @@ function pintarGrid() {
 
   gridEl.innerHTML = lista.length
     ? construirTarjetasHtml(lista)
-    : '<div class="yd-empty"><b>Nada coincide con estos filtros</b>Prueba quitando alguno o mira toda la colección.</div>';
+    : '<div class="yd-empty"><b>Nada coincide con estos filtros</b>Prueba quitando alguno o mira todo el catálogo.</div>';
 
   initScrollReveal();
   activarInteraccionGrid(gridEl);
@@ -295,10 +261,9 @@ document.getElementById('sortSelect').addEventListener('change', (e) => {
 });
 
 document.getElementById('fLimpiar').addEventListener('click', () => {
-  estado.categorias = []; estado.tallas = []; estado.colores = [];
+  estado.categoria = null; estado.tallas = []; estado.colores = [];
   estado.precioMax = precioTope;
-  pintarCategoriaActiva();
-  document.querySelectorAll('#fCategorias [data-cat-check]').forEach(b => b.checked = false);
+  pintarTilesCategoria();
   document.querySelectorAll('#fColores .yd-color-tile').forEach(b => b.classList.remove('is-active'));
   document.querySelectorAll('#fTallas .yd-size').forEach(b => b.classList.remove('is-active'));
   rangoEl.value = precioTope;
@@ -316,25 +281,6 @@ document.getElementById('ydSideClose').addEventListener('click', cerrarFiltros);
 back.addEventListener('click', cerrarFiltros);
 document.getElementById('fAplicar').addEventListener('click', cerrarFiltros);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarFiltros(); });
-
-/* ---------- si venimos del buscador (?buscar=<id>) ---------- */
-const buscarId = params.get('buscar');
-if (buscarId) {
-  const tarjeta = document.getElementById(buscarId);
-  if (tarjeta) {
-    setTimeout(() => {
-      tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      tarjeta.classList.add('search-highlight');
-      setTimeout(() => tarjeta.classList.remove('search-highlight'), 2300);
-    }, 150);
-  }
-}
-
-/* ---------- si el enlace trae ancla de producto (#id), abrir su ficha ---------- */
-if (window.location.hash && document.getElementById(window.location.hash.slice(1))) {
-  const el = document.getElementById(window.location.hash.slice(1));
-  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
-}
 
 function showToast(text, esError = false) { mostrarToast(text, esError); }
 
